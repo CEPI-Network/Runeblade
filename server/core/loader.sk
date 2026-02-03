@@ -4,11 +4,14 @@
 
 
 on load:
+	loader()
+
+function loader():
 	wait 1 second
 	wipeDisplays()
 
 
-	#wait 1 ticks
+	wait 1 ticks
 
 	loadNPCs()
 	loadDisplays()

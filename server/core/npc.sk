@@ -32,9 +32,9 @@ on rightclick on mannequin:
 	else if {_name} = "dungeons":
 		openDungeon(player)
 
-	else if {_name} = "tut_swordsmith":
+	else if {_name} = "tutorial swordsmith":
 		openSwordsmith(player, true)
-	else if {_name} = "tut_attunement":
+	else if {_name} = "tutorial attunement master":
 		set {_i} to player's tool
 		set player's tool to air
 		openAttunement(player, {_i}, true)
@@ -80,6 +80,11 @@ function registerNPC(name: string, display: strings, loc: location, skin: string
 		create temporary bound with id {_bound} within {_loc} ~ vector(4, 4, 4) and {_loc} ~ vector(-4, -4, -4):
 			set bound value "npc" of event-bound to {_ent}
 
+	# won't save, shouldn't matter
+	set {-registry::npc::%{_name}%::entity} to {_ent}
+	set {-registry::npc::%{_name}%::display} to {_txt}
+
+
 
 on load:
 	wait 1 second
@@ -117,6 +122,9 @@ function loadNPCs():
 	registerNPC("Dungeons", ("%{_grad::dungeons}%", "", formatParagraph("&7Enter randomly generated dungeons and fight with your team!"), "", "&6&lCLICK &6to View"), location(-0.5, 75, 24.5, world "runeblade", 180, 0), "dungeons", "dungeons")
 
 	registerNPC("Tutorial", ("%{_grad::tutorial}%", "", formatParagraph("&7Learn more about how to play the game!"), "", "&6&lCLICK &6to Start"), location(7.5, 75, -54.5, world "runeblade", 90, 0), "tutorial", "tutorial")
+
+	registerNPC("Tutorial Swordsmith", ("%{_grad::swordsmith}%", "", formatParagraph("&7Select a <#F0F0F0>&nprimary&7 and <#F0F0F0>&nsecondary&7 weapon!"), "", "&6&lCLICK &6to View"), location(0.5, 80, -481.5, world "runeblade", 180, 0), "swordsmith", "tutorial-swordsmith")
+	registerNPC("Tutorial Attunement Master", ("%{_grad::attunement}%", "", formatParagraph("&7Apply an <#F0F0F0>&nattunement&7 to each weapon!"), "", "&6&lCLICK &6to View"), location(0.5, 80, -481.5, world "runeblade", 180, 0), "attunement", "tutorial-attunement")
 
 
 # for use with NPCs

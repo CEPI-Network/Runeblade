@@ -18,8 +18,8 @@ on load:
 
 function spawnLeaderboards():
 
-	loop indices of {displays::leaderboards::*}:
-		kill {displays::leaderboards::%loop-value%::*}
+	loop indices of {-display::leaderboards::*}:
+		kill {-display::leaderboards::%loop-value%::*}
 	
 
 	wait 1 tick
@@ -45,19 +45,19 @@ function spawnLeaderboards():
 
 		loop reversed 10 times:
 			spawn text display at {_base}
-			set {displays::leaderboards::%loop-value-1%::%loop-value-2%} to last spawned text display
-			set text of {displays::leaderboards::%loop-value-1%::%loop-value-2%} to "N/A"
+			set {-display::leaderboards::%loop-value-1%::%loop-value-2%} to last spawned text display
+			set text of {-display::leaderboards::%loop-value-1%::%loop-value-2%} to "N/A"
 			set {_base} to location 0.4 above {_base}
 
 		# header
 		spawn text display at location 0.4 above {_base}
-		set {displays::leaderboards::%loop-value-1%::header} to last spawned text display
-		set text of {displays::leaderboards::%loop-value-1%::header} to "%{_col::%loop-value-1%}%&l%loop-value-1 in uppercase% <##FF2458>%{_symbol::%loop-value%}%"
-		set transformation scale of {displays::leaderboards::%loop-value-1%::header} to vector(2, 2, 2)
+		set {-display::leaderboards::%loop-value-1%::header} to last spawned text display
+		set text of {-display::leaderboards::%loop-value-1%::header} to "%{_col::%loop-value-1%}%&l%loop-value-1 in uppercase% <##FF2458>%{_symbol::%loop-value%}%"
+		set transformation scale of {-display::leaderboards::%loop-value-1%::header} to vector(2, 2, 2)
 		
-		set billboard of {displays::leaderboards::%loop-value-1%::*} to vertical
-		add drop shadow to {displays::leaderboards::%loop-value-1%::*}
-		set color of {displays::leaderboards::%loop-value-1%::*} to rgb(0, 0, 0, 0)
+		set billboard of {-display::leaderboards::%loop-value-1%::*} to vertical
+		add drop shadow to {-display::leaderboards::%loop-value-1%::*}
+		set color of {-display::leaderboards::%loop-value-1%::*} to rgb(0, 0, 0, 0)
 
 
 function reloadLeaderboards():
@@ -91,7 +91,7 @@ function reloadLeaderboards():
 
 
 		loop reversed 10 times:
-			set {_ent} to {displays::leaderboards::%loop-value-1%::%loop-value-2%}
+			set {_ent} to {-display::leaderboards::%loop-value-1%::%loop-value-2%}
 			set {_player} to offlineplayer({_ind::%loop-value-2%}) ? "N/A"
 			set {_rank} to {_player}'s prefix ? ""
 			{_player} != "N/A":
