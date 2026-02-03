@@ -2,81 +2,11 @@
 
 options:
 	npc: location(0.5, 80, -481.5, world "runeblade", 180, 0)
-	swordsmith: 9
-	attunement: 8
-
-
-import:
-	net.citizensnpcs.api.CitizensAPI
-
-expression citizen from id %integer%:
-	get:
-		return {-npcRegistry}.getById(expr-1).getEntity()
 
 
 
 
 on load:
-
-	set {_pluginManager} to server.getServer().getPluginManager()
-	set {-npcRegistry} to {_pluginManager}.getPlugin("Citizens").getNPCRegistry()
-
-	clear {-guard}
-	kill all text displays in radius 128 of {@npc}
-
-	spawn text display at location 2.5 above {@npc}:
-		set {-display::tutorial::1} to text display
-		set display text of text display to "&c&lSWORDSMITH"
-		set display scale of text display to vector(1.25, 1.25, 1.25)
-		set display billboard of text display to center
-	spawn text display at location 2.125 above {@npc}:
-		set {-display::tutorial::2} to text display
-		set display text of text display to "&e&lCLICK"
-		set display billboard of text display to center
-	
-	spawn text display at location 2.5 above {@npc}:
-		set {-display::tutorial::3} to text display
-		set display text of text display to "&5&lATTUNEMENT MASTER"
-		set display scale of text display to vector(1.25, 1.25, 1.25)
-		set display billboard of text display to center
-	spawn text display at location 2.125 above {@npc}:
-		set {-display::tutorial::4} to text display
-		set display text of text display to "&e&lCLICK"
-		set display billboard of text display to center
-	
-
-
-	spawn text display at {@npc} ~ vector(0, 3.25, 28):
-		set {-display::tutorial::5} to text display
-		set display text of text display to "&a&lSECONDARIES"
-		set display scale of text display to vector(1.5, 1.5, 1.5)
-		set display billboard of text display to center
-	spawn text display at {@npc} ~ vector(0, 2.75, 28):
-		set {-display::tutorial::6} to text display
-		set display text of text display to "&e&lTUTORIAL"
-		set display billboard of text display to center
-	
-
-	spawn text display at {@npc} ~ vector(23, 3.25, 5):
-		set {-display::tutorial::7} to text display
-		set display text of text display to "&9&lCOMBOS"
-		set display scale of text display to vector(1.5, 1.5, 1.5)
-		set display billboard of text display to center
-	spawn text display at {@npc} ~ vector(23, 2.75, 5):
-		set {-display::tutorial::8} to text display
-		set display text of text display to "&e&lTUTORIAL"
-		set display billboard of text display to center
-	
-
-	#spawn text display at {@npc} ~ vector(-23, 3.25, 5):
-	#	set {-display::tutorial::9} to text display
-	#	set display text of text display to "<#2eadd7>&lMANA", "&7&oand" and "&f&lMOBILITY"
-	#	set display scale of text display to vector(1.5, 1.5, 1.5)
-	#	set display billboard of text display to center
-	#spawn text display at {@npc} ~ vector(-23, 2.75, 5):
-	#	set {-display::tutorial::10} to text display
-	#	set display text of text display to "&e&lTUTORIAL"
-	#	set display billboard of text display to center
 
 
 	delete bound from id "tutorial.secondaries"
@@ -87,18 +17,6 @@ on load:
 	create a temporary bound with id "tutorial.combos" between ({@npc} ~ vector(26.5, 0, -2.5)) and ({@npc} ~ vector(41.5, 6, 12.5))
 
 
-	
-	wait 1 second
-
-	set {-guard} to true
-	while {-guard} = true:
-
-		if mod(loop-counter, 2) = 0:
-			set display text of {-display::tutorial::2} and {-display::tutorial::4} to "&e&lCLICK"
-		else:
-			set display text of {-display::tutorial::2} and {-display::tutorial::4} to "&6&lCLICK"
-
-		wait 10 tick
 
 
 
@@ -147,11 +65,14 @@ command /tutorial:
 
 function startTutorial(p: player):
 
+	close {_p}'s inventory
 	set {_start} to {@npc} ~ vector(0, 0, -19)
 	set {_start}'s yaw to 0
 	teleport {_p} to {_start}
     
-	apply potion of blindness of tier 1 without particles to {_p} for 30 ticks
+	apply blindness 1 to {_p} for 30 ticks:
+		hide particles
+		hide icon
 
 	set {_p}'s gamemode to adventure
 	clear {_p}'s inventory
@@ -163,19 +84,16 @@ function startTutorial(p: player):
 
 	wait 5 ticks
 
-	loop all mobs in radius 128 of {@npc} where [string tag "custom;owner" of nbt of input is set]:
+	loop (all mobs in radius 128 of {@npc}) where [string tag "owner" of custom nbt of input is set]:
 		# arg-1 will fetch player, arg-2 is obj to hide
-		set {_user} to string tag "custom;owner" of nbt of loop-value
+		set {_user} to string tag "owner" of custom nbt of loop-value
 		hideEntityWithinScope({_user}, loop-value)
 
 
-	make (citizen from id {@swordsmith}, {-display::tutorial::1} and {-display::tutorial::2}) appear to {_p}
-	reveal citizen from id {@swordsmith} to {_p}
-	make (citizen from id {@attunement}, {-display::tutorial::3} and {-display::tutorial::4}) disappear from {_p} # hide attunement master
-	hide citizen from id {@attunement} from {_p}	
+	reveal {-registry::npc::Tutorial Swordsmith::*} to {_p}
 
-	# extra tutorial displays
-	make ({-display::tutorial::5}, {-display::tutorial::6}, {-display::tutorial::7}, {-display::tutorial::8}, {-display::tutorial::9}, {-display::tutorial::10}) disappear from {_p}
+	hide {-registry::npc::Tutorial Attunement Master::*} from {_p}
+	hide {-display::tutorial::*} from {_p}
 
 	send title "&7« %servername()% &7»" with subtitle "&cSword &7and &3Magic &7PVP" to {_p}
 
@@ -208,7 +126,7 @@ function startTutorial(p: player):
 
 			set {_draw} to {_draw} ~ {_v}
 			set {_temp}'s vector length to distance between {_draw} and {@npc}
-			draw 0 of wax off at {_draw} with offset {_temp} with extra 2 with force to {_p}
+			force draw 0 wax off particles with offset {_temp} with extra value 2 at {_draw} to {_p}
 
 		exit loop if loop-counter > 1000
 		stop if {_p} is not connected
@@ -223,20 +141,19 @@ function startTutorial(p: player):
 function updateTutorial(p: player, type: text):
 
 	set {_scope::*} to getScope({_p})
+	broadcast "Scope is"
 
 	if {_type} = "attunement":
 
-		if (size of items in {_p}'s inventory where [byte tag "custom;weapon" of nbt of input = 1]) >= 2:
+		if size of (items in {_p}'s inventory) where [byte tag "weapon" of custom nbt of input = 1] >= 2:
 			close {_p}'s inventory
 			set {-tempdata::%uuid of {_p}%::tutorial} to 1
 		
-			set {_ent} to citizen from id {@swordsmith}
-			make ({_ent}, {-display::tutorial::1} and {-display::tutorial::2}) disappear from {_p} # hide swordsmith
-			hide {_ent} from {_p}
+			hide {-registry::npc::Tutorial Swordsmith::*} from {_p}
 
-			draw 25 of large smoke at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-			draw 10 of flame at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.1 for {_scope::*}
-			draw 8 of lava at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
+			draw 25 large smoke particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
+			draw 10 flame particles with extra value 0.1 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
+			draw 8 lava particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
 			play sound "block.fire.extinguish" at volume 10 at location of {_ent} to {_p}
 
 
@@ -244,12 +161,11 @@ function updateTutorial(p: player, type: text):
 
 			displayMessage({_p}, "&a&lTUTORIAL", "&7Now that you have your weapons, add an &5Attunement &7to each of them!", true)
 
-			draw 25 of large smoke at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-			draw 20 of witch at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
+			draw 25 large smoke particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
+			draw 20 witch particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
 			play sound "block.fire.extinguish" at volume 10 at location of {_ent} to {_p}
 
-			make (citizen from id {@attunement}, {-display::tutorial::3} and {-display::tutorial::4}) appear to {_p} # show attunement master
-			reveal citizen from id {@attunement} to {_p}
+			reveal {-registry::npc::Tutorial Attunement Master::*} to {_p} # show attunement master
 
 
 
@@ -257,7 +173,7 @@ function updateTutorial(p: player, type: text):
 
 		{-tempdata::%uuid of {_p}%::tutorial} != 2 # debug
 
-		set {_size} to size of ((items in {_p}'s inventory where [byte tag "custom;weapon" of nbt of input = 1]) where [string tag "custom;attunement" of nbt of input != "none"])
+		set {_size} to size of (((items in {_p}'s inventory) where [byte tag "weapon" of custom nbt of input = 1]) where [string tag "attunement" of custom nbt of input != "none"])
 		if {_size} >= 2:
 			set {-tempdata::%uuid of {_p}%::tutorial} to 2
 
@@ -265,37 +181,38 @@ function updateTutorial(p: player, type: text):
 			close {_p}'s inventory
 			
 
-			set {_ent} to citizen from id {@attunement}
-			make ({_ent}, {-display::tutorial::3} and {-display::tutorial::4}) disappear from {_p} # hide swordsmith
-			hide {_ent} from {_p}
+			hide {-registry::npc::Tutorial Attunement Master::*} from {_p}
 
-			draw 25 of large smoke at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-			draw 20 of witch at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
+			draw 25 large smoke particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
+			draw 20 witch particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
 			play sound "block.fire.extinguish" at volume 10 at location of {_ent} to {_p}
 
 			wait 2 second
 
 			displayMessage({_p}, "&a&lTUTORIAL", "&7Let's put those tools to the test! &e&lLEFT-CLICK &7to &fAttack &7and &e&lRIGHT-CLICK &7to use your &5Attunement&7!", true)
 
-			draw 25 of large smoke at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-			draw 10 of angry villager at ({_ent} ~ vector(0, 0.75, 0)) with offset vector(0.3, 0.3, 0.3) for {_scope::*}
+			draw 25 large smoke particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
+			draw 10 angry villager particles with offset vector(0.3, 0.3, 0.3) at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
 			play sound "block.fire.extinguish" at volume 10 at location of {_ent} to {_p}
 
 			spawn adult husk at {@npc}:
 				set {_ent} to husk
-				set byte tag "custom;mob" of nbt of husk to 1
-				set int tag "custom;tutorial" of nbt of husk to 2
+				modify custom nbt of husk:
+					set byte tag "mob" of nbt to 1
+					set int tag "tutorial" of nbt to 2
 				set byte tag "Silent" of nbt of husk to 1
 
 				set husk's generic armor attribute to 0
-				apply infinite potion of weakness of tier 255 without particles to husk
-				apply potion of invisibility without particles to husk for 5 ticks	
+				apply infinite weakness 255 to husk:
+					hide particles
+				apply invisibility 1 to husk for 5 ticks:
+					hide particles
 				set husk's maximum health to 10
 				set ai of husk to false
 				heal husk
 			
 			wait 1 tick
-			set string tag "custom;owner" of nbt of {_ent} to name of {_p}
+			set string tag "owner" of custom nbt of {_ent} to name of {_p}
 			hideEntityWithinScope({_p}, {_ent})
 			
 			wait 3 minutes
@@ -307,7 +224,7 @@ function updateTutorial(p: player, type: text):
 
 
 	else if {_type} = "knight" or "respawn":
-		kill (all zombies in radius 256 of {@npc} where [string tag "custom;owner" of nbt of input = name of {_p}])
+		kill (all zombies in radius 256 of {@npc}) where [string tag "owner" of custom nbt of input = name of {_p}]
 		set {-tempdata::%uuid of {_p}%::tutorial} to 3
 
 		wait 2 second
@@ -319,20 +236,20 @@ function updateTutorial(p: player, type: text):
 
 		wait 2 second
 
-
 		loop ({@npc} ~ vector(23, 0, 5)), ({@npc} ~ vector(-23, 0, 5)):
 			spawn_knight(loop-value, 1)
 			set {_ent} to nearest zombie at loop-value
 
-			set string tag "custom;owner" of nbt of {_ent} to "%{_p}%"
-			set int tag "custom;tutorial" of nbt of {_ent} to 3
-			#set byte tag "Silent" of nbt of {_ent} to 1
+			modify custom nbt of {_ent}:
+				set string tag "owner" of nbt to "%{_p}%"
+				set int tag "tutorial" of nbt to 3
 
 			hideEntityWithinScope({_p}, {_ent})
-			apply potion of glowing of tier 1 without particles to {_ent} for 3 seconds
+			apply glowing 1 to {_ent} for 3 seconds:
+				hide particles
 			set {_ent}'s target to {_p}
 
-			draw 25 of large smoke at ({_ent} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
+			draw 25 large smoke particles with extra value 0.15 at (location of {_ent} ~ vector(0, 0.75, 0)) for {_scope::*}
 			play sound "block.fire.extinguish" at volume 3 at location of {_ent} to {_p}
 			play sound "entity.zombie_villager.cure" at volume 3 at pitch 1.5 at location of {_ent} to {_p}
 
@@ -342,7 +259,7 @@ function updateTutorial(p: player, type: text):
 		wait 1 second
 
 		{-tempdata::%uuid of {_p}%::tutorial} < 4
-		set {_size} to size of (all zombies in radius 256 of {@npc} where [string tag "custom;owner" of nbt of input = name of {_p}])
+		set {_size} to size of ((all zombies in radius 256 of {@npc}) where [string tag "owner" of custom nbt of input = name of {_p}])
 		{_size} = 0
 		set {-tempdata::%uuid of {_p}%::tutorial} to 4
 
@@ -356,7 +273,7 @@ function updateTutorial(p: player, type: text):
 		displayMessage({_p}, "&a&lTUTORIAL", "&7If you want to learn more about the game's mechanics, explore around some more!")
 
 		# unseal doors
-		make ({-display::tutorial::5}, {-display::tutorial::6}, {-display::tutorial::7}, {-display::tutorial::8}, {-display::tutorial::9}, {-display::tutorial::10}) appear for {_p}
+		reveal {-display::tutorial::*} to {_p}
 		make {_p} see (blocks within {@npc} ~ vector(1, 0, 31) and {@npc} ~ vector(-1, 4, 31)) as air
 		make {_p} see (blocks within {@npc} ~ vector(26, 0, 4) and {@npc} ~ vector(26, 4, 6)) as air
 
@@ -394,20 +311,23 @@ function updateTutorial(p: player, type: text):
 		displayMessage({_p}, "&a&lTUTORIAL", "&7Try killing a dummy with your secondary! &e&lLEFT-CLICK &7with your bow to attack!")
 		
 		set {_loc} to {@npc} ~ vector(0, 0, 43.25)
-		draw 25 of large smoke at ({_loc} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-		draw 10 of angry villager at ({_loc} ~ vector(0, 0.75, 0)) with offset vector(0.3, 0.3, 0.3) for {_scope::*}
+		draw 25 large smoke particles with extra value 0.15 at ({_loc} ~ vector(0, 0.75, 0)) for {_scope::*}
+		draw 10 angry villager particles with offset vector(0.3, 0.3, 0.3) at ({_loc} ~ vector(0, 0.75, 0)) for {_scope::*}
 		play sound "block.fire.extinguish" at volume 10 at {_loc} to {_p}
 
 		spawn adult husk at {_loc}:
 			set {_ent} to husk
-			set string tag "custom;owner" of nbt of husk to "%{_p}%"
-			set byte tag "custom;mob" of nbt of husk to 1
-			set int tag "custom;tutorial" of nbt of husk to 5
+			modify custom nbt of husk:
+				set string tag "owner" of nbt to "%{_p}%"
+				set byte tag "mob" of nbt to 1
+				set int tag "tutorial" of nbt to 5
 			set byte tag "Silent" of nbt of husk to 1
 
 			set husk's generic armor attribute to 0
-			apply infinite potion of weakness of tier 255 without particles to husk
-			apply potion of invisibility without particles to husk for 5 ticks	
+			apply infinite weakness 255 to husk:
+				hide particles
+			apply invisibility 1 to husk for 5 ticks:
+				hide particles
 			set husk's maximum health to 5
 			set ai of husk to false
 			heal husk
@@ -469,24 +389,28 @@ function updateTutorial(p: player, type: text):
 		
 		set {_loc} to {@npc} ~ vector(37, 0, 5)
 		set {_loc}'s yaw to 90
-		draw 25 of large smoke at ({_loc} ~ vector(0, 0.75, 0)) with extra 0.15 for {_scope::*}
-		draw 10 of angry villager at ({_loc} ~ vector(0, 0.75, 0)) with offset vector(0.3, 0.3, 0.3) for {_scope::*}
+		draw 25 large smoke particles with extra value 0.15 at ({_loc} ~ vector(0, 0.75, 0)) for {_scope::*}
+		draw 10 angry villager particles with offset vector(0.3, 0.3, 0.3) at ({_loc} ~ vector(0, 0.75, 0)) for {_scope::*}
 		play sound "block.fire.extinguish" at volume 10 at {_loc} to {_p}
 
 		spawn adult husk at {_loc}:
 			set {_ent} to husk
-			set string tag "custom;owner" of nbt of husk to "%{_p}%"
-			set byte tag "custom;mob" of nbt of husk to 1
-			set int tag "custom;tutorial" of nbt of husk to 7
+			modify custom nbt of husk:
+				set string tag "owner" of nbt to "%{_p}%"
+				set byte tag "mob" of nbt to 1
+				set int tag "tutorial" of nbt to 7
 			set byte tag "Silent" of nbt of husk to 1
 
 			set husk's generic armor attribute to 0
-			apply infinite potion of weakness of tier 255 without particles to husk
-			apply potion of invisibility without particles to husk for 5 ticks
+			apply infinite weakness 255 to husk:
+				hide particles
+			apply invisibility 1 to husk for 5 ticks:
+				hide particles
 			set husk's maximum health to 100
 			set ai of husk to false
 			heal husk
-		apply potion of regeneration of tier 5 without particles to {_ent} for 5 minutes
+		apply regeneration 5 to {_ent} for 5 minutes:
+			hide particles
 		
 		wait 1 tick
 		hideEntityWithinScope({_p}, {_ent})
@@ -526,8 +450,8 @@ function updateTutorial(p: player, type: text):
 		set {-tempdata::%uuid of {_p}%::tutorial::combos} to true
 
 		loop all husks in radius 2 of {@npc} ~ vector(37, 0, 5):
-			string tag "custom;owner" of nbt of loop-value = "%{_p}%"
-			kill loop-value
+			string tag "owner" of custom nbt of loop-value = name of {_p}
+			delete loop-value
 
 
 
@@ -537,7 +461,7 @@ function updateTutorial(p: player, type: text):
 
 on target:
 	target is a player
-	string tag "custom;owner" of nbt of event-entity is set
+	string tag "owner" of custom nbt of event-entity is set
 
 	set {_scope::*} to getScope(event-entity)
 	{_scope::*} doesn't contain target
@@ -550,7 +474,7 @@ on death of mob:
 	attacker is a player
 	attacker is online
 
-	set {_val} to int tag "custom;tutorial" of nbt of victim
+	set {_val} to int tag "tutorial" of custom nbt of victim
 	{_val} is set
 	{-tempdata::%uuid of attacker%::tutorial} = {_val}
 
@@ -575,7 +499,7 @@ on rightclick with clock:
 	teleport player to spawn()
 	play sound "ui.button.click" and "entity.enderman.teleport" at volume 10 to player
     
-	loop all mobs in radius 100 of {@npc} where [string tag "custom;owner" of nbt of input = name of player]:
+	loop (all mobs in radius 100 of {@npc}) where [string tag "owner" of custom nbt of input = name of player]:
 		kill loop-entity
 
 
