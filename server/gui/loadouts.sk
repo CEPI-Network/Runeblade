@@ -3,7 +3,7 @@
 
 on rightclick:
 	clicked entity is an interaction
-	{displays::loadouts::1} = clicked entity
+	{-display::loadouts::1} = clicked entity
 	#name of clicked entity = "loadouts"
 	openLoadouts(player)
 	play sound "ui.button.click" to player

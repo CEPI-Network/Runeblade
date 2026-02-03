@@ -2,7 +2,7 @@
 
 on rightclick:
 	clicked entity is an interaction
-	{displays::stats::3} = clicked entity
+	{-display::stats::3} = clicked entity
 	openWeaponStats(player)
 	play sound "ui.button.click" to player
 

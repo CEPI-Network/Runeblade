@@ -16,7 +16,7 @@ command /duel [<player>]:
 
 on rightclick:
 	clicked entity is an interaction
-	{displays::duels::3} = clicked entity
+	{-display::duels::3} = clicked entity
 	#name of clicked entity = "loadouts"
 	openDuels(player)
 
