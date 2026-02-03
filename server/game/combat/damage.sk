@@ -1,6 +1,8 @@
 
 
 function getDamage(p: entity, weapon: text, hit: integer=1, attunement: text="") returns number:
+	replace all "_" in {_weapon} with " "
+
 	if {_attunement} != "":
 		set {_dmg} to ({-attunements::%{_attunement}%::damage::%{_weapon}%} ? {-attunements::%{_attunement}%::damage::1})
 		set {_dmg} to {_dmg} * 1.2 if {-tempdata::%uuid of {_p}%::boon} = "boon of the mystics"
