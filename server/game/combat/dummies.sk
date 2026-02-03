@@ -19,7 +19,8 @@ function spawnDummies():
 	set {dummy::3} to last spawned husk
 
 	set ai of {dummy::*} to false
-	silence {_dummy::*}
+	loop {dummy::*}:
+		silence loop-value
 
 	set helmet of {dummy::*} to {-heads::haybale}
 	set chestplate of {dummy::*} to unbreakable leather chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
