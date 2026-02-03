@@ -777,17 +777,18 @@ on portal enter:
 
 		set {_amnt} to {-tempdata::%uuid of player%::shattered-runes} / 2
 
-		set {_init} to {_amnt}
-		set {_extra} to ""
+		set {_init} to {_amnt} * 2
+		set {_extra} to "&8(&f2x Dungeon"
 		if {boost} is set:
 			set {_amnt} to {_amnt} * 2
-			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+			set {_extra} to {_extra} + " &7&& &e2x <##2eadd7>₪ &fRune Gains"
+		set {_extra} to {_extra} + "&8)"
 
 		send ""
 		send "&5&l DUNGEON CLEARED"
 		send ""
 		send "&8 - &f%formatTime({_time})%&e⌚"
-		send "&8 - &3 +%runes({_amnt}, false)%%{_extra}%"
+		send "&8 - &3 +%runes({_amnt}, false)% %{_extra}%"
 		send ""
 
 		add {_amnt} to {data::%uuid of player%::runes}

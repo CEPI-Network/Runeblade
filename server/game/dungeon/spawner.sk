@@ -34,7 +34,7 @@ function spawnDungeonSpawners():
 				spawn creeper at location 0.75 below loop-value-3:
 					set {_uuid} to uuid of creeper
 					set {_hitbox::%{_uuid}%} to creeper
-					add creeper to {displays::dungeon::*}
+					add creeper to {-display::dungeon::*}
 					set name of creeper to "&dSpawner"
 					add nbt compound from "{NoAI:1b,Silent:1b}" to nbt of creeper
 					set byte tag "display" of custom nbt of creeper to 1
@@ -45,7 +45,7 @@ function spawnDungeonSpawners():
 
 				spawn item display at loop-value-3:
 					set {_display::%{_uuid}%} to item display
-					add item display to {displays::dungeon::*}
+					add item display to {-display::dungeon::*}
 					set item of item display to spawner
 					set interpolation delay of item display to 0 ticks
 					set interpolation duration of item display to 20 ticks
@@ -82,9 +82,11 @@ function spawnDungeonSpawners():
 					set {_index} to weighted_choice(("10₪ shattered runes", "25₪ shattered runes" and "50₪ shattered runes"), (2, 2, 1))
 					set {_i} to {-dungeon::loot::%{_index}%::item} named {-dungeon::loot::%{_index}%::name} with lore {-dungeon::loot::%{_index}%::desc::*} with all item flags
 					if {_index} contains "runes":
-						set {_cut} to uncolored {_name} in lowercase
+						set {_cut} to uncolored {-dungeon::loot::%{_index}%::name} in lowercase
 						replace all "₪ shattered runes" in {_cut} with ""
-						set {_cut} to {_cut} parsed as integer
+						if ({_cut} parsed as integer) isn't set:
+							send "%prefix()% Dungeon Error: Spawner Runes unset &8(%uncolored {-dungeon::loot::%{_index}%::name} in lowercase% &8-> &7%uncolored {-dungeon::loot::%{_index}%::name} in lowercase% &8-> &6%{_cut}% &8-> &e%{_cut} parsed as integer%&8)" to player("Sh_iki") and console
+						set {_cut} to ({_cut} parsed as integer) ? 25
 						set int tag "runes" of custom nbt of {_i} to {_cut}
 					
 					drop {_i} at {_display::%{_uuid}%}
@@ -166,17 +168,18 @@ function spawnDungeonSpawners():
 
 		set {_amnt} to {-tempdata::%uuid of loop-player%::shattered-runes} / 2
 
-		set {_init} to {_amnt}
-		set {_extra} to ""
+		set {_init} to {_amnt} * 2
+		set {_extra} to "&8(&f2x Dungeon"
 		if {boost} is set:
 			set {_amnt} to {_amnt} * 2
-			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+			set {_extra} to {_extra} + " &7&& &e2x <##2eadd7>₪ &fRune Gains"
+		set {_extra} to {_extra} + "&8)"
 
 		send "" to loop-player
 		send "&5&l DUNGEON CLEARED" to loop-player
 		send "" to loop-player
 		send "&8 - &f%formatTime({_time})%&e⌚" to loop-player
-		send "&8 - &3 +%runes({_amnt}, false)%%{_extra}%" to loop-player
+		send "&8 - &3+%runes({_amnt}, false)% %{_extra}%" to loop-player
 		send "" to loop-player
 
 		add {_amnt} to {data::%uuid of loop-player%::runes}
