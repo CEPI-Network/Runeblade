@@ -3,8 +3,12 @@
 function resourcepack(p: player):
 	#remove all resource packs from {_p}
 	wait 5 ticks
-	send resource pack from "https://download.mc-packs.net/pack/f30b06cfb2fccffedf599fdf8e18242e93e4c109.zip" with hash "f30b06cfb2fccffedf599fdf8e18242e93e4c109" to {_p}
+	
+	# 1.20.4
+	# send resource pack from "https://download.mc-packs.net/pack/f30b06cfb2fccffedf599fdf8e18242e93e4c109.zip" with hash "f30b06cfb2fccffedf599fdf8e18242e93e4c109" to {_p}
 
+	# 1.21.10
+	send resource pack from "https://download.mc-packs.net/pack/e522f082926ecc75bb45b66509b812d9e773397d.zip" with hash "e522f082926ecc75bb45b66509b812d9e773397d" to {_p}
 
 
 
