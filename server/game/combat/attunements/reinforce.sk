@@ -1,0 +1,83 @@
+
+
+
+function reinforceAction(p: player, weapon: string, atk-scale: number):
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {-tempdata::%uuid of {_p}%::reinforce} to true
+
+	set {_grad} to minimessage from "<gradient:##545454:##FF55FF>---------------"
+	set {_spl::*} to raw {_grad} split at "-"
+
+
+	#set display text of {_ent::1} to "&8« &5&lREINFORCE &8»"
+
+	play sound "block.beacon.activate" at volume 1.5 at pitch 2 at {_p}
+	play sound "entity.firework_rocket.blast" at volume 1 at pitch 2 at {_p}
+
+	set {_draw} to location of block at {_p}
+	set {_draw}'s pitch to 0
+
+	spawn block display at {_draw}:
+		set {_ent::1} to block display
+		set block data of block display to purple stained glass
+		set transformation translation of block display to vector(-0.5, -1.8, -0.5)
+
+	spawn block display at {_draw}:
+		set {_ent::2} to block display
+		set block data of block display to magenta stained glass
+		set transformation translation of block display to vector(-0.5, -0.8, -0.5)
+
+	add {_ent::*} to {_p}'s passengers # might need to fiddle with their translations here since they'll be stacked on the same OBJ
+
+	set interpolation duration of {_ent::*} to 1 ticks
+	set teleport duration of {_ent::*} to 1 ticks
+	# windup
+	loop 30 times:
+		loop-value <= 5:
+			set interpolation delay of {_ent::*} to 0 ticks
+			set {_height} to -2.8 + (loop-value / 5)
+			set display translation of {_ent::1} to vector(-0.5, {_height}, -0.5)
+			set {_height} to -1.8 + (loop-value / 5)
+			set display translation of {_ent::2} to vector(-0.5, {_height}, -0.5)
+		#mod(loop-value,2) = 0:
+		#	set display text of {_ent::1} to formatted "&8« %{_spl::%loop-value / 2%}%&lREINFORCE &8»"
+		draw 1 dragon breath particles with offset vector(0.3, 0.3, 0.3) with extra value 0.1 at location 1 above {_p}
+		draw 2 enchanting particles with offset vector(0.5, 0.5, 0.5) with extra value 0.25 at location 1 above {_p}
+
+		wait 1 tick	
+
+	play sound "block.enchantment_table.use" at volume 1.25 at pitch 1.65+{_sound-scale} at {_p}
+	play sound "block.beacon.power_select" at volume 1.25 at pitch 2 at {_p}
+	play sound "block.glass.break" at volume 1.25 at pitch 1.5+{_sound-scale} at {_p}
+	play sound "elemental.magic_aura" at volume 1.5 at pitch 2 at {_p}
+
+	draw 1 rgb(225, 130, 250) flash particles at location 1 above {_p}
+	draw 20 enchanting particles with offset vector(0.5, 0.5, 0.5) with extra value 0.5 at location 1 above {_p}
+
+	kill {_ent::*}
+	force {_p}'s helmet, {_p}'s chestplate, {_p}'s leggings and {_p}'s boots to glint
+
+
+	# 7.5s duration
+	loop 30 times:
+		draw 4 enchanting particles with offset vector(0.5, 0.5, 0.5) with extra value 0.25 at location 1 above {_p}
+		wait 5 ticks
+	
+	loop reversed 15 times:
+		# set display text of {_ent::1} to formatted "&8« %{_spl::%loop-value%}%&lREINFORCE &8»"
+		draw 2 smoke particles with offset vector(0.5, 0.5, 0.5) with extra value 0.1 at location 1 above {_p}
+		draw 2 enchanting particles with offset vector(0.5, 0.5, 0.5) with extra value 0.25 at location 1 above {_p}
+		draw 2 portal particles with offset vector(0.5, 0.5, 0.5) with extra value 1 at location 1 above {_p}
+		play sound "block.netherrack.break" at volume 0.3 at pitch 0.5+loop-value/20 at {_p}
+		wait 1 tick
+
+	play sound "block.enchantment_table.use" at volume 3.25 at pitch 0.65+{_sound-scale} at {_p}
+	play sound "block.beacon.deactivate" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+	draw 80 portal particles with offset vector(0.5, 0.5, 0.5) with extra value 1 at location 1 above {_p}
+
+
+	clear {-tempdata::%uuid of {_p}%::reinforce}
+	force {_p}'s helmet, {_p}'s chestplate, {_p}'s leggings and {_p}'s boots to stop glint
+	set {_p}'s metadata "cooldown_reinforce" to 15 seconds from now
+	prioritybar({_p}, "&8«   &d&lREINFORCE &7has expired!   &8»", 1 second)

@@ -1,0 +1,297 @@
+
+
+
+
+function spawn_necromancer(l: location, dungeon: boolean=false):
+
+	spawn wither skeleton at {_l}:
+		set {_ent} to wither skeleton
+		set name of wither skeleton to "Necromancer"
+		#add nbt compound from "{CustomNameVisible:0b,NoAI:1b}" to nbt of wither skeleton
+
+		
+		set helmet of wither skeleton to player head with nbt from "{""minecraft:profile"":{name:""Haybale"",properties:[{name:""textures"",value:""eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2NiM2QyMmFlMDAxMjE4NjFlZTY1ZTg1MDJjMzEzNzg0YTI2OGU0MmExMzBlM2Q2N2RlZDNhNjg0OGVhZjk2OCJ9fX0""}]}}"
+		set chestplate of wither skeleton to unbreakable leather chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set leggings of wither skeleton to unbreakable leather leggings with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set boots of wither skeleton to unbreakable leather boots with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set tool of wither skeleton to bone
+
+		apply infinite weakness 255 to wither skeleton:
+			hide particles
+		set wither skeleton's maximum health to 20
+		set byte tag "mob" of custom nbt of wither skeleton to 1
+		heal wither skeleton
+
+
+	spawn text display at {_l}:
+		set {_txt::1} to text display
+		set text of text display to "&5&lNECROMANCER"
+		set billboard of text display to center
+		set transformation translation of text display to vector(0, 0.35, 0)
+		set transformation scale of text display to vector(1.25, 1.25, 1.25)
+		make text display ride {_ent}
+	
+	spawn text display at {_l}:
+		set {_txt::2} to text display
+		set text of text display to "&6ᴇʟɪᴛᴇ"
+		set billboard of text display to center
+		set transformation translation of text display to vector(0, 0.8, 0)
+		make text display ride {_txt::1}
+	
+
+	if {_dungeon} = true:
+		set {_max-life} to 1000
+	else:
+		set {_max-life} to 300
+
+
+	while {_ent} is alive:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= {_max-life} # bare minimum over 10m
+		then:
+			exit loop
+
+		target entity of {_ent} is set:
+			set {_dist} to distance between {_ent} and (target entity of {_ent})
+			if {_dist} > 30:
+				continue
+			
+			if all:
+				chance of 15%
+				(size of (all entities in radius 30 of {_ent}) where [byte tag "mob" of custom nbt of input = 1]) < 15
+			then:
+				arise({_ent})
+
+			else if {_dist} < 8:
+				necromancer_attack({_ent}, (random integer between 1 and 2), 1)
+			else:
+				necromancer_attack({_ent}, 1, 1)
+
+
+		wait ("%random integer between 50 and 70% ticks") parsed as timespan
+	
+
+	if {_dungeon} = true:
+		if size of all players in radius 64 of {_ent} > 0:
+			set {_i} to {-dungeon::loot::spirit horn::item} named {-dungeon::loot::spirit horn::name} with lore {-dungeon::loot::spirit horn::desc::*} with all item flags
+			drop {_i} at {_ent}
+			draw 3 poof particles at {_i}
+			draw 9 sculk soul particles with extra value 0.05 at {_i}
+
+
+	kill {_ent}
+	kill {_txt::*}
+
+
+
+on damage:
+	attacker is a wither skeleton:
+		remove wither from victim
+
+		name of victim = "&6Knight"
+		cancel event
+
+
+
+
+on death:
+	name of victim = "Necromancer":
+		set {_1::*} to victim's passengers
+		add {_1::1}'s passengers to {_1::*}
+		kill {_1::*}
+
+
+
+
+
+
+on leftclick with bone:
+	necromancer_attack(player, 2, 1)
+
+
+
+
+function arise(p: entity):
+	play sound "entity.zombie_villager.cure" at volume 3 at pitch 1.2 at {_p}
+	play sound "block.fire.extinguish" at volume 3 at {_p}
+
+	wait 1.5 seconds
+	
+	loop 3 times:
+		set {_rand} to random vector
+		set {_rand}'s pitch to 0
+		set {_rand}'s vector length to random number between 0 and 2
+		set {_loc} to location of {_p} ~ {_rand}
+		set {_loc} to location 2 above {_loc} if block at {_loc} is solid
+		spawn_knight({_loc})
+		draw 6 large smoke particles with offset vector(0.3, 0.6, 0.3) with extra value 0.1 at location 1 above {_loc}
+	play sound "block.fire.extinguish" at volume 3 at pitch 2 at {_p}
+
+
+
+function necromancer_attack(p: entity, hit: integer=1, atk-scale: number):
+
+	if {_hit} = 1:
+
+		set {_cast} to location of {_p}
+		play sound "entity.illusioner.prepare_blindness" at volume 3 at pitch 2 at {_p}
+		
+		loop 20 times:
+			set {_x} to 2 * cos(loop-value * 180)
+			set {_dist} to (loop-value / 2)*(loop-value / 10)
+			set {_loc} to location {_x} to the left and 2+{_dist} horizontally infront of {_cast}
+			set {_target} to location 4+(loop-value) horizontally infront of {_cast}
+			set {_v} to vector from {_loc} to {_target}
+			set {_v}'s pitch to {_v}'s pitch - (35 + loop-value)
+			set {_loc}'s yaw to {_v}'s yaw - 180
+			set {_loc}'s pitch to {_v}'s pitch
+			set {_loop} to loop-value
+
+			spawn block display at {_loc}:
+				add block display to {_ent::*}
+				add block display to {_scale::*}
+
+				
+				set block data of block display to pointed dripstone
+				set {_rand::1} to ({_loop} / 50) + random number between 1 and 1.5
+				set {_rand::2} to ({_loop} / 3.5) + random number between 2 and 2.5
+				set {_rand::3} to ({_loop} / 50) + random number between 1 and 1.5
+				set transformation scale of block display to vector(0.1, 0.1, 0.1)
+				set {_cache::%block display%::1} to {_rand::1}
+				set {_cache::%block display%::2} to {_rand::2}
+				set {_cache::%block display%::3} to {_rand::3}
+				set transformation translation of block display to vector((-0.5 * {_rand::1}), 0.25, (-1 * {_rand::3}))
+				set display brightness of block display to displayBrightness(10, 10)
+				set interpolation delay of block display to 0 ticks
+				set interpolation duration of block display to 1 ticks
+				
+				loop 3 times:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.25
+					draw 0 large smoke particles with offset {_v}+{_rand} with extra value 0.05 at (block display ~ {_rand})
+				draw 1 crit particles with extra value 0.2 at (location 0.2 above block display)
+
+
+
+			mod(loop-value, 2) = 0:
+				play sound "block.dripstone_block.break" at volume 3 at pitch 0.5+(loop-value / 20) at {_loc}
+				wait 1 tick
+				loop {_scale::*}:
+					loop 3 times:
+						set {_r::%loop-value-3%} to {_cache::%loop-value-2%::%loop-value-3%}
+					set interpolation delay of loop-value-2 to 0 ticks
+					set transformation scale of loop-value-2 to vector({_r::1}, {_r::2}, {_r::3})
+				clear {_scale::*}
+			
+
+				# hitbox
+				loop entities in radius 4 of {_loc} where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+
+					add loop-entity to {_hit::*}
+					make {_p} damage loop-entity by 4
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.7
+					push loop-entity up at speed 0.3
+
+					draw 12 crit particles with extra value 0.2 at location 1 above loop-entity
+					apply slowness 1 to loop-entity for 1.5 seconds
+					
+					play sound "entity.phantom.bite" at loop-entity
+				
+
+		wait 1 seconds
+		set interpolation duration of {_ent::*} to 1 ticks
+		loop reversed 9 times:
+			loop {_ent::*}:
+				loop 3 times:
+					set {_r::%loop-value-3%} to {_cache::%loop-value-2%::%loop-value-3%} * (loop-value-1 / 10)
+				set interpolation delay of loop-value-2 to 0 ticks
+				set transformation scale of loop-value-2 to vector({_r::1}, {_r::2}, {_r::3})
+			
+			wait 1 tick
+
+		kill {_ent::*}
+	
+
+
+
+	else if {_hit} = 2:
+		
+		play sound "block.respawn_anchor.charge" at volume 4 at {_p}
+		play sound "block.fire.extinguish" at volume 3 at {_p}
+
+		loop 3 times:
+			spawn block display at {_p}
+			set {_ent::%loop-value%} to last spawned block display
+			set block data of {_ent::%loop-value%} to crying obsidian
+			set transformation translation of {_ent::%loop-value%} to vector(-0.5, -0.5, -0.5)
+			set teleport duration of {_ent::%loop-value%} to 1 ticks
+		
+		loop 65 times:
+
+			loop-value = 51:
+				play sound "entity.wither.shoot" at volume 2 at pitch 1 at {_p}
+				draw 3 end rod particles with extra value 0.05 at {_ent::*}
+
+
+			loop-value <= 50:
+				set {_draw} to location min(4, (loop-value / 8)) above {_p}
+
+				loop 3 times:
+					set {_yaw} to (loop-value-1*8)+(loop-value-2*120)
+					set {_v} to spherical vector with radius 2.5, yaw {_yaw}, pitch 0
+					set {_draw}'s yaw to (loop-value-1*5)+(loop-value-2*120)
+					set {_draw}'s pitch to (loop-value-1*2.5)+(loop-value-2*120)
+					teleport {_ent::%loop-value-2%} to {_draw} ~ {_v}
+				draw 2 smoke particles with extra value 0.05 at {_ent::*}
+				
+			
+			else:
+				set {_draw} to location 0.6 below {_draw}
+				loop 3 times:
+					set {_yaw} to (loop-value-1*8)+(loop-value-2*120)
+					set {_v} to spherical vector with radius 2.5, yaw {_yaw}, pitch 0
+					set {_draw}'s yaw to (loop-value-1*5)+(loop-value-2*120)
+					set {_draw}'s pitch to (loop-value-1*2.5)+(loop-value-2*120)
+					teleport {_ent::%loop-value-2%} to {_draw} ~ {_v}
+
+					exit all loops if {_cnt} >= 6
+					add 1 to {_cnt} if block at {_ent::%loop-value-2%} is solid
+				
+			wait 1 tick
+		
+		
+		loop {_ent::*}:
+			draw 1 explosion particles at location 0.6 above loop-value
+
+		play sound "block.respawn_anchor.deplete" at volume 3 at pitch 0.8 at {_p}
+		play sound "block.fire.extinguish" at volume 3 at pitch 1.3 at {_p}
+		play sound "entity.iron_golem.damage" at volume 3 at pitch 1 at {_p}
+
+		loop 3 times:
+			loop 90 times:
+				set {_v} to spherical vector with radius loop-value-1 / 2, yaw loop-value-2*4, pitch 0
+
+				set {_vt} to {_v}
+				set {_vt}'s vector length to 1.25
+				draw 0 large smoke particles with offset {_vt} with extra value 0.5 at (location 0.1 above {_p} ~ {_v})
+
+			
+			# hitbox
+			loop entities in radius 8 of {_p}:
+				loop-entity != {_p}
+				#block at location 1 below loop-entity != air
+				loop-entity is on the ground
+				isDamageableEntity(loop-entity, {_p}) = true
+				{_hit::*} doesn't contain loop-entity
+
+				make {_p} damage loop-entity by 6
+				push loop-entity up at speed 0.75
+				push loop-entity (vector from {_p} to loop-entity) at speed 1.5
+				add loop-entity to {_hit::*}
+
+			wait 2 ticks
+
+		kill {_ent::*}

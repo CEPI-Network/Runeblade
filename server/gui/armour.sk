@@ -1,0 +1,413 @@
+
+on load:
+	clear {-armour::*}
+
+	set {-head::cyber} to skull of ("iiJupxter" parsed as offlineplayer)
+
+	registerArmour("&7Iron", "A standard issue set of armour designed for the battlefield.", iron chestplate, 0, "none")
+	registerArmour("&6Tribal", "A basic set of clothes and a crown of feathers.", feather, 500, "none")
+	registerArmour("&2Hunter", "A lightweight set of cloth and leaves, designed for both stealth and ease of use.", azalea leaves, 500, "none")
+	registerArmour("&eGold", "A ceremonial set, this coat of armour raises the morale of nearby allies.", golden chestplate, 1000, "none")
+	registerArmour("&aGoop", "A strange substance appeared one day, and so we called it the Goop.", slime block, 1500, "none")
+
+	registerArmour("&bCyber-tron", "A technological suit of armour brought back from the future. Batteries not included.", {-head::cyber}, 2000, "grand")
+	registerArmour("&dCustom Armour", "Create your own armour!", writable book, 3000, "grand")
+	registerArmour("&8Dark Astronaut", "A shadowy figure who emerged from the void. Not a feature is visible under its guise.", black stained glass, 2000, "grand")
+	
+
+
+	clear {-sorted-armour::none::*}
+	clear {-sorted-armour::grand::*}
+	loop indices of {-armour::*}:
+		if {-armour::%loop-value%::requires} = "none":
+			set {-sorted-armour::none::%loop-value%} to {-armour::%loop-value%::order}
+
+		else if {-armour::%loop-value%::requires} = "grand":
+			set {-sorted-armour::grand::%loop-value%} to {-armour::%loop-value%::order}
+
+
+
+
+function registerArmour(name: text, desc: text, item: item, cost: integer, requires: string):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-armour::%{_index}%::name} to {_name}
+	set {-armour::%{_index}%::desc} to {_desc}
+	set {-armour::%{_index}%::item} to {_item}
+	set {-armour::%{_index}%::cost} to {_cost}
+	set {-armour::%{_index}%::requires} to {_requires}
+
+	loop (indices of {-armour::*}) where [{-armour::%input%::requires} = {_requires}]:
+		set {_entry::%loop-counter%} to {-armour::%loop-value%::order} ? 0
+	set {-armour::%{_index}%::order} to max({_entry::*}) + 1
+
+
+
+function openArmour(p: player):
+
+	create gui with virtual chest inventory with 6 rows named "&3&l            ARMOUR" and shape "ttttstttt", "---------", "--12345--", "---678---", "---------", "xxxxaxxxx":
+		open gui to {_p}
+
+		format gui slot "t" with cyan stained glass pane named "&0"
+		format gui slot "x" with black stained glass pane named "&0"
+		format gui slot "s" with spruce sign named "&3&lARMOUR" with lore "", formatParagraph("Equip some different armour sets and fight with style!"), "" and formatParagraph("Keep in mind that these sets of armour are only cosmetic, and do not impact gameplay.") and "" with all item flags
+		format gui slot "a" with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			openCosmetics({_p})
+
+
+
+
+		loop "none" and "grand":
+			loop sorted indices of {-sorted-armour::%loop-value%::*} in ascending order:
+				add 1 to {_c}
+
+				set {_name} to {-armour::%loop-value-2%::name}
+				set {_desc::*} to formatParagraph({-armour::%loop-value-2%::desc})
+				set {_item} to {-armour::%loop-value-2%::item}
+				set {_cost} to {-armour::%loop-value-2%::cost}
+				set {_requires} to {-armour::%loop-value-2%::requires}
+
+				set {_ind} to loop-value-2
+				set {_slot} to "%{_c}%"
+
+				if {_p} has permission "group.%{_requires}%":
+					# unlocked
+					if any:
+						{data::%uuid of {_p}%::armour::*} contains loop-value-2
+						("iron") contains loop-value-2
+					then:
+
+						enchant {_item} with unbreaking 1
+						# open custom armour gui?
+						if loop-value-2 = "custom armour":
+							format gui slot {_slot} with {_item} named {_name} with lore {-weapontypes::armour}, "", {_desc::*}, "", "", "&a&lCLICK TO OPEN", "" with all item flags:
+								customizeArmour({_p})
+						
+						else:
+
+							
+							if {data::%uuid of {_p}%::equipped::armour} = loop-value-2:
+								set {_line} to "&e&lCLICK TO UNEQUIP"
+							else:
+								set {_line} to "&a&lCLICK TO EQUIP"
+							
+							format gui slot {_slot} with {_item} named {_name} with lore {-weapontypes::armour}, "", {_desc::*}, "", "", {_line}, "" with all item flags:
+								changeArmour({_p}, {_ind})
+								openArmour({_p})
+					
+
+					else:
+						# not purchased
+						if ({data::%uuid of {_p}%::runes} ? 0) > {_cost}:
+							set {_locked::*} to "&e&lCLICK TO PURCHASE", "" and "&7Costs: %runes({_cost})%"
+						
+						# locked
+						else:
+							set {_locked::*} to "&c&lLOCKED", "" and "&7Costs: %runes({_cost})%"
+					
+						set int tag "cost" of custom nbt of {_item} to {-armour::%loop-value-2%::cost}
+						format gui slot {_slot} with {_item} named {_name} with lore {-weapontypes::armour}, "", {_desc::*}, "", "", {_locked::*} and "" with all item flags:
+							buy({_p}, {_item} named {_name}, "armour")
+			
+				else:
+					format gui slot {_slot} with {_item} named {_name} with lore {-weapontypes::armour}, "", {_desc::*}, "", "", "&c&lLOCKED", "", "&7Requires: &e%{_requires} in strict proper case%" and "" with all item flags
+
+
+
+
+function clearIt():
+	loop (indices of {data::*}) where [indices of {data::%input%::custom-armour::*} is set]:
+		broadcast loop-value
+		clear {data::%loop-value%::custom-armour::*}
+
+function customizeArmour(p: player):
+
+
+	create gui with virtual chest inventory with 6 rows named "&d&l        CREATE ARMOUR":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with magenta stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&d&lCREATE ARMOUR" with lore "", formatParagraph("Create some custom armour sets!"), "" and formatParagraph("You're able to save up to &e2 different sets at once."), "", "", formatParagraph("Having trouble finding an item name? Look here:"), "&e&nhttps://github.com/SkriptLang/skript-aliases", "", "&8(&7Click to open link&8)" with all item flags:
+			send "<url:https://github.com/SkriptLang/skript-aliases>%prefix()% &7Click to open link!" to {_p}
+			play sound "block.note_block.pling" at pitch 2 to {_p}
+			close {_p}'s inventory
+		format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			openArmour({_p})
+		
+		set {_slot} to 11
+		loop 2 times:
+
+			set {_ind} to loop-valueth element out of (indices of {data::%uuid of {_p}%::custom-armour::*})
+			set {_set::*} to {data::%uuid of {_p}%::custom-armour::%{_ind}%::*}
+
+			loop 4 times:
+
+
+				set {_null} to gray dye named "&7None"
+				set {_item} to ({_set::%loop-value-2%} named "&e%translate component from type of {_set::%loop-value-2%}%") ? {_null}
+
+				set {_item} to {_null} if {_item} is air
+				set {_item} to {_item} with lore {-weapontypes::armour}, "", "", "&e&lCLICK TO CHANGE", "" with all item flags
+
+				set {_set} to (loop-value-1th element out of (indices of {data::%uuid of {_p}%::custom-armour::*}))
+				set {_set} to loop-value-1 if {_set} isn't set
+
+				set {_piece} to loop-value-2
+				set string tag "set" of custom nbt of {_item} to "%{_set}%"
+				set int tag "piece" of custom nbt of {_item} to {_piece}
+
+				#broadcast "%loop-value-1%;%loop-value-2% &8&l> &fSet %{_slot}% to %{_item}%"
+
+				format gui slot {_slot} with {_item}:
+					changePiece({_p}, "%{_set}%", {_piece})
+				
+				# dye item
+				if (leather horse armor, leather helmet, leather chestplate, leather leggings, leather boots) contains type of {_item}:
+					if loop-value-1 = 1:
+						set {_new} to {_slot} - 1
+					else:
+						set {_new} to {_slot} + 1
+					format gui slot {_new} with red dye named "&cDye Armour" with lore {-weapontypes::armour}, "", "", "&e&lCLICK TO DYE", "" with all item flags:
+						dyePiece({_p}, "%{_set}%", {_piece})
+
+				add 9 to {_slot}
+			
+			set {_slot} to 15
+
+
+			if {data::%uuid of {_p}%::equipped::armour} = "custom armour %loop-value%":
+				set {_line::%loop-value%} to "&e&lCLICK TO UNEQUIP"
+			else:
+				set {_line::%loop-value%} to "&a&lCLICK TO EQUIP"
+		format gui slot 21 with saddle of unbreaking 1 named "&dCustom Armour 1" with lore {-weapontypes::armour}, "", "", {_line::1}, "" with all item flags:
+			changeArmour({_p}, "custom armour 1")
+			customizeArmour({_p})
+		format gui slot 23 with saddle of unbreaking 1 named "&dCustom Armour 2" with lore {-weapontypes::armour}, "", "", {_line::2}, "" with all item flags:
+			changeArmour({_p}, "custom armour 2")
+			customizeArmour({_p})
+		
+
+
+
+
+function changePiece(p: player, set: string, piece: integer):
+	close {_p}'s inventory
+
+	set {_p}'s metadata "chatprompt" to "changePiece;%{_set}%;%{_piece}%"
+
+	send "" to {_p}
+	send "&fType in &b&nchat&f the item you want to change it to!" to {_p}
+	send "" to {_p}
+
+	loop 3 times:
+		play sound "block.note_block.flute" at pitch 1+(loop-value/3) to {_p}
+		wait 3 ticks
+	
+	wait 15 seconds
+	{_p}'s metadata "chatprompt" = "changePiece;%{_set}%;%{_piece}%"
+
+	send "" to {_p}
+	send "&fChat prompt timed out." to {_p}
+	send "" to {_p}
+
+	clear {_p}'s metadata "chatprompt"
+	loop 3 times:
+		play sound "block.note_block.flute" at pitch 1.33 - (loop-value/3) to {_p}
+		wait 3 ticks
+
+
+
+function dyePiece(p: player, set: string, piece: integer):
+	close {_p}'s inventory
+
+
+	set {_p}'s metadata "chatprompt" to "dyePiece;%{_set}%;%{_piece}%"
+
+	send "" to {_p}
+	send "&fType in &b&nchat&f the RGB code you want to dye your item to!" to {_p}
+	send "&7  ex. &f""255,0,0""" to {_p}
+	send "" to {_p}
+
+	loop 3 times:
+		play sound "block.note_block.flute" at pitch 1+(loop-value/3) to {_p}
+		wait 3 ticks
+	
+	wait 15 seconds
+	{_p}'s metadata "chatprompt" = "dyePiece;%{_set}%;%{_piece}%"
+
+	send "" to {_p}
+	send "&fChat prompt timed out." to {_p}
+	send "" to {_p}
+
+	clear {_p}'s metadata "chatprompt"
+	loop 3 times:
+		play sound "block.note_block.flute" at pitch 1.33 - (loop-value/3) to {_p}
+		wait 3 ticks
+
+
+
+on chat:
+	player's metadata "chatprompt" is set
+	cancel event
+
+	set {_spl::*} to player's metadata "chatprompt" split at ";"
+
+	if {_spl::1} = "changePiece":
+		set {_set} to {_spl::2}
+		set {_piece} to {_spl::3}
+		set {_item} to (message parsed as itemtype) ? air
+		set {_item} to air if (elytra) contains {_item}
+		
+		if message = "goop":
+			set {_item} to leather horse armor named "&aGoop"
+			set item model of {_item} to "goop"
+
+		send "" to player
+		send "&fSet item to &b%name of {_item} ? translate component from {_item}%" to player
+		send "" to player
+
+		clear player's metadata "chatprompt"
+		play sound "block.note_block.pling" at pitch 2 to player
+
+		set {data::%uuid of player%::custom-armour::%{_set}%::%{_piece}%} to {_item}
+		customizeArmour(player)
+	
+	else if {_spl::1} = "dyePiece":
+		set {_set} to {_spl::2}
+		set {_piece} to {_spl::3}
+		set {_col::*} to message split at ","
+
+		loop 3 times:
+			set {_col::%loop-value%} to {_col::%loop-value%} parsed as number ? 255
+
+		set {_rgb} to rgb({_col::1}, {_col::2}, {_col::3})
+
+
+		send "" to player
+		send "&fDyed item with &bRGB %{_col::1}%, %{_col::2}%, %{_col::3}%" to player
+		send "" to player
+
+		clear player's metadata "chatprompt"
+		play sound "block.note_block.pling" at pitch 2 to player
+
+		#set {data::%uuid of player%::custom-armour::%{_set}%::%{_piece}%} to {_item}
+		dye {data::%uuid of player%::custom-armour::%{_set}%::%{_piece}%} {_rgb}
+		customizeArmour(player)
+
+
+
+
+
+
+
+
+function changeArmour(p: player, armour: text):
+	(indices of {-armour::*}, "custom armour 1" and "custom armour 2") contains {_armour}
+	if {data::%uuid of {_p}%::equipped::armour} = {_armour}:
+		clear {data::%uuid of {_p}%::equipped::armour}
+		play sound "entity.horse.saddle" to {_p}
+		play sound "block.note_block.harp" at pitch 1 to {_p}
+		send "%prefix()% Unequipped %{-armour::%{_armour}%::name} ? {_armour} in strict proper case%&7!" to {_p}
+	else:
+		set {data::%uuid of {_p}%::equipped::armour} to {_armour}
+		play sound "item.armor.equip_iron" to {_p}
+		play sound "block.note_block.harp" at pitch 2 to {_p}
+		send "%prefix()% Equipped %{-armour::%{_armour}%::name} ? {_armour} in strict proper case%&7!" to {_p}
+	equipArmour({_p})
+
+
+
+function equipArmour(p: player, armour: text=""):
+	set {_p}'s helmet to air
+	set {_p}'s chestplate to air
+	set {_p}'s leggings to air
+	set {_p}'s boots to air
+
+	set {_armour} to {data::%uuid of {_p}%::equipped::armour} if {_armour} = ""
+
+	if {_armour} = "iron":
+		set {_helm} to iron helmet named "&7Iron Helmet"
+		set {_p}'s chestplate to iron chestplate named "&7Iron Chestplate"
+		set {_p}'s leggings to iron leggings named "&7Iron Leggings"
+		set {_p}'s boots to iron boots named "&7Iron Boots"
+
+	else if {_armour} = "tribal":
+		set {_helm} to feather
+		set {_p}'s chestplate to leather chestplate
+		set {_p}'s boots to leather boots
+
+		dye {_p}'s chestplate rgb(99, 69, 42)
+		dye {_p}'s boots rgb(65, 44, 28)
+	
+	else if {_armour} = "hunter":
+		set {_helm} to azalea leaves
+		set {_p}'s chestplate to leather chestplate
+		set {_p}'s leggings to chainmail leggings
+		set {_p}'s boots to leather boots
+
+		dye {_p}'s chestplate rgb(84, 110, 34)
+		dye {_p}'s boots rgb(44, 57, 29)
+	
+	else if {_armour} = "gold":
+		set {_helm} to golden helmet named "&eGolden Helmet"
+		set {_p}'s chestplate to golden chestplate named "&eGolden Chestplate"
+		set {_p}'s leggings to golden leggings named "&eGolden Leggings"
+		set {_p}'s boots to golden boots named "&eGolden Boots"
+	
+	else if {_armour} = "goop":
+		set {_helm} to slime block
+		set {_p}'s chestplate to leather chestplate
+
+		dye {_p}'s chestplate rgb(65, 176, 0)
+	
+	else if {_armour} = "cyber-tron":
+		# set {_helm} to skull of ("iiJupxter" parsed as offlineplayer) #{-head::cyber}
+		set {_p}'s chestplate to leather chestplate
+		set {_p}'s leggings to leather leggings
+		set {_p}'s boots to leather boots
+		set {_helm} to {-head::cyber}
+
+		dye {_p}'s chestplate rgb(34, 34, 34)
+		dye {_p}'s leggings rgb(24, 24, 24)
+		dye {_p}'s boots rgb(0, 0, 0)
+	
+
+	else if {_armour} = "custom armour 1":
+		set {_helm} to {data::%uuid of {_p}%::custom-armour::1::1}
+		set {_p}'s chestplate to {data::%uuid of {_p}%::custom-armour::1::2}
+		set {_p}'s leggings to {data::%uuid of {_p}%::custom-armour::1::3}
+		set {_p}'s boots to {data::%uuid of {_p}%::custom-armour::1::4}
+	
+	else if {_armour} = "custom armour 2":
+		set {_helm} to {data::%uuid of {_p}%::custom-armour::2::1}
+		set {_p}'s chestplate to {data::%uuid of {_p}%::custom-armour::2::2}
+		set {_p}'s leggings to {data::%uuid of {_p}%::custom-armour::2::3}
+		set {_p}'s boots to {data::%uuid of {_p}%::custom-armour::2::4}
+		
+	else if {_armour} = "dark astronaut":
+		set {_helm} to black stained glass
+		set {_p}'s chestplate to leather chestplate
+		set {_p}'s leggings to leather leggings
+		set {_p}'s boots to leather boots
+
+		dye {_p}'s chestplate rgb(18, 18, 18)
+		dye {_p}'s leggings rgb(18, 18, 18)
+		dye {_p}'s boots rgb(18, 18, 18)
+	
+	set byte tag "armour" of custom nbt of {_p}'s helmet to 1
+	set byte tag "armour" of custom nbt of {_p}'s chestplate to 1
+	set byte tag "armour" of custom nbt of {_p}'s leggings to 1
+	set byte tag "armour" of custom nbt of {_p}'s boots to 1
+
+	set {_nbt} to nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+
+	set {_p}'s helmet to unbreakable ({_helm} ? {_p}'s helmet) named (name of {_p}'s helmet ? {-armour::%{_armour}%::name}) with lore {-weapontypes::armour}, "", formatParagraph({-armour::%{_armour}%::desc}), "" with nbt from {_nbt} with all item flags
+	set {_p}'s chestplate to unbreakable {_p}'s chestplate named (name of {_p}'s chestplate ? {-armour::%{_armour}%::name}) with lore {-weapontypes::armour}, "", formatParagraph({-armour::%{_armour}%::desc}), "" with nbt from {_nbt} with all item flags
+	set {_p}'s leggings to unbreakable {_p}'s leggings named (name of {_p}'s leggings ? {-armour::%{_armour}%::name}) with lore {-weapontypes::armour}, "", formatParagraph({-armour::%{_armour}%::desc}), "" with nbt from {_nbt} with all item flags
+	set {_p}'s boots to unbreakable {_p}'s boots named (name of {_p}'s boots ? {-armour::%{_armour}%::name}) with lore {-weapontypes::armour}, "", formatParagraph({-armour::%{_armour}%::desc}), "" with nbt from {_nbt} with all item flags
+	
+
+on inventory click:
+	byte tag "armour" of custom nbt of event-item = 1
+	cancel event

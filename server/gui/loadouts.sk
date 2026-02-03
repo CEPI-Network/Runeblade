@@ -1,0 +1,113 @@
+
+
+
+on rightclick:
+	clicked entity is an interaction
+	{displays::loadouts::1} = clicked entity
+	#name of clicked entity = "loadouts"
+	openLoadouts(player)
+	play sound "ui.button.click" to player
+
+
+command /loadouts:
+	trigger:
+		if regions at player contains region "spawn" in world "runeblade":
+			play sound "ui.button.click" to player
+			openLoadouts(player)
+		else:
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% &7You need to be in spawn to open your loadouts!" to player
+
+
+function openLoadouts(p: player, page: integer=1):
+
+	create gui with virtual chest inventory with 6 rows named "&3&l       LOADOUTS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with cyan stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&3&lLOADOUTS" with lore "", formatParagraph("Store some of your favourite builds to use for later!") and "" with all item flags
+		format gui slot 49 with writable book named "&e&lCREATE LOADOUT" with lore "", formatParagraph("Create a loadout with your current build!") and "" with all item flags:
+			createLoadout({_p})
+
+		set {_pged::*} to page {_page} of indices of {data::%uuid of {_p}%::loadouts::*} with 8 lines
+		format gui slot (10, 11, 19, 20, 28, 29, 37, 38, 15, 16, 24, 25, 33, 34, 42, 43) with gray dye named "&7No loadout found." with lore "", "&7Create a loadout to see it here!", "" with all item flags
+		
+		set {_slot} to 10
+		loop {_pged::*}:
+			set {_primary} to {data::%uuid of {_p}%::loadouts::%loop-value%::1}
+			set {_secondary} to {data::%uuid of {_p}%::loadouts::%loop-value%::2}
+			set {_target} to loop-value parsed as integer
+
+			set {_lore::*} to {_primary}'s lore
+			set {_first} to first element out of {_lore::*}
+			remove {_first} from {_lore::*}
+			set {_lore::*} to {_first}, "", "&eLeft-Click &fto &a&lEQUIP &fthis loadout","&eRight-Click &fto &c&lDELETE &fthis loadout", {_lore::*}
+			format gui slot {_slot} with {_primary} with lore {_lore::*}:
+				if "%click type%" = "left mouse button":
+					equipLoadout({_p}, {_target})
+				else if "%click type%" = "right mouse button":
+					deleteLoadout({_p}, {_target})
+
+			set {_lore::*} to {_secondary}'s lore
+			set {_first} to first element out of {_lore::*}
+			remove {_first} from {_lore::*}
+			set {_lore::*} to {_first}, "", "&eLeft-Click &fto &a&lEQUIP &fthis loadout","&eRight-Click &fto &c&lDELETE &fthis loadout", {_lore::*}
+			format gui slot {_slot}+1 with {_secondary} with lore {_lore::*}:
+				if "%click type%" = "left mouse button":
+					equipLoadout({_p}, {_target})
+				else if "%click type%" = "right mouse button":
+					deleteLoadout({_p}, {_target})
+
+			add 4+mod(loop-counter,2) to {_slot}
+
+
+
+function createLoadout(p: player):
+	loop items in {_p}'s inventory:
+		byte tag "weapon" of custom nbt of loop-value = 1
+
+		if byte tag "primary" of custom nbt of loop-value = 1:
+			set {_primary} to loop-value
+		else if byte tag "secondary" of custom nbt of loop-value = 1:
+			set {_secondary} to loop-value
+		
+		if all:
+			{_primary} is set
+			{_secondary} is set
+		then:
+			exit loop
+	
+	set {_ind::*} to indices of {data::%uuid of {_p}%::loadouts::*}
+	loop {_ind::*}:
+		set {_ind::%loop-counter%} to loop-value parsed as integer
+	set {_index} to first element out of (integers between 1 and 9 where [{_ind::*} doesn't contain input])
+	if {_index} > 8:
+		send "%prefix()% You can't make any more loadouts!" to {_p}
+		play sound "block.note_block.pling" at volume 10 at pitch 0.5 to {_p}
+	else:
+		set {data::%uuid of {_p}%::loadouts::%{_index}%::1} to {_primary}
+		set {data::%uuid of {_p}%::loadouts::%{_index}%::2} to {_secondary}
+		send "%prefix()% Created a loadout with %name of {_primary}% &7and %name of {_secondary}%&7!" to {_p}
+		play sound "block.note_block.pling" at volume 10 at pitch 2 to {_p}
+		openLoadouts({_p})
+
+
+
+function equipLoadout(p: player, index: integer):
+	set {_filter::*} to tag values of tag "minecraft:swords", iron axe, iron pickaxe, iron hoe, netherite hoe, bow, stick, iron shovel, tipped arrow, poppy
+	remove (all items of {_p}'s inventory where [byte tag "weapon" of custom nbt of input = 1]) from {_p}'s inventory
+	remove (all items of {_p}'s inventory where [byte tag "offhand" of custom nbt of input = 1]) from {_p}'s inventory
+	remove (all items of {_p}'s inventory where [{_filter::*} contains input]) from {_p}'s inventory
+	loop {data::%uuid of {_p}%::loadouts::%{_index}%::*}:
+		give {_p} loop-value
+	play sound "block.note_block.pling" to {_p}
+	send "%prefix()% Equipped Loadout &e%{_index}%&7!" to {_p}
+
+
+
+function deleteLoadout(p: player, index: integer):
+	clear {data::%uuid of {_p}%::loadouts::%{_index}%::*}
+	play sound "block.note_block.pling" at pitch 0.5 to {_p}
+	send "%prefix()% &cDeleted Loadout &e%{_index}%&c!" to {_p}
+	openLoadouts({_p})

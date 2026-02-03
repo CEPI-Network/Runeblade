@@ -1,0 +1,29 @@
+
+
+
+
+function spawnSheath(p: player):
+
+	spawn item display at block at {_p}:
+		set {_ent} to item display
+		set name of {_ent} to "Sheathed Onimaru"
+		set display item of {_ent} to netherite sword with custom model data 10
+		set item display transform of {_ent} to head_transform
+		set display left rotation of {_ent} to axisAngle(-90 * (3.14 / 180), 0, 1, 0)
+		set display right rotation of {_ent} to axisAngle(160 * (3.14 / 180), 0, 0, 1)
+		set teleport duration of {_ent} to 1
+		set interpolation duration of {_ent} to 1
+		
+
+	add {_ent} to {_p}'s passengers
+	
+	loop 400 times:
+		set {_v} to vector from yaw {_p}'s yaw+90 and pitch 0
+		set {_v}'s vector length to 0.2
+		set interpolation start of {_ent} to 0
+		set display translation of {_ent} to vector(0, -0.3, 0) + {_v}
+		set display left rotation of {_ent} to axisAngle(({_p}'s yaw * -0.0174444444) - 90, 0, 1, 0)
+
+		wait 1 tick
+	
+	kill {_ent}

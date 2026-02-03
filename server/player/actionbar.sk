@@ -1,0 +1,41 @@
+
+
+function prioritybar(p: player, text: text, duration: timespan):
+	set {-tempdata::%uuid of {_p}%::priority-bar} to {_text}
+	actionbar({_p})
+	wait {_duration}
+	{-tempdata::%uuid of {_p}%::priority-bar} = {_text} # don't clear different messages
+	clear {-tempdata::%uuid of {_p}%::priority-bar}
+	actionbar({_p})
+
+
+function actionbar(p: player):
+
+	if {-tempdata::%uuid of {_p}%::priority-bar} is set:
+		send action bar {-tempdata::%uuid of {_p}%::priority-bar} to {_p}
+		stop
+
+	set {_weapon} to string tag "name" of custom nbt of {_p}'s tool
+	set {_moveset-hits} to int tag "hits" of custom nbt of {_p}'s tool
+	set {_player-hits} to {_p}'s metadata "hit_%{_weapon}%"
+		
+	set {_hits::*} to integers between 1 and {_moveset-hits}
+
+	loop {_hits::*}:
+		if {_player-hits} >= loop-value:
+			if {-tempdata::%uuid of {_p}%::combo::%loop-counter%} = true:
+				set {_col} to "<##EE3B3B>&l"
+			else if {-tempdata::%uuid of {_p}%::combo::%loop-counter%} = false:
+				set {_col} to "<##FFDE6C>&l"
+			else:
+				set {_col} to "<##EEEEEE>&l"
+				
+			set {_hits::%loop-counter%} to "%{_col}%%loop-value%"
+		else:
+			set {_hits::%loop-counter%} to "<##777777>%loop-value%"
+
+	set {_combo} to (join {_hits::*} with "<##555555>-") ? "<##555555>-/-"
+	set {_mana} to {_p}'s metadata "mana" ? "-"
+	set {_max-mana} to {-tempdata::%uuid of {_p}%::max-mana} ? 10
+	send action bar "&c%{_p}'s health%/%{_p}'s maximum health%❤   &8&l|&r   %{_combo}%   &8&l|&r   <##2eadd7>%{_mana}%/%{_max-mana}%★" to {_p}
+

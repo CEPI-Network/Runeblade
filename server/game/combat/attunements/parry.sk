@@ -1,0 +1,50 @@
+
+
+
+function parryAction(p: player, weapon: text, atk-scale: number):
+
+	set {_p}'s metadata "cooldown_parry" to 2.7 seconds from now
+	play sound "sword.throw" at volume 2 at {_p}
+	set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+	set {_ref} to {_v}
+	add -90 to {_ref}'s pitch
+	set {_ref}'s vector length to 0.35
+	loop 5 times:
+		draw 0 crit particles with offset {_ref} with extra value 0.5 at (location 1.5 infront of {_p}'s head ~ {_ref})
+		rotate {_ref} around {_v} by 72
+
+	wait 4 tick
+
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_yaw} to {_p}'s yaw
+	set {_pitch} to {_p}'s pitch
+
+	loop 3 times:
+		set {_draw::%loop-value%} to location 1.2+(loop-value/4) infront of {_p}'s head
+
+		set {_rad} to 2-(loop-value/2)
+		set {_circ::%loop-value%::*} to baseCircle({_yaw}, {_pitch}, {_rad}, (6*loop-value))
+	
+	play sound "item.trident.return" at volume 1.5 at pitch 2 at {_p}
+	play sound "block.beacon.activate" at volume 1.75 at pitch 2 at {_p}
+	play sound "block.conduit.activate" at volume 1.75 at pitch 2 at {_p}
+
+	set {-tempdata::%uuid of {_p}%::parry} to true
+
+	# duration
+	loop 6 times:
+		# rings
+		loop 3 times:
+			# circle
+			set {_col::1} to {-colours::%{_palette}%::1::%loop-value-2%} ? {-colours::%{_palette}%::1::1}
+			set {_col::2} to {-colours::%{_palette}%::2::%loop-value-2%} ? {-colours::%{_palette}%::2::1}
+			loop {_circ::%loop-value-2%::*}:
+				draw 1 {_col::1} dust particles that transitions to {_col::2} at ({_draw::%loop-value-2%} ~ loop-value-3)
+		wait 2 tick
+
+	play sound "item.shield.break" at volume 0.8 at pitch 1.5 at {_p}
+	draw 5 poof particles with offset vector(0.2, 0.2, 0.2) with extra value 0.1 at {_draw::1}
+	clear {-tempdata::%uuid of {_p}%::parry}
+
+	# damage code in game.sk

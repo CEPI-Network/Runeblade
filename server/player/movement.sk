@@ -1,0 +1,52 @@
+
+
+
+
+on player press of an input key:
+	player's gamemode = adventure
+	event-input keys contains jump key
+	player's level progress > 0
+	player is not on the ground
+
+	set {_old-velo} to player's velocity
+	player's level progress <= 0:
+		wait 1 tick
+		set player's velocity to {_old-velo}
+		stop
+
+
+	set y of player's velocity to 0
+	push player up at speed 0.5
+	push player getWASD(player) at speed 0.7
+	play sound "entity.ender_dragon.flap" at volume 3 at pitch 1.2 at player
+	draw 8 cloud particles with offset vector(0.6, 0.3, 0.6) with extra value 0.2 at player
+	set player's level progress to 0
+
+	while player is not on ground:
+		wait 1 tick
+		exit loop if loop-counter >= 120
+	set player's level progress to 0.99
+
+
+
+
+
+function getWASD(p: player) :: vector:
+
+	set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+
+	if {_p}'s input keys contains forward movement key:
+		if {_p}'s input keys contains left movement key:
+			add -45 to yaw of {_v}
+		if {_p}'s input keys contains right movement key:
+			add 45 to yaw of {_v}
+
+
+	else if {_p}'s input keys contains left movement key:
+		{_p}'s input keys does not contain right movement key
+		add -45 to yaw of {_v}
+	else if {_p}'s input keys contains right movement key:
+		{_p}'s input keys does not contain left movement key
+		add 45 to yaw of {_v}
+	
+	return {_v}

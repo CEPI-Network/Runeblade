@@ -1,0 +1,112 @@
+
+on rightclick on lectern:
+	player's gamemode != creative
+	cancel event
+	openOptions(player)
+
+
+command /options:
+	trigger:
+		openOptions(player)
+
+
+on load:
+	clear {-options::*}
+
+	registerOption("&3Dual Onimaru", netherite sword with custom model data 12, "&7Toggle whether to show Onimaru's second blade.", (true and false))
+	registerOption("&eGame Time", clock, "&7Change the time of day.", ("noon", "evening", "night"))
+
+
+
+function registerOption(name: text, item: item, desc: text, options: objects):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-options::%{_index}%::name} to {_name}
+	set {-options::%{_index}%::item} to {_item}
+	set {-options::%{_index}%::desc} to {_desc}
+
+	set {-options::%{_index}%::options::*} to {_options::*}
+
+
+
+
+function openOptions(p: player):
+
+	create gui with virtual chest inventory with 5 rows named "&9&l           OPTIONS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with blue stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&9&lOPTIONS" with lore "", formatParagraph("Change some game settings!") and "" with all item flags
+
+		set {_slot} to 21
+		loop sorted indices of {-options::*}:
+			set {_index} to loop-value
+			set {_name} to {-options::%loop-value%::name}
+			set {_item} to {-options::%loop-value%::item}
+			set {_desc} to {-options::%loop-value%::desc}
+			set {_options::*} to {-options::%loop-value%::options::*}
+
+			if {_options::*} = true and false: # ENABLED BY DEFAULT
+				if {data::%uuid of {_p}%::options::%loop-value%} != true:
+					set {_status} to "&7Current: &aEnabled"
+				else:
+					set {_status} to "&7Current: &cDisabled"
+
+			else if {_options::*} = false and true: # DISABLED BY DEFAULT
+				if {data::%uuid of {_p}%::options::%loop-value%} = true:
+					set {_status} to "&7Current: &aEnabled"
+				else:
+					set {_status} to "&7Current: &cDisabled"
+			
+			else:
+				set {_status} to "&7Current: &a%({data::%uuid of {_p}%::options::%loop-value%}) ? (first element out of {_options::*}) in strict proper case%"
+
+			format gui slot {_slot} with {_item} named {_name} with lore "&8ᴏᴘᴛɪᴏɴ", "", {_desc}, "", "", {_status}, "", "&eClick to change!" and "" with all item flags:
+				changeOption({_p}, {_index})
+				play sound "block.note_block.pling" to {_p}
+				play sound "ui.button.click" to {_p}
+				openOptions({_p})
+
+			
+			add 2 to {_slot}
+			add 5 to {_slot} if {_slot} = 25
+
+
+
+
+function changeOption(p: player, index: text):
+	# toggle boolean
+	if {-options::%{_index}%::options::*} = (true and false):
+		if {data::%uuid of {_p}%::options::%{_index}%} is not set:
+			set {data::%uuid of {_p}%::options::%{_index}%} to true
+		else:
+			clear {data::%uuid of {_p}%::options::%{_index}%}
+	
+	# cycle string
+	else:
+		set {_options::*} to {-options::%{_index}%::options::*}
+		set {_curr} to ({data::%uuid of {_p}%::options::%{_index}%}) ? (first element out of {_options::*})
+		# find current index
+		loop {_options::*}:
+			if {_curr} = loop-value:
+				set {_n} to mod(loop-counter, (size of {_options::*})) + 1
+				exit loop
+		set {_n} to 2 if {_n} isn't set
+		set {data::%uuid of {_p}%::options::%{_index}%} to {_n}th element out of {_options::*}
+	
+	applyOption({_p}, {_index})
+
+
+
+function applyOption(p: player, index: text):
+	set {_curr} to {data::%uuid of {_p}%::options::%{_index}%} ? first element out of {-options::%{_index}%::options::*}
+
+	if {_index} = "game time":
+		if {_curr} = "night":
+			{_p}.setPlayerTime(18000, false)
+		else if {_curr} = "evening":
+			{_p}.setPlayerTime(12750, false)
+		else:
+			{_p}.setPlayerTime(6000, false)
+		

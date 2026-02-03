@@ -1,0 +1,115 @@
+
+
+
+function eruptionAction(p: player, weapon: text, atk-scale: number):
+
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}, "eruption") * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	
+	play sound "block.fire.extinguish" at volume 3 at pitch 1.25+{_sound-scale} at {_p}
+	draw 15 flame particles with offset vector(0.3, 0.3, 0.3) with extra value 0.2 at location 1 above {_p}
+
+	setModifier({_p}, "speed", "attunement", -0.2)
+	setModifier({_p}, "jump", "attunement", -0.42)
+	updateModifiers({_p})
+
+	set {_amnt} to size of (item displays in radius 20 of {_p} where [input's name = "Eruption"])
+	if mod({_amnt}, 2) = 1:
+		set {_col} to "blue"
+	else:
+		set {_col} to "red"
+
+
+	set {_tool} to {_p}'s tool
+	set {_loc} to location 1.25 above and 1.25 horizontally infront of {_p}
+	set {_loc}'s pitch to 0
+	spawn item display at {_loc}:
+		set {_ent} to item display
+		set item of item display to {_tool}
+		set transformation scale of item display to vector(1.3, 1.3, 1.3)
+		set left rotation of item display to axisAngle((random number between 8 and -8), vector(0, 0, 1))
+		set right rotation of item display to axisAngle(-135, vector(0, 0, 1))
+		set transformation translation of item display to vector(-0.65, 0.65, 0.65)
+		set item transform of item display to head
+		set interpolation duration of {_ent} to 1 ticks
+		set name of item display to "Eruption"
+	
+	wait 8 tick
+
+	removeModifier({_p}, "speed", "attunement")
+	removeModifier({_p}, "jump", "attunement")
+	updateModifiers({_p})
+
+	loop 4 times:
+		set {_ent}'s interpolation delay to 0 ticks
+		set {_ent}'s transformation translation to vector(-0.65, 0.65+(-0.2 * loop-value), 0.65)
+		wait 1 tick
+
+	play sound "entity.blaze.ambient" at volume 3 at pitch 1.25+{_sound-scale} at {_p}
+	play sound "entity.blaze.hurt" at volume 3 at pitch 0.6+{_sound-scale} at {_p}
+	play sound "elemental.flames" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+	draw 1 explosion particles at location 1 below {_ent}
+	draw 6 lava particles at {_ent}
+	draw 5 flame particles  with extra value 0.1 at location 0.2 below {_ent}
+	draw 4 large smoke particles with extra value 0.1 at {_ent}
+
+
+	# VORTEX LOCATIONs
+	set {_rand} to vector from yaw {_loc}'s yaw - 72 and pitch 0
+	loop 5 times:
+		set {_rand}'s vector length to 7
+
+		set {_loc::%loop-value%} to location 1.25 below {_loc} ~ {_rand}
+		set {_hitbox::%loop-value%} to location 2 above {_loc::%loop-value%}
+		set {_rot::%loop-value%} to random element out of 90 and -90
+		set {_yaw::%loop-value%} to ({_rot::%loop-value%} / -5)
+
+		add 72 to {_rand}'s yaw
+	
+
+	set {_p}'s metadata "cooldown_eruption" to 8 seconds from now # 4s duration + reg
+
+	# duration
+	loop 80 times:
+
+		# indiv vortex
+		loop 5 times:
+
+			# particles
+			loop 40 times:
+				set {_height} to vector(0, (loop-value-3 / 8), 0)
+				set {_v} to spherical vector with radius 1, yaw (loop-value-3 * {_yaw::%loop-value-2%}), pitch 0
+				set {_temp} to {_v} + vector(0, 1, 0)
+				rotate {_temp} around vector(0,1,0) by {_rot::%loop-value-2%}
+
+				if {_col} = "red":
+					draw 0 flame particles with offset {_temp} with extra value 0.05 at ({_loc::%loop-value-2%} ~ {_height} ~ {_v})
+				else:
+					draw 0 soul fire flame particles with offset {_temp} with extra value 0.05 at ({_loc::%loop-value-2%} ~ {_height} ~ {_v})
+
+			draw 2 large smoke particles with offset vector(0.3, 2, 0.3) with extra value 0.1 at location 2 above {_loc::%loop-value-2%}
+
+
+			# hitbox
+			loop-value-1 >= 10:
+				mod(loop-value-1, 2) = 0
+
+				loop entities in radius 3.5 of {_hitbox::%loop-value-2%} where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					add loop-entity to {_hit::*}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "eruption")
+					make {_p} damage loop-entity by {_dmg}
+					ignite loop-entity for 25 ticks
+					push loop-entity (vector from {_hitbox::%loop-value-2%} to loop-entity) at speed 1.35 * {_atk-scale}
+					push loop-entity up at speed 0.45 * {_atk-scale}
+
+
+		wait 1 tick
+
+	wait 3 tick
+	draw 5 large smoke particles with extra value 0.1 at {_ent}
+	play sound "entity.blaze.death" at volume 2 at pitch 0.6+{_sound-scale} at {_ent}
+	kill {_ent}

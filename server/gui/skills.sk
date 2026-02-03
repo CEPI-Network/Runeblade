@@ -1,0 +1,127 @@
+
+
+on load:
+	loop indices of {-skills::*}:
+		clear {-skills::%loop-value%::*}
+	clear {-skills::*}
+
+	registerSkill("&cVigorous", apple with custom model data 1, "Slightly increased health regeneration rate.", 3000, "none")
+	registerSkill("&9Knowledgeable", skull banner pattern, "Slightly increased mana regeneration rate.", 3000, "none")
+	registerSkill("&dArcane", amethyst cluster, "Slightly increased base mana.", 3000, "none")
+	registerSkill("&fAirborne", feather with custom model data 1, "Increases damage from midair attacks.", 3000, "none")
+
+
+
+
+function registerSkill(name: text, item: item, desc: text, cost: number, requires: text):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-skills::%{_index}%::name} to {_name}
+	set {-skills::%{_index}%::item} to {_item}
+	set {-skills::%{_index}%::desc} to {_desc}
+	set {-skills::%{_index}%::cost} to {_cost}
+	set {-skills::%{_index}%::requires} to {_requires}
+	
+	#loop indices of {-skills::*}:
+	#	set {_entry::%loop-value%} to {-skills::%loop-value%::order} ? 0
+	#set {-skills::%{_index}%::order} to max({_entry::*})+1
+
+
+function openSkills(p: player):
+
+	create gui with virtual chest inventory with 5 rows named "&c&l         SKILLS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&c&lSKILLS" with lore "", formatParagraph("Gain a little perk to add to your build!") and "" with all item flags
+
+		
+
+		set {_slot} to 19
+		loop reversed indices of {-skills::*}:
+
+			set {_name} to {-skills::%loop-value%::name}
+			set {_item} to {-skills::%loop-value%::item}
+			set {_desc::*} to formatParagraph({-skills::%loop-value%::desc})
+			set {_cost} to {-skills::%loop-value%::cost}
+			set {_requires} to {-skills::%loop-value%::requires}
+
+			# owns it
+			if {data::%uuid of {_p}%::skills::*} contains loop-value:
+				if {data::%uuid of {_p}%::equipped::skills} = loop-value:
+					set {_status::*} to "&e&lCLICK TO UNEQUIP", ""
+					enchant {_item} with unbreaking 1
+				else:
+					set {_status::*} to "&a&lCLICK TO EQUIP", ""
+
+				set {_target} to loop-value
+				format gui slot {_slot} with {_item} named {_name} with lore "&8sᴋɪʟʟ", "", {_desc::*}, "", "", {_status::*} with all item flags:
+					toggleCosmetic({_p}, "skills", {_target})
+					openSkills({_p})
+					updateSkill({_p})
+			
+
+			else:
+				if ({data::%uuid of {_p}%::runes} ? 0) > {_cost}:
+					set {_lore::*} to "&e&lCLICK TO PURCHASE", "", "&7Costs: %runes({_cost})%"
+				else:
+					set {_lore::*} to "&c&lLOCKED", "", "&7Costs: %runes({_cost})%"
+				if {_requires} != "none":
+					add "&7Requires: &e%{_requires} in strict proper case%" to {_lore::*}
+
+				format gui slot {_slot} with {_item} named {_name} with lore "&8sᴋɪʟʟ", "", {_desc::*}, "", "", {_lore::*} and "" with all item flags:
+					if {_p} doesn't have permission "group.%{_requires}%":
+						send "%prefix()% You don't meet the requirements to buy this!" to {_p}
+						play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					else:
+						buy({_p}, {_item} named {_name}, "skills")
+			
+			add 2 to {_slot}
+
+
+
+function updateSkill(p: player):
+
+	set {_p}'s saturated regen rate to 4 seconds
+	set {_p}'s unsaturated regen rate to 4 seconds
+	set {_p}'s maximum health to 10
+	set {_p}'s walkspeed to 0.2
+
+	set {-tempdata::%uuid of {_p}%::mana-rate} to 15 ticks
+	set {-tempdata::%uuid of {_p}%::max-mana} to 10
+
+	if {data::%uuid of {_p}%::equipped::skills} = "vigorous": # -10%
+		set {_p}'s saturated regen rate to 3.6 seconds
+		set {_p}'s unsaturated regen rate to 3.6 seconds
+	else if {data::%uuid of {_p}%::equipped::skills} = "knowledgeable":
+		set {-tempdata::%uuid of {_p}%::mana-rate} to 13 ticks
+	else if {data::%uuid of {_p}%::equipped::skills} = "arcane":
+		set {-tempdata::%uuid of {_p}%::max-mana} to 12
+	set {_p}'s metadata "mana" to max({_p}'s metadata "mana", {-tempdata::%uuid of {_p}%::max-mana})
+
+
+	set {_boon} to {-tempdata::%uuid of {_p}%::boon}
+	if {_boon} = "boon of the spellbound":
+		set {_p}'s maximum health to 7.5
+		set {_p}'s health to 7.5 # would make you 10/5 until you took damage
+		set {-tempdata::%uuid of {_p}%::mana-rate} to ({-tempdata::%uuid of {_p}%::mana-rate} / 2)
+	else if {_boon} = "boon of the earth":
+		remove 0.75 seconds from {_p}'s saturated regen rate
+		remove 0.75 seconds from {_p}'s unsaturated regen rate
+	# other stuff in api-abil, core-func isDamageableEntity, etc.
+
+
+	if {-tempdata::%uuid of {_p}%::equipment::icarus feather} is set:
+		set {_mod} to 0.05 * {-tempdata::%uuid of {_p}%::equipment::icarus feather}
+		set {_p}'s walkspeed to 0.2 + (0.2 * {_mod})
+	if {-tempdata::%uuid of {_p}%::root-stacks} > 0:
+		set {_mod} to 0.1 * {-tempdata::%uuid of {_p}%::equipment::witch's root} * {-tempdata::%uuid of {_p}%::root-stacks}
+		set {_mod} to max((1 - {_mod}), 0.1)
+		set {_ticks} to ticks of {-tempdata::%uuid of {_p}%::mana-rate}
+		set {_time} to "%{_ticks} * (1 - {_mod})% ticks" parsed as timespan
+
+		if {_time} < 4 ticks:
+			set {_time} to 4 ticks
+
+		set {-tempdata::%uuid of {_p}%::mana-rate} to {_time}

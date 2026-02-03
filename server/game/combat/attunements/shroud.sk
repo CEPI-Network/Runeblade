@@ -1,0 +1,83 @@
+
+
+
+function shroudAction(p: player, weapon: text, atk-scale: number):
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+
+	play sound "block.fire.extinguish" at volume 1.5 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.evoker.cast_spell" at volume 1 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.iron_golem.attack" at volume 2 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.phantom.flap" at volume 1.5 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.breeze.land" at volume 1.5 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.breeze.idle_ground" at volume 1.5 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "elemental.shroud" at volume 1.5 at pitch 1+{_sound-scale} at {_p}
+
+	set {-tempdata::%uuid of {_p}%::shroud} to true
+	set {_scale} to (50 * {_atk-scale})
+	set {_duration} to "%({_scale}*2)+3% ticks" parsed as timespan
+
+	# windup
+	loop 12 times:
+		set {_draw} to location 3.25-(loop-value*0.3125) above {_p}
+		loop 90 times:
+		
+			set {_v} to spherical vector with radius 1.5, yaw loop-value-2 * 4, pitch 0
+			set {_v2} to {_v}
+			add -90 to {_v2}'s yaw
+			add 45 to {_v2}'s pitch
+			draw 0 smoke particles with offset {_v2} with extra value 0.1 at {_draw} ~ {_v}
+
+			chance of 7%:
+				draw 1 soul fire flame particles with extra value 0.1 at {_draw} ~ {_v}
+
+			chance of 12%:
+				draw 1 enchanted hit particles with extra value 0.1 at {_draw} ~ {_v}
+
+		wait 1 tick
+
+	{-tempdata::%uuid of {_p}%::shroud} = true # could keep invis if you hit before the 12 ticks
+
+	remove invisibility from {_p}
+	apply potion effect of invisibility of tier 1 to {_p} for {_duration}:
+		hide the particles
+	set arrows stuck in {_p} to 0
+	set {_offhand} to {_p}'s offhand tool
+	set {_p}'s offhand tool, {_p}'s helmet, {_p}'s chestplate, {_p}'s leggings and {_p}'s boots to air
+
+	# push
+	set {_v} to {_p}'s velocity
+	set {_v2} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+	set {_v2}'s vector length to 0.1
+	add 0.08 to y component of {_v}
+	set {_v} to {_v} + {_v2}
+	set {_v}'s vector length to 1.5
+	set {_p}'s velocity to {_v}
+
+
+	
+	loop {_scale} times:
+		draw (random integer between 2 and 3) of smoke particles with offset vector(0.35, 0.35, 0.35) with extra value 0.1 at location 1 above {_p}
+		exit loop if {-tempdata::%uuid of {_p}%::shroud} != true
+		wait 2 ticks
+
+	play sound "entity.breeze.land" at volume 1.5 at pitch 0.5+{_sound-scale} at {_p}
+	
+	loop 3 times:
+		set {_draw} to location 0.25 above {_p}
+		set {_rad} to 1+(loop-value / 3)
+		loop 90 times:
+			set {_v} to spherical vector with radius {_rad}, yaw loop-value-2 * 4, pitch 0
+			set {_v2} to {_v}
+			add -90 to {_v2}'s yaw
+			draw 0 smoke particle with offset {_v2} with extra value 0.2 at {_draw} ~ {_v}
+		
+		wait 1 tick
+
+	clear {-tempdata::%uuid of {_p}%::shroud}
+	equipArmour({_p})
+
+	if byte tag "offhand" of custom nbt of {_offhand} != 1:
+		set {_p}'s offhand tool to {_offhand}
+	set {_p}'s metadata "cooldown_shroud" to 8 seconds from now
+	prioritybar({_p}, "&8«   &3&lSHROUD &7has expired!   &8»", 1 second)
+	

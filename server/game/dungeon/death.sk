@@ -1,0 +1,60 @@
+
+
+on death:
+	victim is a player
+	{-tempdata::%uuid of victim%::dungeon} is set
+
+	set {_attacker} to attacker ? {-tempdata::%uuid of victim%::attacker}
+	set {_attacker} to {-tempdata::%uuid of victim%::attacker} if attacker = victim
+	clear {-tempdata::%uuid of victim%::stunned}
+
+	if {_attacker} is alive:
+		set {_msg} to "&cSlain by &f%name of {_attacker}%"
+	send title "<##ff2458>☠" with subtitle ({_msg} ? "") to victim for 2.5 seconds
+	score(victim)
+
+	set {_players::*} to all players where [{-tempdata::%uuid of input%::dungeon} is set]
+	set {_msg::*} to "&f%victim% &7was swallowed by the darkness.", "&f%victim% &7was lost to the madness.", "&f%victim% &7was claimed by the shadows.", "&f%victim% &7lost their life in the dungeon.", "&f%victim%&7's screams could be heard throughout the dungeon."
+	send "&3☠ &8| %random element out of {_msg::*}%" to {_players::*}
+	play sound "entity.lightning_bolt.thunder" at volume 100 at pitch 1.5 to {_players::*}
+	draw 8 poof particles with extra value 0.085 at (victim ~ vector(0, 1, 0))
+
+	send "%prefix()% You died, but your teammates can still revive you! &8(&7Requires &3&lSpirit Horn&8)" to victim
+
+	loop {_players::*} where [{-tempdata::%uuid of input%::boon} = "boon of vengeance"]:
+		add 0.15 to {-tempdata::%uuid of loop-value%::dungeon::vengeance}
+		set {_msg} to random element out of ("&f%victim%&7's death fills you with rage.", "&f%victim%&7's spirit ushers power into the Boon of Vengeance.", "&f%victim% fell to the ground, and with it you rise.")
+		send "%prefix()% %{_msg}% &8(&c+%{-tempdata::%uuid of loop-value%::dungeon::vengeance} * 100%%% Damage&8)" to loop-value
+
+	cancel event
+	heal victim
+	clear victim's potion effects
+	set victim's gamemode to spectator
+	clearCombat(victim)
+	
+	
+	wait 1 tick
+	set victim's spectator target to attacker ? {_attacker}
+	wait 3 seconds
+
+	{-tempdata::%uuid of victim%::dungeon} is set # might leave dungeon immediately after dying
+	set {_players::*} to all players where [{-tempdata::%uuid of input%::dungeon} is set]
+	if size of ({_players::*} where [input's gamemode != spectator]) = 0:
+		# everyone is dead
+		loop {_players::*}:
+			set loop-value's gamemode to adventure
+			teleport loop-value to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers
+			apply infinite weakness 255 to loop-value:
+				hide particles
+			leaveDungeonQueue(loop-value, "failure")
+		clearDungeon()
+	
+	else:
+		# start spectating an alive player
+		clear victim's spectator target
+		teleport victim to nearest player at victim
+		apply infinite weakness 255 to victim:
+			hide particles
+
+
+		

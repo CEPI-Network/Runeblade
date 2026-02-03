@@ -1,0 +1,202 @@
+
+
+
+function arcanumAction(p: entity, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 3
+	set {_particle-scale::2} to 2.5
+
+	set {_weapon} to "arcanum"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+	
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+
+	if {_hit} = 1:
+		set {_arc-draw} to location 1 above and 0.5 behind {_p} ~ {_v}
+		set {_draw} to location 1 horizontally infront {_p} ~ {_v}
+	else:
+		set {_draw} to location 1 behind and 0.3 below {_p}'s head ~ {_v}
+
+
+	if {_hit} = 1:
+
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to (random element out of (30 and -30)) + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to first element out of clamp({_p}'s pitch, -45, 45)
+
+		set {_arc-draw} to location 1 above and 0.5 behind {_p}
+		set {_v} to vector from yaw {_yaw} and pitch 0
+		set {_v}'s vector length to 0.75
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.2, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.5, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.evoker.cast_spell" at volume 3.25 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "block.respawn_anchor.charge" at volume 3.5 at pitch 1.6+{_sound-scale} at {_p}
+
+		# windup arc
+		loop {_arc} times:
+			loop 3 times:
+				set {_particle-scale} to 0.75 + (loop-value-2 / 3)
+				draw 1 {-colours::%{_weapon}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_arc-draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			mod(loop-value, 30) = 0
+			wait 1 tick
+
+
+		# actual attack
+		wait 9 ticks
+
+		draw 8 enchanted hit particles with extra value 0.3 at location 1 above {_draw}
+		draw 1 explosion particles at location 1 above {_draw}
+
+		play sound "block.beacon.deactivate" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "block.beacon.power_select" at volume 3 at pitch 1.7+{_sound-scale} at {_p}
+		play sound "block.respawn_anchor.set_spawn" at volume 2.75 at pitch 1.6+{_sound-scale} at {_p}
+		play sound "entity.generic.explode" at volume 2.25 at pitch 1.6+{_sound-scale} at {_p}
+		play sound "elemental.beam" at volume 2.5 at pitch 0.9+{_sound-scale} at {_p}
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch 0
+		set {_v}'s vector length to 0.75
+
+		# projectile
+		loop 10 times:
+			set {_draw} to {_draw} ~ {_v}
+
+			# indiv spikes
+			set {_rand} to random vector
+			set {_rand}'s vector length to 0.125
+
+			set {_spike} to vector from yaw {_yaw} and pitch (-60 + (2*loop-value))
+			set {_spike}'s vector length to 0.3
+			add {_rand} to {_spike}
+			set {_temp-draw} to {_draw}
+			loop 3 times:
+				draw 0 dragon breath particles with offset ({_spike} + {_rand}) with extra value 0.8 at {_temp-draw}
+				draw 0 firework particles with offset ({_spike} + {_rand} + {_rand}) with extra value 1.2 at {_temp-draw} ~ {_rand}
+			loop 15 times:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.05
+				set {_particle-scale} to {_particle-scale::%{_hit}%} - (0.12 * loop-value-2)
+
+				set {_n} to max(1, round(loop-value-2 / 5))
+				draw 1 {-colours::%{_weapon}%::%{_hit}%::%{_n}%} dust particles of size {_particle-scale} at {_temp-draw}
+				set {_temp-draw} to {_temp-draw} ~ {_spike} ~ {_rand}
+			draw 0 wax off particles with offset {_spike} with extra value 0.3 at {_temp-draw}
+			
+			# hitbox
+			mod(loop-value+1, 2) = 0:
+				loop entities in radius 2.8 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.amethyst_cluster.break" at pitch 1.2 at loop-entity
+					play sound "item.trident.thunder" at volume 2 at pitch 1.2 at loop-entity
+					play sound "entity.blaze.shoot" at volume 2.5 at pitch 1.2 at loop-entity
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 1 * {_kb-scale}
+					push loop-entity up at speed 0.8 * {_kb-scale}
+
+				wait 1 tick
+	
+
+	else if {_hit} = 2:
+
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to -10 + random number between -5 and 5 - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.2, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.5, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.illusioner.mirror_move" at volume 2.5 at pitch 1.25+{_sound-scale} at {_p}
+		play sound "block.respawn_anchor.set_spawn" at volume 2.5 at pitch 1.7+{_sound-scale} at {_p}
+		play sound "block.amethyst_block.resonate" at volume 2.5 at pitch 1.7+{_sound-scale} at {_p}
+		play sound "elemental.pulse" at volume 2.5 at pitch 1+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			loop 3 times:
+				set {_particle-scale} to 0.25 + (loop-value-2 / 3)
+				draw 1 {-colours::%{_weapon}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			chance of 10%:
+				set {_temp-v} to {_arc::2::%loop-value-1%}
+				set {_ref} to vector from yaw {_yaw} and pitch {_pitch}+90
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				rotate {_temp-v} around {_ref} by 80 # = arc
+				draw 0 dragon breath particles with offset {_temp-v} with extra value 0.1 at {_draw} ~ {_arc::2::%loop-value-1%} ~ {_rand}
+
+			# spikes
+			mod(loop-value,5) = 0:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.125
+
+				set {_spike} to {_arc::3::%loop-value-1%}
+				set {_spike}'s vector length to 0.35
+				add {_rand} to {_spike}
+				set {_temp-draw} to {_draw} ~ {_arc::3::%loop-value-1%}
+
+				chance of 40%:
+					draw 0 firework particles with offset ({_spike} + {_rand}) with extra value 1.2 at {_temp-draw} ~ {_rand}
+					
+				loop 15 times:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.05
+					set {_particle-scale} to {_particle-scale::%{_hit}%} - (0.12 * loop-value-2)
+
+					set {_n} to max(1, round(loop-value-2 / 5))
+					draw 1 {-colours::%{_weapon}%::%{_hit}%::%{_n}%} dust particles of size {_particle-scale} at {_temp-draw}
+					set {_temp-draw} to {_temp-draw} ~ {_spike} ~ {_rand}
+				draw 0 wax off particles with offset {_spike} with extra value 0.3 at {_temp-draw}
+
+				# further hitbox
+				loop entities in radius 1.75 of ({_temp-draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.amethyst_cluster.break" at pitch 0.8 at loop-entity
+					play sound "item.trident.thunder" at volume 2 at pitch 1.5 at loop-entity
+					play sound "entity.blaze.shoot" at volume 2.5 at pitch 1.5 at loop-entity
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 1.2 * {_atk-scale}
+					push loop-entity up at speed 0.5 * {_atk-scale}
+					
+
+
+			# closer hitbox
+			mod(loop-value,20) = 0:
+				loop entities in radius 2.65 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.amethyst_cluster.break" at pitch 0.8 at loop-entity
+					play sound "item.trident.thunder" at volume 2 at pitch 1.5 at loop-entity
+					play sound "entity.blaze.shoot" at volume 2.5 at pitch 1.5 at loop-entity
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 1 * {_kb-scale}
+					push loop-entity up at speed 0.5 * {_kb-scale}
+
+			mod(loop-value,10) = 0:
+				wait 1 tick

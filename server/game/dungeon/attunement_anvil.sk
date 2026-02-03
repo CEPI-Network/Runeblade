@@ -1,0 +1,133 @@
+
+
+function spawnAnvil(loc: location):
+	set block at {_loc} to anvil
+	set {_anvil} to block at {_loc}
+	set byte tag "dungeon" of custom nbt of {_anvil} to 1
+	add {_loc} to {-dungeon::chests::*}
+
+	spawn text display at location 1 above {_anvil}:
+		set {_ent} to text display
+		add {_ent} to {display::dungeon::*}
+		set text of {_ent} to "&5&lATTUNEMENT ANVIL"
+		set billboard of {_ent} to center
+
+	spawn text display at location 0.75 above {_anvil}:
+		set {_ent} to text display
+		add {_ent} to {display::dungeon::*}
+		set text of {_ent} to "&7CLICK TO USE"
+		set billboard of {_ent} to center
+		set transformation scale of {_ent} to vector(0.75, 0.75, 0.75)
+
+
+
+
+
+
+
+
+
+on rightclick on anvil:
+	byte tag "dungeon" of custom nbt of clicked block = 1
+	cancel event
+
+	if byte tag "weapon" of custom nbt of player's tool = 1:
+		set {_i} to player's tool
+		set player's tool to air
+		openAttunementAnvil(player, {_i})
+	else:
+		openAttunementAnvil(player)
+
+
+function openAttunementAnvil(p: player, i: item=air):
+
+	set {_slots::*} to 28, 29, 30, 32, 33, 34
+	set {_noitem} to iron bars named "&fNo Item" with lore "", formatParagraph("Click a weapon in your inventory to start applying &5Attunements&7!") and "" with all item flags
+
+	create a gui with virtual chest inventory with 6 rows named "&5&lATTUNEMENT ANVIL":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with purple stained glass pane named "&0"
+		format gui slot (integers between 45 and 53) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&5&lATTUNEMENTS" with lore "", formatParagraph("Each weapon can have an &5Attunement added to it to gain an extra ability!"), "", formatParagraph("Attunements are activated by pressing &fRight-Click while holding the weapon. Keep in mind they cost mana, so don't try to spam them!"), "", formatParagraph("Not all attunements can be applied to every weapon. Sometimes, using a &aSecondary &aWeapon just for its attunements is a viable strategy.") and "" with all item flags
+		
+		run on gui close:
+			slot 22 of gui != {_noitem}
+			give {_p} slot 22 of gui
+
+		if {_i} = air:
+			format gui slot 22 with {_noitem}
+			loop {_slots::*}:
+				# looped to randomize attunement name
+				format gui slot loop-value with book named "&f&k%random element out of indices of {-attunements::*}%" with lore "&8Attunement", "", formatParagraph("Place an item into the &5Attunement &5Slot before you can add attunements!") and "" with all item flags
+		else:
+			format gui slot 22 with {_i}:
+				give {_p} {_i}
+				play sound "ui.button.click" to {_p}
+				play sound "ui.toast.out" to {_p}
+				# reset the items without re-opening the gui
+				format gui slot 22 with {_noitem}
+				loop {_slots::*}:
+					format gui slot loop-value with book named "&f&k%random element out of indices of {-attunements::*}%" with lore "&8Attunement", "", formatParagraph("Place an item into the &5Attunement &5Slot before you can add attunements!") and "" with all item flags
+
+			set {_index} to uncolored unformat(name of {_i}) in lowercase
+			loop {-weapons::%{_index}%::attunements::*}:
+				clear {_dmg-display} # carryover
+				clear {_mana-display}
+
+				set {_dmg} to {-attunements::%loop-value%::damage::%{_index}%} ? {-attunements::%loop-value%::damage::1}
+				set {_mana} to {-attunements::%loop-value%::mana::%{_index}%} ? {-attunements::%loop-value%::mana::1}
+				
+				if {_dmg} != 0:
+					set {_dmg-display} to "&f%{_dmg}%<##ff2458>🗡"
+				set {_mana-display} to "&f%{_mana}%<##2eadd7>★"
+				set {_dmg-mana} to "&8[%join {_dmg-display} and {_mana-display} with " "%&8]"
+
+				# unlocked
+				set {_owned-attunements::*} to all items in {_p}'s inventory where [uncolored name of input in lowercase = loop-value]
+				if {_owned-attunements::*} is set:
+
+					set {_new} to getWeapon({_index}, loop-value)
+					format gui slot {_slots::%loop-counter%} with enchanted book named "&e&n%loop-value in strict proper case%" with lore "&8Attunement", "", formatParagraph({-attunements::%loop-value%::desc}), "", {_dmg-mana}, "", "", "&a&lCLICK TO APPLY" and "" with all item flags:
+						format gui slot 22 with {_new}:
+							give {_p} {_new}
+							play sound "ui.button.click" to {_p}
+							play sound "ui.toast.out" to {_p}
+							# reset the items without re-opening the gui
+							format gui slot 22 with {_noitem}
+							loop {_slots::*}:
+								format gui slot loop-value with book named "&f&k%random element out of indices of {-attunements::*}%" with lore "&8Attunement", "", formatParagraph("Place an item into the &5Attunement &5Slot before you can add attunements!") and "" with all item flags
+
+						play sound "block.enchantment_table.use" at volume 10 at pitch 1.2 to {_p}
+						play sound "ui.cartography_table.take_result" at volume 10 at pitch 1.3 to {_p}
+						draw 20 enchanting particles with offset vector(0.6, 0.6, 0.6) with extra value 0.5 at location 1 above {_p}
+						
+						remove (first element out of {_owned-attunements::*}) from {_p}'s inventory
+				
+				else:
+					# locked
+					format gui slot {_slots::%loop-counter%} with book named "&7&n%loop-value in strict proper case%" with lore "&8Attunement", "", formatParagraph({-attunements::%loop-value%::desc}), "", {_dmg-mana}, "", "", "&c&lLOCKED", "", "&fMissing &5Attunement Book &8(&7Found in Chests&8)" and "" with all item flags:
+						stop
+
+
+
+
+
+
+
+
+
+
+on inventory click:
+	name of player's top inventory = "&5&lATTUNEMENT ANVIL"
+	event-inventory = player's inventory
+	byte tag "weapon" of custom nbt of event-item = 1
+	# put item into GUI
+	cancel event
+	openAttunementAnvil(player, event-item)
+	play sound "ui.button.click" to player
+	play sound "ui.toast.out" to player
+	remove event-item from player's inventory
+
+
+

@@ -1,0 +1,285 @@
+
+
+
+
+function crossbladeAction(p: player, hit: integer=1, atk-scale: number, rahhh: number=1):
+
+	set {_particle-scale::1} to 1
+	set {_particle-scale::2} to 1
+	set {_particle-scale::3} to 1.2
+	set {_particle-scale::4} to 1.4
+
+	set {_weapon} to "crossblade"
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+
+
+	if {_hit} = 1:
+		set {_draw} to location 1 infront of {_p}'s head ~ {_v}
+	else if {_hit} = 2:
+		set {_rot} to vector from yaw {_p}'s yaw+90 and pitch 0
+		set {_rot}'s vector length to 3
+		set {_draw} to location 2.25 horizontally infront of {_p}'s head ~ {_rot} ~ {_v}
+	else if {_hit} = 3:
+		set {_draw} to location 1.25 infront of {_p}'s head ~ {_v}
+	else:
+		set {_rot} to vector from yaw {_p}'s yaw-90 and pitch 0
+		set {_rot}'s vector length to 2
+		set {_draw} to location 1 infront of {_p}'s head ~ {_rot} ~ {_v}
+
+
+
+
+	if {_hit} = 1:
+
+		set {_dir} to -1
+		set {_arc} to 100
+		set {_angle} to 90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.4, {_dir}, {_arc}, 1, {_angle}-2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 2.7, {_dir}, {_arc}, 1, {_angle}-1)
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3, {_dir}, {_arc}+20, 1, {_angle}) # prong blade
+		set {_arc::4::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.7+{_sound-scale} at {_p}
+		play sound "sword.slash" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		
+		loop {_arc} times:
+			loop 4 times:
+				loop-value-2 = 3:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1 + 20%}
+				else:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.25 of ({_draw} ~ {_arc::3::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+
+				loop entities in radius 2.25 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+
+			mod(loop-value, 20) = 0:
+				wait 1 tick
+
+
+	else if {_hit} = 2:
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_ref} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch+90
+		rotate {_v} around {_ref} by -65
+
+		set {_dir} to -1
+		set {_arc} to 55
+		set {_angle} to -25 + (random number between -5 and 5) + ({_p}'s pitch * 0.33)
+		set {_yaw} to {_v}'s yaw
+		set {_pitch} to {_v}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 3.6, {_dir}, {_arc}, 1, {_angle}-2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.8, {_dir}, {_arc}, 1, {_angle}-1)
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 4, {_dir}, {_arc}+20, 1, {_angle}) # prong blade
+		set {_arc::4::*} to baseArc({_yaw}, {_pitch}, 4.2, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "sword.alt_slash" at volume 3 at pitch 1.05+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			loop 4 times:
+				loop-value-2 = 3:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1 + 20%}
+				else:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.25 of ({_draw} ~ {_arc::3::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+				
+				loop entities in radius 2.25 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+
+
+			mod(loop-value, 12) = 0:
+				wait 1 tick
+
+
+
+	else if {_hit} = 3:
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_ref} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch+90
+		rotate {_v} around {_ref} by -30
+
+		set {_dir} to -1
+		set {_arc} to 120
+		set {_angle} to -10 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_v}'s yaw
+		set {_pitch} to {_v}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.4, {_dir}, {_arc}, 1, {_angle}-2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 2.7, {_dir}, {_arc}, 1, {_angle}-1)
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3, {_dir}, {_arc}+20, 1, {_angle}) # prong blade
+		set {_arc::4::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1.1+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.6+{_sound-scale} at {_p}
+		play sound "sword.slash" at volume 3 at pitch 0.8+{_sound-scale} at {_p}
+		
+		loop {_arc} times:
+
+			loop 4 times:
+				loop-value-2 = 3:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1 + 20%}
+				else:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.25 of ({_draw} ~ {_arc::3::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+				
+				loop entities in radius 2.25 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+
+
+			mod(loop-value, 25) = 0:
+				wait 1 tick
+	
+
+
+	else:
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_ref} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch+90
+		rotate {_v} around {_ref} by 40
+
+		set {_dir} to 1
+		set {_arc} to 60
+		set {_angle} to -12.5 + (random number between -5 and 5) + ({_p}'s pitch * 0.33)
+		set {_yaw} to {_v}'s yaw
+		set {_pitch} to {_v}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 3.6, {_dir}, {_arc}, 1, {_angle}-2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.8, {_dir}, {_arc}, 1, {_angle}-1)
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 4, {_dir}, {_arc}+20, 1, {_angle}) # prong blade
+		set {_arc::4::*} to baseArc({_yaw}, {_pitch}, 4.2, {_dir}, {_arc}, 1, {_angle}-2)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "sword.alt_slash" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			loop 4 times:
+				loop-value-2 = 3:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1 + 20%}
+				else:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale::%loop-value-2%} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.25 of ({_draw} ~ {_arc::3::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+				
+				loop entities in radius 2.25 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.sweep" at pitch 0.6 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.175 * {_kb-scale})
+
+
+			mod(loop-value, 12) = 0:
+				wait 1 tick

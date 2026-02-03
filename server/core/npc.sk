@@ -1,0 +1,170 @@
+
+
+
+# requires reloading this every time you edit one of the function calls
+on rightclick on mannequin:
+	set {_name} to string tag "name" of custom nbt of clicked entity
+
+	if {_name} = "swordsmith":
+		openSwordsmith(player)
+		play sound "block.grindstone.use" at pitch 1.5 to player
+	else if {_name} = "attunement master":
+		set {_i} to player's tool
+		set player's tool to air
+		openAttunement(player, {_i})
+		play sound "block.vault.insert_item" to player
+	
+	else if {_name} = "cosmetics":
+		openCosmetics(player)
+	else if {_name} = "challenges":
+		openChallenges(player)
+	else if {_name} = "skills":
+		openSkills(player)
+
+	else if {_name} = "tutorial":
+		create gui with virtual chest inventory with 5 rows named "&a&l          TUTORIAL":
+			open gui to player
+			format gui slot (integers between 0 and 8) with lime stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with lime stained glass pane named "&0"
+			format gui slot 22 with oak sign named "&a&lRESTART TUTORIAL" with lore "", formatParagraph("Wanted to take another look at the tutorial? Revisit it and go over the server's mechanics!"), "", "&e&lCLICK TO START", "" with all item flags:
+				startTutorial(player)
+
+	else if {_name} = "dungeons":
+		openDungeon(player)
+
+	else if {_name} = "tut_swordsmith":
+		openSwordsmith(player, true)
+	else if {_name} = "tut_attunement":
+		set {_i} to player's tool
+		set player's tool to air
+		openAttunement(player, {_i}, true)
+
+
+
+
+
+
+
+
+
+function registerSkin(name: string, value: string, signature: string):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-registry::skin::%{_index}%::value} to {_value}
+	set {-registry::skin::%{_index}%::signature} to {_signature}
+
+
+function registerNPC(name: string, display: strings, loc: location, skin: string, bound: string={_}):
+	set {_index} to uncolored {_name} in lowercase
+	
+	set {_value} to {-registry::skin::%{_skin}%::value}
+	set {_signature} to {-registry::skin::%{_skin}%::signature}
+
+	spawn mannequin at {_loc}:
+		set {_ent} to entity
+		make entity invulnerable
+		setSkin(entity, {_value}, {_signature})
+		set string tag "name" of custom nbt of entity to {_name}
+
+	spawn text display at {_loc} ~ vector(0, 2.2, 0):
+		set {_txt} to entity
+		set billboard of entity to center
+		set text of entity to {_display::*}
+		add drop shadow to entity
+		set color of entity to rgb(0, 0, 0, 0)
+	set boolean tag "temp" of custom nbt of {_txt} to true
+
+	if {_bound} is set:
+		delete bound with id {_bound}
+		wait 1 tick
+		create temporary bound with id {_bound} within {_loc} ~ vector(4, 4, 4) and {_loc} ~ vector(-4, -4, -4):
+			set bound value "npc" of event-bound to {_ent}
+
+
+on load:
+	wait 1 second
+	loadNPCs()
+
+function loadNPCs():
+
+	loop all mannequins:
+		kill all text displays in radius 3 of loop-value where [boolean tag "temp" of custom nbt of input = true]
+		delete loop-value
+
+	registerSkin("swordsmith", "ewogICJ0aW1lc3RhbXAiIDogMTcxNzk2MDMxNDM3MywKICAicHJvZmlsZUlkIiA6ICJmMDhlMTRiMGVjM2E0NGNmODY4Yjk1NWM0NGU1ZTA3NyIsCiAgInByb2ZpbGVOYW1lIiA6ICJ2aW5ucm9jIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2EwMDc1ZjRkNjA2MTNkNzcyOThmMTMzMDZiOTgyZjExZDFlMDdkNTBmYmU2NTg2N2YyMTY3ZjU2YzI1MmRmMiIKICAgIH0KICB9Cn0=", "T0uvg23nSW758cySPhSbDcIEY7SXm0+ks4Zr7m7ZVmyVdzXTd9raMl0rIDZDrHirnjKMhQCvbkaChT6Jp+gcr7r/sePHXd988/zDr/0KFZHckfIwMQZdxRxt73ZwpWiawWHcWUbsBtdrm4aYZpKninIPEct9dM/LxqU1bgfJ4RofiT/I+zUGt0Ojt3vBiucuFlDgaWpZLkkd04Npnk2LMulBVtg43sKBIRCXHkAi6xj35H8h0oOzE4pqC318Oay9Yp7N0xit4AU/Es6wYN3B7nCBxOHH7R7zIXGmYvhFP7IQIe6nPDoWQRXBAsKEhpwsVZLA3vv2kB9GAvU92hCoWxmh7wWLsiNmWrJq9V1FZuKhODcZvTa5+03/VS9kAO0H1RyWZLBznHcVqkt0rnV71fwy+S+202w7GzmTembVAiu+Ge2q2KF+b3wgzDDbAYK4BvMb8y+6lhHIik+nNuoVOqoza2RTFc1CaqIW+M6VlGqMNwRlbptbIxkrfGU3lOEGBiHAlZuBv0bxFXEOXw7skxJlZN71NGnX6qv+MhrKWkfeqnu2Z+x/ee0vLR9zWQ7I7mo87/pXzXHbbnQirno9lH8TNhdLh6+Vqg0yIUqPb+hn4AYVHesxpOvTh8czm3vfkrk8zBFhvVm6aLlVjL6ZiGwP4CXibcCnCYmXRgeRKC8=")
+	registerSkin("attunement", "ewogICJ0aW1lc3RhbXAiIDogMTY4NzI1NTg4NDI5NywKICAicHJvZmlsZUlkIiA6ICI1NzgzZWMxNDgxMDI0ZDJmOTk4N2JhNGZhNWNlMmFmOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJCbHVlUGhlbml4NDMiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjI0ZjlkNDQ5MTc4YmRjZjUyZDBmOTVkMWFhNzgzNDZmOTcyZGVmMWRlZDcyM2NmM2IzMGQ0ZjM0MmE1NzA3MiIKICAgIH0KICB9Cn0=", "UBJIafF6vW8IrlLXcLPuIyQM6DUqzu1mNQffa8BMitdHoV6j/LTG7OuB63Axd7encJsWKcDnnwtghvimLqa32emlhVO4rKIRkHa2FTqvV0U5SXKGMf95jJjx0TtbGZ0i44/bG8oDfbDZ3Sd8XI7FK+WyLb4tQn9shUIL0ooYj1b3w9HgzvORb5NisZ14qxUEpRddfo5BhjA0L6PX99F5xv6ap97cYMp8CznxqwhfcL4OuDqQs5hESdaPMpLgTmITc61+tbi+3PRgkAZh1JRei0JqXB5FPbbVKgnbHh8/I6di0glQ1QaF1KAx/MfABITs3lRPR+S8zwb2an7P7I7yg+L2bQfoqcoL90nPTMk8GiGhnB+eBIcL3nRtmI08bgqF3Ai0J5o3JJSK5ND60QuG1ljdM5mHwcJ8twZPT60Jp5IDkurKB6p7rOI1v4bkOtsq3prlJUP3hRQolLcuzsDsLNYqP2bcSliWYVKPaaUtnP1UtAeIzcMKn/X+4x84B5h3evABOwlvf212o4Wu1IuCsdTKTvvYWWFdO106/cQ8odd2vGnIRl8al5McAhwCOj/Egj4coQTBV8hA12swMUq4YEy2QzY2tuVzB1gd71mHYwfH3OfkuvP4l7QfuAH82E3zDsjj7UnH+mO1RX8mfTeddQ2dhEwd93y6Aa/N9QGobpk=")
+	registerSkin("tutorial", "ewogICJ0aW1lc3RhbXAiIDogMTcxODA0MTYwMTcyOCwKICAicHJvZmlsZUlkIiA6ICJmZjJkNDgxN2RhOWU0MWE2OTlkNGI2MDIxN2ZjYzQ5ZSIsCiAgInByb2ZpbGVOYW1lIiA6ICJJbmVyYWQiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjJiY2JhNGIyMmJiMzc2YmI1YzI5MmE5ZTViYTgyZGI1NTc5Y2I4MmI1NzkyMjZhODQzZDcxYTFlNjcxY2JjZCIKICAgIH0KICB9Cn0=", "Bh8OqlbwK/zleT8txA5XiiR4ec298BEG9WJGSwrptMp/l9ne4Q70eaOxKRdOIG3nsWiQEf3YGXYScr8hEjqnFAD9c2eJiDctAPDUCa0aJWxO/pLLVEZb2lsDvB6OTT7JM97AQAxQDlZubGyJOwLw9QH74UdY0y/Hb24Lts+pQzZQwuBePI59SES+oKnc4gwRuoO9Ia4RRff+olqBoG6cG/QOx12iRSK1onXrMZCqvAEDqFoh8B3YYDdRFX/CygPITFp4ggJSDQttZCAJrR2A7qnCn5u8yWpIgXLHcmr5YXkj94ach0mNn2I9nfKgZQAJbIgORzR2vY14RxDTU8k+336KikBywJ2PYYISgR3J4ryGTaRM3pMnCi+l//E3xCg9mOYEQ8/Y++QeDDjoxkay96SFzM/NyPIq5ke92vg4HhvbfblcR3aKCSQUfaHPBEdBStH5V4jDag+fe5lAysT3AeQoH4UGRYgteq+d1ZlrRUXWXN8Ghjp7xMKJJdgqBIx9moBJCAFLWqY11g2DGpcOEPczIGSDZVmnU4595AynGSJTSMFMvZAf1OjTxTmqZfe2xA8EXBXRH93uyuh1INVBmWHfbC0snTVgT3Uc2kfxRfvercA6ePjtW3ae4d8ntGJLVamFIDau18U4yic2t9o9SE3AuGj+B7daic5mDC8vlc4=")
+	registerSkin("cosmetics", "ewogICJ0aW1lc3RhbXAiIDogMTcxODA0OTc1NDA4MCwKICAicHJvZmlsZUlkIiA6ICIzOWQ2MzI4ZWY4NTc0MDNjOTQ2YTg4NTFiNWZmMmFhOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJDcHRHYXRvIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzIwNTk3NzBlNjg3NGYzNGEwZGZiYzU2ZDE0NjI0NmM1MTg2NmE4ZjNhYzJkNjUwMzMyZWU5ZGNkNjJlZWNjYTMiLAogICAgICAibWV0YWRhdGEiIDogewogICAgICAgICJtb2RlbCIgOiAic2xpbSIKICAgICAgfQogICAgfSwKICAgICJDQVBFIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8yMzQwYzBlMDNkZDI0YTExYjE1YThiMzNjMmE3ZTllMzJhYmIyMDUxYjI0ODFkMGJhN2RlZmQ2MzVjYTdhOTMzIgogICAgfQogIH0KfQ==", "rwMmlGPE8Y9AKEwMc1lDHwN+DEA3PYDpawmU6fGxBSkrNdB0Vn9Kfl49kulgid5TZln7CrDNEMYvZ8DOkPJFg+QV8GhwovwIcdEtL67W3WJyEu7QLMjrgONqeKRIWV/133nkagWNFGZ8k8WXWQzTSG3dqcWWI4npbkMoMsc9qORDi4BYz2vkpkfukldmf7ohePcRJpYxGBIyZoIwWNHsXHR09xu/95u65ThSaXPZF9eH0OSftxhZZJz9wJzckQf7/uf6f9kUOw+upf/Uhlk/2DvOghSoc+H8gtYTvetFqzSiTMrWagqDDumKgluZlBJ35Ey1neQd1oTNsTxdeKQsYT/DETMJG/fXgJiAq1mdDfLGsr+ytD6rVbCkiGN/wgn9JZpI8eSS3EpnwAizUKLqqfn1dRY6Eij1PfpoxasGhM7nLTmJaN+S/ju0Zdi9pfS5LpA06cJKP8gae/bz56/KXB/2V5HNcimTv+JXNRfFFbB0RoJA4AuZlaiaZQTmyw/IDhHFw5HbwZ3iNOkhhzqA2fnb/2PuOLPgBN+PnSDOoBf/EZa/dG7nPI/Wz1k5TPoSicHygugWTe6q7SHiqkAwXq665DQGKaB5N/HI1xxTFZw48ggvA5xP10no6bF83ahW0Sp8v3SNu7Z8yrl+GoE7WLN1hrFzZBzOhsJFOAlJdGk=")
+	registerSkin("skills", "ewogICJ0aW1lc3RhbXAiIDogMTcxODIxMjQzODY4MiwKICAicHJvZmlsZUlkIiA6ICJjMDg0NmU5YzgzZWU0MzdmOGZkNTJjZTQzMjFhNWQ5MSIsCiAgInByb2ZpbGVOYW1lIiA6ICJGYW56YWxsIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2Q1NDgwZmExODliZmUxYjRjY2RkOTdmYzUyYjVkYTdlMmM2OTQzZGY4NTJkNGM2ODBmNDJkOTI0N2JjMjVkZTEiCiAgICB9LAogICAgIkNBUEUiIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzIzNDBjMGUwM2RkMjRhMTFiMTVhOGIzM2MyYTdlOWUzMmFiYjIwNTFiMjQ4MWQwYmE3ZGVmZDYzNWNhN2E5MzMiCiAgICB9CiAgfQp9", "nwXJK5zTE1SahL2ePYS7msj3AlJdsHjRgGf+e5SwvvFXzgkvgNu+O46H1XKu/vKX887XAVQMHvitoaOQtCJM5tslRkaPwvAlRChgEy0UbasNwRq8h3op6083PJbGcngnG9vBU6L/gy9aWY35VinJ+niKBWEDFoA0cTQjaYaJiNbanQAtEnAwbaqaeJO3jj78qgN2RTTpEgg1BG2bboC84DfD0XuD6ODK/xPcJt7JrS+YmOOoKUBPWsiVMqQaxM5TR3ZD0CuTY007mwmpRtQPN9iIMqzF8wH8faayN6d4S94fBmX3KsDZ+wOopg10s0U5AbREda+mss/Iswc/3r1PFkxCiTnF1QHExdb94liZ2hNw7QlIROxD7Nu+ZKaJ0kIRQj053bB/HbdILOxuG2UdlXhxnaryXW1U3AEt1b5Uyi4HQ8qDxB03sQk350G7goeoKKocZox4hGwJol3MvdrBfNJ9MoqeilSIv7D4BHNufh1fuNB5S+9Y9hRMJGbFwDhqygGj1cgKh8U19fh9FHaIajjsbq1QCYieli/9754i3iDeJfHoNcmXb2sHc+f8wkl/X8pShlWRuB+vSKrxkUy2q4ABDaJV2dU7x+21Gkmzux6bZMRsnkmkKuCK56PhPHkQwbkp1zjq2csls0Jm/V/p+ZxSzQRZPdk3s/v9Dpctzkc=")
+	registerSkin("challenges", "ewogICJ0aW1lc3RhbXAiIDogMTcxODMzMzgxNjU5OCwKICAicHJvZmlsZUlkIiA6ICIzMzU3MWJiY2UyMDE0MTRiYmNkMDYyMjEyZTI4MjBlMyIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGFkb21JbmF0b3I0NzgiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODhkOGE1MTVkOWZkYTAwYjc0ZjM0MmExZWQyNGJiZTY5Zjg3YWJkMmVmMjNjZDk5ZGExZDRiMmY1YWIxZDMwZSIKICAgIH0KICB9Cn0=", "aI+UD9RcXemmR+OPmOvD23GsiMm9wwBowDARF8iUm+rQ+pz7diji65hjjxdD3eEefgEAMzx2koDo1ffqpne3uU3yPWSlXqpzKm3/rr11BJIWKC803Euh2XVfeLq7B6aZOF3Rxh5ReTbKCz+jCAkHiFzpTaN7eGgrcN2F/lYdLc14oWUcMiJA/4IY3iTP+uXNJ5gfeC5hQU66FQbb6rcH95RY2r2RhbJoeE7AUon/UkP2iLuEPGm8gf6Jg5xMMs698W31wZ6/hvY7O6mZ/iX9Nh9HIPvNZ5q4ULWfgh3KyN1i6OxEWwoG+1VBkAJQqjex87A6DKv+VCtxb8KPG4SNNpl9TEvFDaukuXkRnkdVsVc2foHCaJX0+66ZfmSYHPw5e7+TL6rfMrur0SoSF2VySBtXWSzxaBT4MOUa5+swx2Nl/0MLFnaKwkOuW6i3AKjOKMMSC05KdlPcfouFQyEYwtiEdxN3lIQQXSio9czNSN3y+uAciTKoe70vuv/ZzoOTu8dxiOu7N5KNgeAPmwzZT9GNjh1q5G1MEPgohicI6rjEF3hyGKoD5Ox77Bn+tkyDZqI5I8o3+2DLW74AW5N4g5pOhYNvhYWIQYra+BFvGHTTD96c3U4Mipg3jCdDqsfGijveZOcq3yDZ9ANq8rOE6CEb7ReKMtVwyEr/geaab2w=")
+	registerSkin("dungeons", "ewogICJ0aW1lc3RhbXAiIDogMTcyMjM4NzA3Nzg4NywKICAicHJvZmlsZUlkIiA6ICIxNzRjZmRiNGEzY2I0M2I1YmZjZGU0MjRjM2JiMmM2ZSIsCiAgInByb2ZpbGVOYW1lIiA6ICJtYXJhZWwxOCIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9lN2E3NGI2ZmJhODBmNTk3MDBiOGJjY2FhM2E0OWY4YWNmODk1NDE2MjVkYjI5Y2Q5MTNkNzE1NzY3ZmU0NzFlIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=", "x5RqqL8sKsUMgVLIByP2jHhChrLCFCG0O+aR2wWotABDBLbBUrPOeefRkFF0I1RKf9obiPKdsLz7S0zRpzCzKTqlwN4e5Ze4VPZRFM/Phlrf4nmIK0jb25pEibtEBLUdcPuK0x443XFgRpszLDkVUcEWvTI+af2/iYOFkIltT8aelfOkWrSoFfmi1TGGu/UgCBFdNnJNm0ysT3E5Y4o6zqGfSblSfHS9PYpL9LDTzBHb//uoBsFFH3FPJluNejOf5I2ozMfWH4+rGYmFMl/Df4WdIv7HH4gth19WDL3GXHqA36jH0hOZ98uUH9EdTErEIuBB4F9loTiJs4N7vp0QJenqSt+ZKUnhOHq8xQuZFsmJ5EbbyQ2E57CyCfN5A84uecjCDCT5KVUksdlPcAf7P45E2w0BnWUUO9p6orVTka2T0Bt8g5gsx0Nvwt4qMjYaw+2KtSj6GGw7v/x/u4YC/KUXap9+Pu0xBo66O2tOMQa5RUbe0Pyy8NmD3/dBFkYwBRSDUJUlzUy9y4ziIw+YI+QHt8rrv02fd5S9vPuu7EbNjPYIdjMZ0uevdRTCUvmLDvsN/tZcV5GD3YoNOoKa9y82rQZcuBNyoGmosQmINVx9wMrPIk78x5BMYEPSDsBBpAIcbl3gIod5Yzq7+XehvRfF1l/S2VZY41MwninHxP8=")
+
+
+	# --
+	set {_grad::swordsmith} to minimessage from "<gradient:#FF5555:#FF7575:#FF5555>← <bold>SWORDSMITH</bold> →"
+	set {_grad::attunement} to minimessage from "<gradient:#AA00AA:#D936D9:#AA00AA><obf>-</obf> <bold>ATTUNEMENT MASTER</bold> <obf>-</obf>"
+	set {_grad::cosmetics} to minimessage from "<gradient:#D182FF:#FF82F9:#D182FF>•<strikethrough>  </strikethrough> <bold>COSMETICS</bold> <strikethrough>  </strikethrough>•"
+	set {_grad::skills} to minimessage from "<gradient:#FF5C7F:#DE3742:#FF5C7F>« <bold>SKILLS</bold> »"
+	set {_grad::challenges} to minimessage from "<gradient:#F7C286:#FFD15C:#F7C286>🗡 <bold>CHALLENGES</bold> 🗡"
+	set {_grad::dungeons} to minimessage from "<gradient:#B973FF:#DA73FF:#B973FF>•◆| <bold>DUNGEONS</bold> |◆•"
+	set {_grad::tutorial} to minimessage from "<gradient:#94FF73:#58FC67:#94FF73>• <bold>TUTORIAL</bold> •"
+	registerNPC("Swordsmith", ("%{_grad::swordsmith}%", "", formatParagraph("&7Select a <#F0F0F0>&nprimary&7 and <#F0F0F0>&nsecondary&7 weapon!"), "", "&6&lCLICK &6to View"), location(4.5, 75, -38.5, world "runeblade", 135, 0), "swordsmith", "swordsmith")
+	registerNPC("Attunement Master", ("%{_grad::attunement}%", "", formatParagraph("&7Apply an <#F0F0F0>&nattunement&7 to each weapon!"), "", "&6&lCLICK &6to View"), location(-5.5, 75, -38.5, world "runeblade", 225, 0), "attunement", "attunement")
+
+	registerNPC("Cosmetics", ("%{_grad::cosmetics}%", "", formatParagraph("&7Equip unique armours, suffixes and more!"), "", "&6&lCLICK &6to View"), location(-36, 74, -33, world "runeblade", -90, 0), "cosmetics", "cosmetics")
+	registerNPC("Skills", ("%{_grad::skills}%", "", formatParagraph("&7Equip minor buffs for your character!"), "", "&6&lCLICK &6to View"), location(30, 75, -33, world "runeblade", 90, 0), "skills", "skills")
+	registerNPC("Challenges", ("%{_grad::challenges}%", "", formatParagraph("&7Complete challenges to unlock more content!"), "", "&6&lCLICK &6to View"), location(-0.5, 75, 3.5, world "runeblade", 180, 0), "challenges", "challenges")
+	registerNPC("Dungeons", ("%{_grad::dungeons}%", "", formatParagraph("&7Enter randomly generated dungeons and fight with your team!"), "", "&6&lCLICK &6to View"), location(-0.5, 75, 24.5, world "runeblade", 180, 0), "dungeons", "dungeons")
+
+	registerNPC("Tutorial", ("%{_grad::tutorial}%", "", formatParagraph("&7Learn more about how to play the game!"), "", "&6&lCLICK &6to Start"), location(7.5, 75, -54.5, world "runeblade", 90, 0), "tutorial", "tutorial")
+
+
+# for use with NPCs
+function setSkin(mannequin: entity, value: string, signature: string):
+	set {_nbtcompound} to nbt from "{name:"""",properties:[{name:""textures"",signature:""%{_signature}%"",value:""%{_value}%""}]}"
+	set compound tag "profile" of nbt of {_mannequin} to {_nbtcompound}
+
+
+
+
+
+
+
+
+on bound enter:
+	wait 1 tick
+	set {_ind} to (bound value "npc" of event-bound)
+	set {_npc} to {_ind} parsed as entity
+
+	{-guard::%{_ind}%} isn't set
+	set {-guard::%{_ind}%} to true
+	while (size of all players in bound event-bound) > 0:
+		set {_target} to nearest player at {_npc}
+		set {_v} to vector from {_npc} to {_target}
+		set {_curr} to vector in direction of {_npc}
+		set {_v}'s vector length to 0.5
+
+		set {_join} to normalized ({_curr} + {_v})
+		if {_npc}'s yaw != {_join}'s yaw:
+			set {_npc}'s yaw to {_join}'s yaw
+		if {_npc}'s pitch != {_join}'s pitch:
+			set {_npc}'s pitch to {_join}'s pitch
+
+		wait 2 ticks
+	
+	clear {-guard::%{_ind}%}
+
+	while {_npc}'s pitch != 0:
+		exit all loops if {-guard::%{_ind}%} is set
+		set {_v} to vector in direction of {_npc}
+		set {_v}'s pitch to 0
+		set {_curr} to vector in direction of {_npc}
+		set {_v}'s vector length to 0.5
+
+		set {_join} to normalized ({_curr} + {_v})
+		if {_npc}'s yaw != {_join}'s yaw:
+			set {_npc}'s yaw to {_join}'s yaw
+		if {_npc}'s pitch != {_join}'s pitch:
+			set {_npc}'s pitch to {_join}'s pitch
+
+		wait 2 ticks

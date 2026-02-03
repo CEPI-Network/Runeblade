@@ -1,0 +1,296 @@
+
+
+
+function dragonboltAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 1.2
+	set {_particle-scale::2} to 1.2
+	set {_particle-scale::3} to 1.4
+	set {_particle-scale::4} to 1.6
+	set {_particle-scale::5} to 1.8
+
+	set {_weapon} to "dragonbolt"
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	if {_hit} = 1:
+		set {_rand::1} to random number between -1 and -0.4
+		set {_rand::2} to random number between -0.6 and 0.6
+
+		set {_draw} to location {_rand::1} above, {_rand::2} to the right of and 1.25 infront of {_p}'s head
+		set {_l} to {_draw}
+		set {_target} to location 4 infront of {_p}'s head
+		set {_div} to distance between {_draw} and {_target}/0.2
+		set {_hitbox} to round({_div}/3)
+
+
+		# handle shit ==============================================
+		set {_v} to vector from {_draw} to {_target}
+		set {_v}'s vector length to 0.5
+		set {_temp-v} to {_v}
+		add 90 to {_temp-v}'s pitch
+		rotate {_temp-v} around {_v} by random number between 0 and 360
+
+		loop 4 times:
+			set {_draw::%loop-value%} to {_draw} ~ {_temp-v}
+			rotate {_temp-v} around {_v} by 90
+
+			set {_v::%loop-value%} to vector from {_draw::%loop-value%} to {_target}
+			set {_v::%loop-value%}'s vector length to 0.2
+
+		set {_prev} to {_draw::4}
+		set {_curr} to {_draw::1}
+		set {_mod} to 1
+		loop 4 times:
+			set {_temp-v} to vector from {_prev} to {_curr}
+			set {_temp-v}'s vector length to ({_temp-v}'s vector length) / 3
+			set {_draw} to {_prev} ~ {_temp-v}
+			loop 2 times:
+				
+				draw 1 of dust using dustOption({-colours::%{_palette}%::%{_hit}%::3}, 1.5) at {_draw}
+				set {_draw} to {_draw} ~ {_temp-v}
+			
+			set {_mod} to mod({_mod}, 4)+1
+			set {_prev} to {_curr}
+			set {_curr} to {_draw::%{_mod}%}
+
+		
+		loop 4 times:
+			set {_v} to vector from {_draw::%loop-value%} to location 0.5 behind {_l}
+			set {_v}'s vector length to 0.24
+
+			set {_draw} to {_draw::%loop-value%} ~ {_v}
+			loop 3 times:
+				draw 1 of dust using dustOption({-colours::%{_palette}%::%{_hit}%::2}, 1.5) at {_draw}
+				set {_draw} to {_draw} ~ {_v}
+
+		# =========================================================
+
+
+		play sound "item.trident.throw" at volume 2.5 at pitch 1.25+{_sound-scale} at {_p}
+		play sound "item.trident.thunder" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.firework_rocket.blast" at volume 2 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "sword.thrust" at volume 2.75 at pitch 0.8+{_sound-scale} at {_p}
+
+		loop {_div} times:
+			#set {_loop-scale} to 0.25+sin(loop-value * {_sin})
+			set {_loop-scale} to max(0.75, (loop-value * -0.05) + 1.5)
+			set {_particle-scale} to {_particle-scale::1} * {_loop-scale}
+			
+			loop 4 times:
+				draw 1 of dust_color_transition using dustTransition({-colours::%{_palette}%::%{_hit}%::3}, {-colours::%{_palette}%::%{_hit}%::1}, {_particle-scale}) at {_draw::%loop-value-2%}
+			
+				chance of 12%:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.25
+					draw 0 of electric spark at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+				
+				chance of 3%:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.25
+					draw 0 of cloud at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+
+			loop 4 times:
+				set {_draw::%loop-value-2%} to {_draw::%loop-value-2%} ~ {_v::%loop-value-2%}
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2 of ({_draw::1}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.4 * {_kb-scale}
+					push loop-entity up at speed 0.15 * {_kb-scale}
+					add loop-entity to {_hit::*}
+
+
+			mod(loop-value, 6) = 0:
+				wait 1 tick
+		
+		
+		
+	else if {_hit} = 2:
+
+		set {_dir} to -1
+		set {_arc} to 100
+		set {_angle} to 30 + random number between -5 and 5 - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw - 5
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.5, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 2.7, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::4::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::5::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle})
+		
+
+
+		play sound "entity.player.attack.sweep" at volume 2 at pitch 0.7+{_sound-scale} at {_p}
+		play sound "entity.iron_golem.attack" at volume 2 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 2 at pitch 1+{_sound-scale} at {_p}
+		play sound "item.trident.thunder" at volume 2.5 at pitch 1+{_sound-scale} at {_p}
+		play sound "entity.firework_rocket.blast" at volume 2 at pitch 1.25+{_sound-scale} at {_p}
+		play sound "sword.alt_slash" at volume 2.75 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "sword.heavy_slash" at volume 2.75 at pitch 1.25+{_sound-scale} at {_p}
+
+
+		set {_draw} to location of {_p}'s head
+		loop {_arc} times:
+
+			set {_loop-scale} to max(0.5, (loop-value * -0.01) + 1.25)
+			loop 5 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+						
+				draw 1 of dust using dustOption({-colours::%{_palette}%::2::%loop-value-2%}, {_particle-scale}) at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			set {_temp-draw} to {_draw} ~ {_arc::2::%loop-value%}
+			chance of 15%:
+				set {_temp-v} to {_arc::2::%loop-value-1%}
+				set {_ref} to vector from yaw {_yaw} and pitch {_pitch}+90
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.25
+				rotate {_temp-v} around {_ref} by {_arc}
+				draw 0 of electric spark at {_temp-draw} ~ {_rand} with offset {_temp-v} with extra 0.225
+
+			chance of 5%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.25
+				draw 0 of cloud at {_temp-draw} ~ {_rand} with offset {_arc::2::%loop-value-1%}+random vector with extra 0.15
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::3::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.4 * {_kb-scale}
+					push loop-entity up at speed 0.15 * {_kb-scale}
+					add loop-entity to {_hit::*}
+
+
+			mod(loop-value, 20) = 0:
+				wait 1 tick
+	
+
+
+	else:
+		set {_rand::1} to random number between -1 and -0.4
+		set {_rand::2} to random number between -0.6 and 0.6
+
+		set {_draw} to location {_rand::1} above, {_rand::2} to the right of and 1.25 infront of {_p}'s head
+		set {_l} to {_draw}
+		set {_target} to location 5 infront of {_p}'s head
+		set {_div} to distance between {_draw} and {_target}/0.2
+		set {_hitbox} to round({_div}/3)
+		#set {_sin} to 90/({_div}/2)
+
+
+
+		# handle shit ==============================================
+		set {_v} to vector from {_draw} to {_target}
+		set {_v}'s vector length to 0.5
+		set {_temp-v} to {_v}
+		add 90 to {_temp-v}'s pitch
+		rotate {_temp-v} around {_v} by random number between 0 and 360
+
+		loop 4 times:
+			set {_draw::%loop-value%} to {_draw} ~ {_temp-v}
+			rotate {_temp-v} around {_v} by 90
+
+			set {_v::%loop-value%} to vector from {_draw::%loop-value%} to {_target}
+			set {_v::%loop-value%}'s vector length to 0.2
+
+		set {_prev} to {_draw::4}
+		set {_curr} to {_draw::1}
+		set {_mod} to 1
+		loop 4 times:
+			set {_temp-v} to vector from {_prev} to {_curr}
+			set {_temp-v}'s vector length to ({_temp-v}'s vector length) / 3
+			set {_draw} to {_prev} ~ {_temp-v}
+			loop 2 times:
+				
+				draw 1 of dust using dustOption({-colours::%{_palette}%::%{_hit}%::3}, 1.5) at {_draw}
+				set {_draw} to {_draw} ~ {_temp-v}
+			
+			set {_mod} to mod({_mod}, 4)+1
+			set {_prev} to {_curr}
+			set {_curr} to {_draw::%{_mod}%}
+
+		
+		loop 4 times:
+			set {_v} to vector from {_draw::%loop-value%} to location 0.5 behind {_l}
+			set {_v}'s vector length to 0.3
+
+			set {_draw} to {_draw::%loop-value%} ~ {_v}
+			loop 3 times:
+				draw 1 of dust using dustOption({-colours::%{_palette}%::%{_hit}%::2}, 1.5) at {_draw}
+				set {_draw} to {_draw} ~ {_v}
+
+		# =========================================================
+
+
+		play sound "item.trident.throw" at volume 2.5 at pitch 1.25+{_sound-scale} at {_p}
+		play sound "item.trident.thunder" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.firework_rocket.blast" at volume 2 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "sword.thrust" at volume 2.75 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "elemental.lightning_strike" at volume 1.5 at pitch 1.25+{_sound-scale} at {_p}
+		
+		loop {_div} times:
+			set {_loop-scale} to max(0.75, (loop-value * -0.05) + 1.5)
+			set {_particle-scale} to {_particle-scale::1} * {_loop-scale}
+			
+			loop 4 times:
+				draw 1 of dust_color_transition using dustTransition({-colours::%{_palette}%::%{_hit}%::3}, {-colours::%{_palette}%::%{_hit}%::1}, {_particle-scale}) at {_draw::%loop-value-2%}
+			
+				chance of 12%:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.25
+					chance of 50%:
+						draw 0 of electric spark at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+					else:
+						if {_palette} = "dragonbolt":
+							draw 0 of wax on at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+						else:
+							draw 0 of glow at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+				
+				chance of 3%:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.25
+					draw 0 of cloud at {_draw::%loop-value-2%} ~ {_rand} with offset {_v::%loop-value-2%}+{_rand} with extra 1
+
+			loop 4 times:
+				set {_draw::%loop-value-2%} to {_draw::%loop-value-2%} ~ {_v::%loop-value-2%}
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2 of ({_draw::1}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.5 * {_kb-scale}
+					push loop-entity up at speed 0.2 * {_kb-scale}
+					add loop-entity to {_hit::*}
+
+
+			mod(loop-value, 4) = 0:
+				wait 1 tick	
+
+
+
+
+

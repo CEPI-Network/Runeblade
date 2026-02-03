@@ -1,0 +1,696 @@
+on load:
+	locally suppress starting with expression warnings
+
+
+
+command /duel [<player>]:
+	trigger:
+
+		if arg-1 is not set:
+			openDuels(player)
+		else if arg-1 = player:
+			send "%prefix()% &7You can't send a duel request to yourself!"
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else:
+			duelChallenge(player, arg-1)
+
+on rightclick:
+	clicked entity is an interaction
+	{displays::duels::3} = clicked entity
+	#name of clicked entity = "loadouts"
+	openDuels(player)
+
+on command:
+	{-tempdata::%uuid of player%::duel::in-duel} = true
+	full command contains "spawn" or "spectate"
+
+	set {_in-duel::*} to (all players where [{-tempdata::%uuid of input%::duel::in-duel} is set])
+	if size of {_in-duel::*} >= 2:
+		cancel event
+		send "%prefix()% &7You can't execute that command! You're in a duel!" to player
+	else:
+		send "%prefix()% &7Ending the duel..." to player
+		wait 5 seconds
+		clear {-tempdata::%uuid of player%::duel::*}
+
+
+
+function openDuels(p: player, menu: string="main", page: integer=1):
+
+	create gui with virtual chest inventory with 5 rows named "&c&l             DUELS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&c&lDUELS" with lore "", formatParagraph("Duel another player on the server or spectate an ongoing duel!") and "" with all item flags
+
+		if {_menu} = "main":
+
+			play sound "ui.button.click" to {_p}
+
+			set {_in-duel::*} to (all players where [{-tempdata::%uuid of input%::duel::in-duel} is set])
+			if {_in-duel::*} is set:
+				loop {_in-duel::*}:
+					set {_current::%loop-counter%} to "&e%loop-value%"
+				
+
+				format gui slot 22 with clock named "&e&lDUEL IN PROGRESS" with lore "", formatParagraph("There's already a duel going on!"), "", "%join {_current::*} with " &7and "% &7are in a duel!", "", "", "&e&lCLICK TO SPECTATE", "" with all item flags:
+					spectateDuel({_p})
+			
+			else:
+				format gui slot 21 with iron sword named "&c&lSTART A DUEL" with lore "", formatParagraph("Start dueling another player!"), "", "", "&e&lCLICK TO OPEN", "" with all item flags:
+					openDuels({_p}, "duel")
+				
+				if inTeamDuelQueue({_p}) = true:
+					format gui slot 23 with netherite sword named "&6&lQUEUE A TEAMDUEL" with lore "", formatParagraph("Enter a queue for a &f2v2 &7match!"), "", "", "&c&lCLICK TO LEAVE QUEUE", "" with all item flags:
+						toggleTeamDuelQueue({_p})
+						close {_p}'s inventory
+				else:
+					format gui slot 23 with netherite sword named "&6&lQUEUE A TEAMDUEL" with lore "", formatParagraph("Enter a queue for a &f2v2 &7match!"), "", "", "&a&lCLICK TO ENTER QUEUE", "" with all item flags:
+						toggleTeamDuelQueue({_p})
+						close {_p}'s inventory
+
+						
+
+
+		else if {_menu} = "duel":
+			
+			play sound "ui.button.click" to {_p}
+
+			set {_pged::*} to page {_page} of (all players where [input != {_p}]) with 7 lines
+			set {_slot} to 19
+			loop {_pged::*}:
+				set {_target} to loop-value
+				
+				format gui slot {_slot} with skull of loop-value named "&e%name of loop-value%" with lore "&8ᴘʟᴀʏᴇʀ", "", "", "&e&lCLICK TO CHALLENGE", "" with all item flags:
+					challengeMenu({_p}, {_target})
+				
+				add 1 to {_slot}
+			
+			set {_next::*} to page {_page}+1 of (all players where [input != {_p}]) with 7 lines
+			set {_prev::*} to page {_page}-1 of (all players where [input != {_p}]) with 7 lines
+			if size of {_next::*} > 0:
+				format gui slot 26 with arrow named "&a&lNEXT PAGE" with lore "":
+					openDuels({_p}, "duel", {_page}+1)
+			if size of {_prev::*} > 0:
+				format gui slot 26 with arrow named "&a&lPREVIOUS PAGE" with lore "":
+					openDuels({_p}, "duel", {_page}-1)
+			
+		
+
+
+function challengeMenu(p: player, t: player):
+	create gui with virtual chest inventory with 5 rows named "&c&l             DUELS" with shape "aaaasaaaa", "---------", "-1234567-", "---------", "bbbbbbbbb":
+		open gui to {_p}
+
+		format gui slot "a" with red stained glass pane named "&0"
+		format gui slot "b" with black stained glass pane named "&0"
+		set {_prefix} to {_t}'s prefix ? ""
+		format gui slot "s" with skull of {_t} named "&f%{_prefix}%%{_t}%" with lore ""
+
+		
+		if {-tempdata::%uuid of {_p}%::duel::rune gains} is set:
+			set {_status} to "&c&lCLICK TO DISABLE"
+			set {_stat-cond} to "&a&lENABLED"
+		else:
+			set {_status} to "&a&lCLICK TO ENABLE"
+			set {_stat-cond} to "&c&lDISABLED"
+
+		set {_item} to oak sign named "<##2eadd7>RUNE GAINS ₪" with lore "&8ᴏᴘᴛɪᴏɴ", "", formatParagraph("&aEnable&7/&cDisable Rune Gains."), "", formatParagraph("Having this option enabled will affect your stats."), "", "", {_status}, "" with all item flags
+		enchant {_item} with unbreaking 1 if {_status} = "&c&lCLICK TO DISABLE"
+
+		#format gui slot "2" with {_item}:
+		#	toggle({_p}, "rune gains")
+		#	challengeMenu({_p}, {_t})
+		format gui slot "4" with netherite sword named "&c&lSTART DUEL" with lore "", "", "&e&lCLICK TO START", "" with all item flags: # "&8 - <##2eadd7>₪ &fRune Gains &8» %{_stat-cond}%",
+			duelChallenge({_p}, {_t})
+
+
+local function toggle(p: player, opt: text):
+	if {-tempdata::%uuid of {_p}%::duel::%{_opt}%} is set:
+		clear {-tempdata::%uuid of {_p}%::duel::%{_opt}%}
+		play sound "block.note_block.harp" at pitch 1 to {_p}
+		send "%prefix()% Disabled &e%{_opt} in strict proper case%&7!" to {_p}
+	else:
+		set {-tempdata::%uuid of {_p}%::duel::%{_opt}%} to true
+		play sound "block.note_block.harp" at pitch 2 to {_p}
+		send "%prefix()% Enabled &e%{_opt} in strict proper case%&7!" to {_p}
+	
+
+
+
+
+function duelChallenge(p: player, t: player):
+
+	if {-tempdata::%uuid of {_t}%::duel-request} = {_p}:
+		play sound "block.note_block.pling" at pitch 0.5 to {_p}
+		send "%prefix()% &7You've already challenged &f%{_t}% &7to a duel!" to {_p}
+		stop
+
+	if {-tempdata::%uuid of {_p}%::duel::rune gains} is set:
+		set {_s} to " &8(&fRune <##2eadd7>₪ &fGains Enabled &8)"
+	else:
+		set {_s} to ""
+
+
+	play sound "block.note_block.pling" at pitch 2 to {_p} and {_t}
+	send "" to {_p} and {_t}
+	send "&c&l DUEL &8» &7Sent a duel request to &f%{_t}%&7!" to {_p}
+	send "<command:/acceptduel>&f  &c&lDUEL &8» &f%{_p}% &7has challenged you to a duel&7!%{_s}%" to {_t}
+	send "<command:/acceptduel>&8   (&7Click to Accept&8)" to {_t}
+	send "" to {_p} and {_t}
+
+	set {-tempdata::%uuid of {_t}%::duel-request} to {_p}
+
+	loop 30 times:
+		wait 2 seconds
+		exit loop if {-tempdata::%uuid of {_t}%::duel-request} isn't set
+	
+	stop if {-tempdata::%uuid of {_t}%::duel::in-duel} is set
+
+	send "" to {_p} and {_t}
+	send "&c&l DUEL &8» &7Your duel request to &f%{_t}% &7has expired." to {_p}
+	send "&c&l DUEL &8» &f%{_p}%&7's duel request has expired." to {_t}
+	send "" to {_p} and {_t}
+
+	clear {-tempdata::%uuid of {_t}%::duel-request} if {-tempdata::%uuid of {_t}%::duel-request} = {_p}
+
+
+
+
+command /acceptduel:
+	trigger:
+		{-tempdata::%uuid of player%::duel-request} is set
+		{-tempdata::%uuid of player%::duel::in-duel} isn't set
+		{-tempdata::%uuid of player%::dungeon} isn't set
+
+		wait 1 tick
+
+		set {_t} to {-tempdata::%uuid of player%::duel-request}
+		if {_t} is not connected:
+			send "%prefix()% &7That player is no longer online!"
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		
+		else if any:
+			{-tempdata::%uuid of player%::combatlog} is set
+			{-tempdata::%uuid of {_t}%::combatlog} is set
+		then:
+			send "%prefix()% &7A player is still in combat!"
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		
+		else if (all players where [{-tempdata::%uuid of input%::duel::in-duel} is set]) is set:
+			send "%prefix()% &7A duel is already going on!"
+			play sound "block.note_block.pling" at pitch 0.5 to player
+
+		else:
+			clear {-tempdata::%uuid of player%::duel-request}
+			startDuel(player, {_t})
+			
+
+
+command /spectateduel:
+	trigger:
+		spectateDuel(player)
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ████████╗███████╗░█████╗░███╗░░░███╗  ██████╗░██╗░░░██╗███████╗██╗░░░░░
+# ╚══██╔══╝██╔════╝██╔══██╗████╗░████║  ██╔══██╗██║░░░██║██╔════╝██║░░░░░
+# ░░░██║░░░█████╗░░███████║██╔████╔██║  ██║░░██║██║░░░██║█████╗░░██║░░░░░
+# ░░░██║░░░██╔══╝░░██╔══██║██║╚██╔╝██║  ██║░░██║██║░░░██║██╔══╝░░██║░░░░░
+# ░░░██║░░░███████╗██║░░██║██║░╚═╝░██║  ██████╔╝╚██████╔╝███████╗███████╗
+# ░░░╚═╝░░░╚══════╝╚═╝░░╚═╝╚═╝░░░░░╚═╝  ╚═════╝░░╚═════╝░╚══════╝╚══════╝
+
+
+function inTeamDuelQueue(p: player) :: boolean:
+	if {-queue::teamduel::*} contains {_p}:
+		return true
+	else:
+		return false
+
+function toggleTeamDuelQueue(p: player) :: boolean:
+
+	if {-queue::teamduel::*} contains {_p}:
+		play sound "block.note_block.pling" to {_p}
+		send "%prefix()% You've left the &eTeam Duel &7queue!" to {_p}
+		remove {_p} from {-queue::teamduel::*}
+
+		loop {-queue::teamduel::*}:
+			send "%prefix()% &e%{_p}% &7has left the &eTeam Duel &7queue!" to loop-value
+			play sound "block.note_block.pling" at pitch 0.5 to loop-value
+
+		return false
+	
+	else:
+		play sound "block.note_block.pling" to {_p}
+		send "%prefix()% You've joined the &eTeam Duel &7queue!" to {_p}
+		send "%prefix()% There are currently &a%size of {-queue::teamduel::*}% &7other players in the queue." to {_p}
+
+		loop {-queue::teamduel::*}:
+			send "%prefix()% &e%{_p}% &7has joined the &eTeam Duel &7queue!" to loop-value
+			play sound "block.note_block.pling" to loop-value
+
+		add {_p} to {-queue::teamduel::*}
+		updateTeamDuelQueue()
+		return true
+
+
+
+function updateTeamDuelQueue():
+	wait 3 second # wait so it can update before returning above ^
+
+	set {_queued} to size of {-queue::teamduel::*}
+	set {_ready} to size of {-queue::teamduel::*} where [{-tempdata::%uuid of input%::combatlog} isn't set]
+
+	# enough members to queue for a match
+	{_ready} > 0
+	if mod({_ready}, 4) = 0:
+		# remove first 4 elements from queue, add to participants
+		loop 4 times:
+			set {_player} to (first element out of {-queue::teamduel::*})
+			remove {_player} from {-queue::teamduel::*}
+			add {_player} to {_participants::*}
+		
+		# shuffled to randomize teams
+		loop shuffled {_participants::*}:
+			send "%prefix()% Match found! Starting a team duel..." to loop-value
+			play sound "block.note_block.pling" at pitch 2 to loop-value
+
+			if size of {_red::*} < 2:
+				add loop-value to {_red::*}
+			else:
+				add loop-value to {_blue::*}
+		
+		wait 2 seconds
+
+		# start duel
+		startDuel({_red::*}, {_blue::*})
+
+
+	# possible match found, however some are in combat -> retry later
+	else if mod({_queued}, 4) = 0:
+		set {_waiting::*} to first 4 elements out of {-queue::teamduel::*}
+		send "%prefix()% Found a match for a team duel, but a player is still in combat!" to {_waiting::*}
+		send "%prefix()% Waiting &e%formatTime(15 seconds)% &7before retrying matchmaking." to {_waiting::*}
+
+		play sound "block.note_block.pling" at pitch 0.5 to {_waiting::*}
+
+		wait 15 seconds
+		updateTeamDuelQueue()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function startDuel(red: players, blue: players):
+
+	(size of {_red::*}) + (size of {_blue::*}) > 0
+
+
+	set {duel-id} to floor({duel-id})+1
+	add 1 to {duel-id}
+	set {_id} to {duel-id}
+
+	set {_all-players::*} to {_red::*} and {_blue::*}
+	
+
+	# is rune gains enabled?
+	#loop {_red::*}:
+	#	if {-tempdata::%uuid of loop-value%::duel::rune gains} is set:
+	#		set {_s} to " &8(&fRune <##2eadd7>₪ &fGains Enabled &8)"
+	#		set {_rune-gains} to true
+	#		exit loop
+	#	else:
+	#		set {_s} to ""
+	#		set {_rune-gains} to false
+	#
+	#	maybe turn it into a per-player setting, instead of a global one
+
+
+	# format the broadcast
+
+	if all:
+		size of {_red::*} = 1
+		size of {_blue::*} = 1
+	then:
+		set {_col::red} and {_col::blue} to "&e"
+	else:
+		set {_col::red} to "&c"
+		set {_col::blue} to "&9"
+
+	set {_disp::red::*} to "%{_col::red}%%{_red::*} ? "N/A"%"
+	set {_disp::blue::*} to "%{_col::blue}%%{_blue::*} ? "N/A"%"
+	replace all "," in {_disp::red::*} with "&7,%{_col::red}%"
+	replace all "," in {_disp::blue::*} with "&7,%{_col::blue}%"
+	replace all "and" in {_disp::red::*} with "&7and%{_col::red}%"
+	replace all "and" in {_disp::blue::*} with "&7and%{_col::blue}%"
+
+	broadcast ""
+	broadcast "&c&l DUEL &8» &e%{_disp::red::*}% &fand &e%{_disp::blue::*}% &fare about to duel!"
+	broadcast "<command:/spectateduel>&8   (&7Click to Spectate&8)"
+	broadcast ""
+
+	loop {_all-players::*}:
+		heal loop-value
+		set {-tempdata::%uuid of loop-value%::duel::in-duel} to true
+		set {-tempdata::%uuid of loop-value%::duel::id} to {_id}
+
+		# ensure everyone has rune-gains enabled; easier to check
+		if {_rune-gains} = true:
+			set {-tempdata::%uuid of loop-value%::duel::rune gains} to true
+
+	set {-duel::%{_id}%::red::*} to {_red::*}
+	set {-duel::%{_id}%::blue::*} to {_blue::*}
+
+	
+
+
+
+	set {_loc::0} to location(0, 80, 1000, world "runeblade", 0, 0) # center
+	set {_loc::1} to location(-20.5, 80, 1021.5, world "runeblade", -135, 0) # player 1 spawn
+	set {_loc::2} to location(21.5, 80, 979.5, world "runeblade", 45, 0) # player 2 spawn
+
+	# orientation is DIR FACING CENTRE -90 degrees (to the left)
+	#	1) get normal position
+	#	2) offset each location by 1.5 blocks apart, if the teamsize > 1
+	set {_orientation::red} to vector from yaw -135-90 and pitch 0
+	set {_orientation::blue} to vector from yaw 45-90 and pitch 0
+	set {_orientation::red}'s vector length to 1.5*floor((size of {_red::*}) * 0.5)+0.1
+	set {_orientation::blue}'s vector length to 1.5*floor((size of {_blue::*}) * 0.5)+0.1
+
+	set {_spawn-loc::red::0} to {_loc::1} ~ {_orientation::red}*2
+	set {_spawn-loc::blue::0} to {_loc::2} ~ {_orientation::blue}*2
+	add 180 to {_orientation::*}'s yaw # might error, need to add to orient::1 and 2
+
+	# assign spawn locs
+	loop "red" and "blue":
+		loop {_%loop-value%::*}:
+			# go to leftmost spot, repeatedly offset from location zero
+			#	spawn-loc::red::2
+			set {_spawn-loc::%loop-value-1%::%loop-counter-2%} to {_spawn-loc::%loop-value-1%::0} ~ {_orientation::%loop-value-1%}*loop-counter-2
+			set {-tempdata::%uuid of loop-value-2%::duel::teammates::*} to {_%loop-value-1%::*} where [input != loop-value-2]
+
+	loop 60 times:		
+		loop "red" and "blue":
+			loop {_%loop-value-2%::*}:
+				# spawn-loc::red::1
+				if any:
+					loop-value-1 = 1
+					distance between loop-value-3 and {_spawn-loc::%loop-value-2%::%loop-counter-3%} > 0.25
+				then:
+					teleport loop-value-3 to {_spawn-loc::%loop-value-2%::%loop-counter-3%} retain passengers
+				else:
+					set loop-value-3's velocity to vector(0,0,0)
+
+		mod(loop-value+19, 20) = 0:
+			send title "&c&lDUEL" with subtitle "&7Starting in &e%4 - ((loop-value+19) / 20)%s" to {_all-players::*}
+			play sound "block.note_block.pling" at volume 10 to {_all-players::*}
+		wait 1 tick
+	
+	send title "&c&lDUEL" with subtitle "&eFight!" to {_all-players::*} for 1 second
+	play sound "entity.ender_dragon.growl" at volume 10 to {_all-players::*}
+	
+	loop "red" and "blue":
+		loop {_%loop-value%::*}:
+			set {_v} to vector from {_spawn-loc::%loop-value-1%::%loop-counter-2%} to location 10 above and 30 infront of {_spawn-loc::%loop-value-1%::%loop-counter-2%}
+			set {_v}'s vector length to 1.25
+			set loop-value-2's velocity to {_v}
+
+
+	wait 5 seconds
+	loop {_red::*}:
+		if loop-value is connected:
+			set {_connected::red} to true
+	loop {_blue::*}:
+		if loop-value is connected:
+			set {_connected::blue} to true
+	if any:
+		{_connected::red} != true
+		{_connected::blue} != true
+	then:
+		endDuel({_id}, "timeout")
+		stop
+	clear {_connected::*}
+	
+	loop 9 times:
+		wait 20 seconds
+		stop if {duel-id} != {_id}
+		
+		loop {_red::*}:
+			if loop-value-2 is connected:
+				set {_connected::red} to true
+		loop {_blue::*}:
+			if loop-value-2 is connected:
+				set {_connected::blue} to true
+		if any:
+			{_connected::red} != true
+			{_connected::blue} != true
+		then:
+			endDuel({_id}, "timeout")
+			stop
+		clear {_connected::*}
+
+
+	# ==============================================================
+	#	World Border
+	if any:
+		{duel-id} != {_id}
+		(all players in radius 100 of {_loc::0} where [input's gamemode = adventure]) isn't set
+	then:
+		stop
+	
+
+	set {duel-border} to a virtual worldborder:
+		set worldborder radius to 62
+		set world border center of event-worldborder to location(0, 80, 1000, world "runeblade")
+
+		set world border warning time to 1 second
+		set world border warning distance to 3
+		set world border damage amount to 1
+		set world border damage buffer to 0
+
+	shrink {duel-border}'s diameter to 15 over 90 seconds
+	add {_red::*} and {_blue::*} to {duel-border}
+	# ==============================================================
+
+	wait 90 seconds
+	
+	# ==============================================================
+	#	Timeout Warning
+	if any:
+		{duel-id} != {_id}
+		(all players in radius 100 of {_loc::0} where [input's gamemode = adventure]) isn't set
+	then:
+		stop
+
+	set {_nearby::*} to all players in radius 100 of {_loc::0}
+	send "" to {_nearby::*}
+	send "&c&l  DUEL &8» &7Time Remaining: &e30s" to {_nearby::*}
+	send "" to {_nearby::*}
+	play sound "block.note_block.harp" to {_nearby::*}
+	# ==============================================================
+
+	wait 30 seconds
+
+	# ==============================================================
+	#	Timeout
+	if any:
+		{duel-id} != {_id}
+		(all players in radius 100 of {_loc::0} where [input's gamemode = adventure]) isn't set
+	then:
+		stop
+	# ==============================================================
+	reset {duel-border}
+	remove {_red::*} and {_blue::*} from {duel-border}
+	endDuel({_id}, "timeout")
+
+
+
+
+
+
+
+
+
+# ID should be unnecessary, since you fetch it directly from the player anyways
+#	add some error clause so if ID is unset it resets everything
+#	disallow accepting a duel if you're in a dungeon
+
+function dieInDuel(attacker: player, victim: player):
+
+	set {_id} to {-tempdata::%uuid of {_victim}%::duel::id} ? {-tempdata::%uuid of {_attacker}%::duel::id} ? {duel-id}
+
+	if {-duel::%{_id}%::red::*} contains {_attacker}:
+		set {_team::attacker} to "&c&lRED &c"
+		set {_raw::attacker} to "red"
+	else:
+		set {_team::attacker} to "&9&lBLUE &9"
+		set {_raw::attacker} to "blue"
+
+	if {-duel::%{_id}%::red::*} contains {_victim}:
+		set {_team::victim} to "&c&lRED &c"
+		set {_raw::victim} to "red"
+	else:
+		set {_team::victim} to "&9&lBLUE &9"
+		set {_raw::victim} to "blue"
+	
+
+	if all:
+		size of {-duel::%{_id}%::red::*} = 1
+		size of {-duel::%{_id}%::blue::*} = 1
+	then:
+		set {_team::attacker} and {_team::victim} to "&e"
+
+	
+
+	clear {-tempdata::%uuid of {_victim}%::duel::*}
+
+	# no teammates left? -> end duel
+	if size of {-duel::%{_id}%::%{_raw::victim}%::*} where [{-tempdata::%uuid of input%::duel::in-duel} is set] = 0:
+		endDuel({_id}, "kill", {_raw::attacker})
+		stop
+	else:
+		set {_size} to size of {-duel::%{_id}%::%{_raw::victim}%::*}
+		set {_size2} to size of {-duel::%{_id}%::%{_raw::victim}%::*} where [{-tempdata::%uuid of input%::duel::in-duel} is set]
+
+	if {_attacker} is alive:
+		set {_msg} to "&cSlain by &f%name of {_attacker}%"
+	send title "<##ff2458>☠" with subtitle ({_msg} ? "") to {_victim} for 2.5 seconds
+
+	set {_all-players::*} to {-duel::%{_id}%::red::*} and {-duel::%{_id}%::blue::*} and console
+
+	send "" to {_all-players::*}
+	send "&c&l DUEL &8» %{_team::victim}%%{_victim}% &7was defeated by %{_team::attacker}%%{_attacker}%&7!" to {_all-players::*}
+	send "" to {_all-players::*}
+
+	play sound "entity.experience_orb.pickup" at pitch 1 to {-duel::%{_id}%::%{_raw::attacker}%::*}
+	play sound "entity.experience_orb.pickup" at pitch 0.5 to {-duel::%{_id}%::%{_raw::attacker}%::*}
+
+	wait 3 seconds
+	clear {_victim}'s spectator target
+	teleport {_victim} to location(0, 84, 1000, world "runeblade", 0, 0) retain passengers
+
+
+
+
+function endDuel(id: number, reason: string="kill", winner: string="red"):
+
+	set {_red::*} to {-duel::%{_id}%::red::*}
+	set {_blue::*} to {-duel::%{_id}%::blue::*}
+
+	if (size of {_red::*}) + (size of {_blue::*}) = 0:
+		# to avoid N/A & N/A's duel timed out! spam
+		stop
+
+	if all:
+		size of {_red::*} = 1
+		size of {_blue::*} = 1
+	then:
+		set {_col::red} and {_col::blue} to "&e"
+	else:
+		set {_col::red} to "&c"
+		set {_col::blue} to "&9"
+
+	set {_disp::red::*} to "%{_col::red}%%{_red::*} ? "N/A"%"
+	set {_disp::blue::*} to "%{_col::blue}%%{_blue::*} ? "N/A"%"
+	replace all "," in {_disp::red::*} with "&7,%{_col::red}%"
+	replace all "," in {_disp::blue::*} with "&7,%{_col::blue}%"
+	replace all "and" in {_disp::red::*} with "&7and%{_col::red}%"
+	replace all "and" in {_disp::blue::*} with "&7and%{_col::blue}%"
+	
+
+	loop "red" and "blue":
+		loop {_%loop-value%::*}:
+			if {-tempdata::%uuid of loop-value-2%::duel::in-duel} = true:
+				set {_hp} to "&8(&c%loop-value-2's health% ❤&8)"
+			else:
+				set {_hp} to "&8(&4&lDEAD&8)"
+			replace all "%loop-value-2%" in {_disp::%loop-value-1%::*} with "%loop-value-2% %{_hp}%"
+			add 0.1 to {-tempdata::%uuid of loop-value-2%::duel::id} # to fail checks in startDuel() for TIMEOUT, WORLDBORDER, etc.
+
+	if {_winner} = "red":
+		set {_loser} to "blue"
+	else:
+		set {_loser} to "red"
+
+	if {_reason} = "timeout":
+		broadcast ""
+		broadcast "&c&l DUEL &8» &e%{_disp::%{_winner}%::*}% &7and &e%{_disp::%{_loser}%::*}%&7's duel has timed out!"
+		broadcast ""
+		play sound "block.note_block.didgeridoo" at volume 10 at pitch 0.5 to {_red::*}, {_blue::*} and all players in radius 100 of {_loc::0}
+		postEmbed({_%{_winner}%::1}, uncolored "%{_disp::%{_winner}%::*}% and %{_disp::%{_loser}%::*}%'s duel has timed out!", "FFDB24", "1140453816601427989")
+		postEmbed({_%{_winner}%::1}, uncolored "%{_disp::%{_winner}%::*}% and %{_disp::%{_loser}%::*}%'s duel has timed out!", "FFDB24", "1294824268722470973")
+	else if {_reason} = "kill":
+		broadcast ""
+		broadcast "&c&lDUEL &8» &d%{_disp::%{_winner}%::*}% &7defeated &d%{_disp::%{_loser}%::*}% &7in a duel!"
+		broadcast ""
+		play sound "ui.toast.challenge_complete" at volume 10 at pitch 2 to {_red::*}, {_blue::*} and all players in radius 100 of {_loc::0}
+		postEmbed({_%{_loser}%::1}, uncolored "%{_disp::%{_loser}%::*}% was defeated by %{_disp::%{_winner}%::*}% in a duel!", "FFDB24", "1140453816601427989")
+		postEmbed({_%{_loser}%::1}, uncolored "%{_disp::%{_loser}%::*}% was defeated by %{_disp::%{_winner}%::*}% in a duel!", "FFDB24", "1294824268722470973")
+	
+	wait 2.9 seconds
+
+	loop all entities in radius 150 of location(0, 80, 1000, world "runeblade", 0, 0):
+		byte tag "display" of custom nbt of loop-entity = 1
+		kill loop-entity
+	
+	wait 0.1 seconds
+
+	set {_nearby::*} to all players in radius 150 of location(0, 80, 1000, world "runeblade", 0, 0)
+
+	teleport {_nearby::*} to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers
+	play sound "entity.enderman.teleport" to {_nearby::*}
+
+	loop {_nearby::*}:
+		set loop-value's gamemode to adventure
+		apply infinite weakness 255 to loop-value:
+			hide the particles
+		heal loop-value
+		clearCombat(loop-value)
+	loop {_red::*} and {_blue::*}:
+		clear {-tempdata::%uuid of loop-value%::duel::*}
+	
+
+	clear {-duel::%{_id}%::*}, {-duel::%{_id}%::red::*} and {-duel::%{_id}%::blue::*}
+
+
+
+
+
+function spectateDuel(p: player):
+
+	{-tempdata::%uuid of {_p}%::combatlog} isn't set
+	distance between {_p} and location(0, 84, 1000, world "runeblade", 0, 0) > 150
+
+	if (all players where [{-tempdata::%uuid of input%::duel::in-duel} is set]) is not set:
+		send "%prefix()% &7There's no duel to spectate!" to {_p}
+		play sound "block.note_block.pling" at pitch 0.5 to {_p}
+		stop
+
+	set {_p}'s gamemode to spectator
+	teleport {_p} to location(0, 84, 1000, world "runeblade", 0, 0) retain passengers
+	play sound "entity.enderman.teleport" to {_p}

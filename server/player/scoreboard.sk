@@ -1,0 +1,55 @@
+
+options:
+	dark_gray: <##555555>
+	gray: <##8f8f8f>
+	white: <##dbdbdb>
+	orange: <##ff9b24>
+	cyan: <##2eadd7>
+
+function score(p: player):
+
+	set {_kills} to {data::%uuid of {_p}%::kills} ? 0
+	set {_deaths} to {data::%uuid of {_p}%::deaths} ? 0
+	set {_kd} to min({data::%uuid of {_p}%::kills}, ({data::%uuid of {_p}%::kills} / {data::%uuid of {_p}%::deaths})) ? 0
+	if {data::%uuid of {_p}%::equipped::suffixes} is set:
+		set {_suffix} to " &8(%{-suffixes::%{data::%uuid of {_p}%::equipped::suffixes}%::name}%&8)"
+	else:
+		set {_suffix} to ""
+
+	set title of {_p}'s fastboard to "  {@gray}◆ {@orange}&l&nRUNE{@cyan}&l&nBLADE&r {@gray}◆  "
+	set line 1 of {_p}'s fastboard to ""
+	set line 2 of {_p}'s fastboard to "%{_p}'s prefix%%{data::%uuid of {_p}%::nickname} ? {_p}%%{_suffix}%"
+
+	if {-tempdata::%uuid of {_p}%::dungeon} is not set:
+		set line 3 of {_p}'s fastboard to ""
+		set line 4 of {_p}'s fastboard to "&8&l| {@orange}Kills: {@white}%{_kills}%"
+		set line 5 of {_p}'s fastboard to "&8&l| <##ffbf73>Deaths: {@white}%{_deaths}%"
+		set line 6 of {_p}'s fastboard to "&8&l| {@orange}KDR: {@white}%{_kd}%"
+		set line 7 of {_p}'s fastboard to ""
+		set line 8 of {_p}'s fastboard to "&8&l| %runes({data::%uuid of {_p}%::runes})%"
+		set line 9 of {_p}'s fastboard to ""
+	
+
+	else:
+
+		set {_time} to (difference between now and {-tempdata::%uuid of {_p}%::dungeon})
+		set {_time} to 99 days if {_time} isn't set
+
+		set line 3 of {_p}'s fastboard to ""
+		set line 4 of {_p}'s fastboard to "&8&l| &fPlayers in Dungeon: {@white}%size of all players where [{-tempdata::%uuid of input%::dungeon} is set]%"
+		set line 5 of {_p}'s fastboard to "&8&l| &6Time: {@white}%formatTime({_time})%"
+		set line 6 of {_p}'s fastboard to ""
+		set line 7 of {_p}'s fastboard to ""
+		set line 8 of {_p}'s fastboard to "&8&l| %runes({-tempdata::%uuid of {_p}%::shattered-runes}, true)%"
+		
+
+	if {-tempdata::%uuid of {_p}%::koth} is set:
+		set line 10 of {_p}'s fastboard to "&8&l| &6KOTH: &a%{-tempdata::%uuid of {_p}%::koth}% Points"
+	else:
+		set line 10 of {_p}'s fastboard to "&8&l| &fOnline: %size of all players%/%max players%"
+
+	set line 11 of {_p}'s fastboard to ""
+	set line 12 of {_p}'s fastboard to "&7runeblade.minehut.gg"
+
+	toggle {_p}'s fastboard on
+

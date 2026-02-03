@@ -1,0 +1,108 @@
+
+
+function packagelinkSend(p: player, name: text, num: number):
+	send "" to {_p}
+	send "%{_name}%" to {_p}
+	make console execute command "/tebex sendlink %{_p}% %{_num}%"
+	wait 1 tick
+	send "" to {_p}
+
+
+
+on command "/buy":
+	cancel event
+	openBuy(player)
+
+
+function openBuy(p: player, menu: string="main"):
+
+	play sound "ui.button.click" to {_p}
+	play sound "entity.experience_orb.pickup" at pitch 2 to {_p}
+
+	if {_menu} = "main":
+		create gui with virtual chest inventory with 5 rows named "&d&lSHOP":
+			open gui to {_p}
+			format gui slot (integers between 0 and 8) with magenta stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			
+			format gui slot 20 with flower banner pattern named "&b&lBOOSTS" with lore "", formatParagraph("Temporary server-wide boosts to help you out!"), "" with all item flags:
+				openBuy({_p}, "boosts")
+			format gui slot 22 with golden helmet named "&e&lRANKS" with lore "", formatParagraph("Server ranks with unique perks!"), "" with all item flags:
+				openBuy({_p}, "ranks")
+			format gui slot 24 with diamond named "&a&lOTHER" with lore "", formatParagraph("Other features & packages!"), "" with all item flags:
+				openBuy({_p}, "other")
+
+
+	else if {_menu} = "boosts":
+		create gui with virtual chest inventory with 5 rows named "&d&lSHOP &8» &b&lBOOSTS":
+			open gui to {_p}
+			format gui slot (integers between 0 and 8) with light blue stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			
+			format gui slot 22 with flower banner pattern named "&e1x Scroll of Rune Boosting" with lore "", formatParagraph("Gain a one-time &b2x &bserverwide &bRune &bBoost &7that lasts for &e1 &eHour"), "", "&7Owned Boosts: &e%{data::%uuid of {_p}%::boosts} ? 0%", "", "", "&fPrice: &a$0.99", "" with all item flags:
+				close {_p}'s inventory
+				play sound "block.note_block.pling" at pitch 2 to {_p}
+				packagelinkSend({_p}, "&e&l1x SCROLL OF RUNE BOOSTING", 6346515)
+                
+			format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu.", "" with all item flags:
+				openBuy({_p})
+
+
+
+	else if {_menu} = "ranks":
+		create gui with virtual chest inventory with 5 rows named "&d&lSHOP &8» &e&lRANKS":
+			open gui to {_p}
+			format gui slot (integers between 0 and 8) with yellow stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			
+			if {_p} has permission "group.grand":
+				set {_grand} to golden helmet named (minimessage from "<gradient:#FFEE00:#E36E0D><bold>GRAND </bold><#FFEE00>Rank") with lore "", "&a✔ &fGrand Rank Cosmetics", "&a✔ &fDaily Rune Boost &8(&e/boost&8)", "&a✔ &fCustom Armour", "&a✔ &f/nick", "&a✔ &f/chatcolor", "", "", "&fPrice: &a$7.99", "", "&dThanks for supporting the server!", ""
+			else:
+				set {_grand} to golden helmet named (minimessage from "<gradient:#FFEE00:#E36E0D><bold>GRAND </bold><#FFEE00>Rank") with lore "", "&c✘ &fGrand Rank Cosmetics", "&c✘ &fDaily Rune Boost &8(&e/boost&8)", "&c✘ &fCustom Armour", "&c✘ &f/nick", "&c✘ &f/chatcolor", "", "", "&fPrice: &a$7.99", ""
+
+
+
+			if {_p} has permission "group.emerald":
+				set {_emerald} to emerald named (minimessage from "<gradient:#0AE572:#59FFA1><bold>EMERALD </bold><#0AE572>Rank") with lore "", "&a✔ &fGrand & Emerald Rank Cosmetics", "&a✔ &fDaily Rune Boost &8(&e/boost&8)", "&a✔ &fCustom Armour", "&a✔ &f/nick", "&a✔ &f/chatcolor", "&a✔ &f/setmap", "&a✔ &f/startevent", "&a✔ &f+%runes(5000)%", "", "", "&fPrice: &a$14.99", "", "&dThanks for supporting the server!", ""
+			
+			else if {_p} has permission "group.grand":
+				set {_emerald} to emerald named (minimessage from "<gradient:#0AE572:#59FFA1><bold>EMERALD </bold><#0AE572>Rank Upgrade") with lore "", "&c✘ &fGrand & Emerald Rank Cosmetics", "&c✘ &fDaily Rune Boost &8(&e/boost&8)", "&c✘ &fCustom Armour", "&c✘ &f/nick", "&c✘ &f/chatcolor", "&c✘ &f/setmap", "&c✘ &f/startevent", "&c✘ &f+%runes(5000)%", "", "", "&fPrice: &a$6.99", "", ""
+				set {_upgrade} to true
+			else:
+				set {_emerald} to emerald named (minimessage from "<gradient:#0AE572:#59FFA1><bold>EMERALD </bold><#0AE572>Rank") with lore "", "&c✘ &fGrand & Emerald Rank Cosmetics", "&c✘ &fDaily Rune Boost &8(&e/boost&8)", "&c✘ &fCustom Armour", "&c✘ &f/nick", "&c✘ &f/chatcolor", "&c✘ &f/setmap", "&c✘ &f/startevent", "&c✘ &f+%runes(5000)%", "", "", "&fPrice: &a$14.99", "", ""
+                
+                
+                
+			format gui slot 21 with {_grand} with all item flags:
+				close {_p}'s inventory
+				play sound "block.note_block.pling" at pitch 2 to {_p}
+				packagelinkSend({_p}, (minimessage from "<gradient:#FFEE00:#E36E0D><bold>GRAND </bold><#FFEE00>RANK"), 6346146)
+			format gui slot 23 with {_emerald} with all item flags:
+				close {_p}'s inventory
+				play sound "block.note_block.pling" at pitch 2 to {_p}
+				if {_upgrade} = true:
+					set {_id} to 6516251
+				else:
+					set {_id} to 6516244
+				packagelinkSend({_p}, (minimessage from "<gradient:#0AE572:#59FFA1><bold>EMERALD </bold><#0AE572>RANK"), {_id})
+
+
+			format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu.", "" with all item flags:
+				openBuy({_p})
+
+
+
+
+	else if {_menu} = "other":
+		create gui with virtual chest inventory with 5 rows named "&d&lSHOP &8» &a&lOTHER":
+			open gui to {_p}
+			format gui slot (integers between 0 and 8) with lime stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			
+			format gui slot 22 with lime dye named "&a1x Custom Weapon Colour" with lore "", formatParagraph("Create a &bcustom &bweapon &bcolour &bpalette &7for 1 Primary or Secondary weapon, unique to you."), "", "&7Requires contacting the Owner.", "", "", "&fPrice: &a$4.99", "" with all item flags:
+				close {_p}'s inventory
+				play sound "block.note_block.pling" at pitch 2 to {_p}
+				packagelinkSend({_p}, "&a&l1x CUSTOM WEAPON COLOUR", 6516268)
+                
+			format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu.", "" with all item flags:
+				openBuy({_p})

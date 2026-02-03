@@ -1,0 +1,117 @@
+
+command /stats [<text>]:
+	trigger:
+		if arg-1 is not set:
+			set {_p} to player
+		else:
+			set {_p} to offlineplayer(arg-1, false)
+		if {_p} is not set:
+			send "%prefix()% &f%arg-1% &7has never played before!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+			stop
+            
+		if executor is a player:
+			openStats(player, {_p})
+		
+		else:
+			set {_kills} to {data::%uuid of {_t}%::kills} ? 0
+			set {_deaths} to {data::%uuid of {_t}%::deaths} ? 0
+			set {_kd} to min({data::%uuid of {_t}%::kills}, ({data::%uuid of {_t}%::kills} / {data::%uuid of {_t}%::deaths})) ? 0
+
+			set {_runes} to runes({data::%uuid of {_t}%::runes})
+			set {_time} to formatTime(time played of {_t})
+            
+			send "%{_kills}% Kills | %{_deaths}% Deaths | %{_kd}% KDR" to console
+			send "%{_runes}% Runes | %{_time}% Time Played" to console
+			
+            
+		
+
+
+on tab complete of "/stats":
+	set tab completions of position 1 to all players
+
+
+
+function openStats(p: player, t: offlineplayer):
+
+	#if {_t} has not played before:
+	#	send "%prefix()% &f%{_t}% &7has never played before!" to {_p}
+	#	play sound "block.note_block.pling" at pitch 0.5 to {_p}
+	#	stop
+
+	create gui with virtual chest inventory with 5 rows named "&9&l   STATS &8» &f%{_t}%":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with blue stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		set {_prefix} to {_t}'s prefix ? ""
+		
+		run 0 ticks later:
+			format gui slot 4 with skull of {_t} named "&f%{_prefix}%%{_t}%" with lore "&8sᴛᴀᴛs", ""
+
+
+		loop items in {_t}'s inventory where [byte tag "weapon" of custom nbt of input = 1]:
+			if byte tag "primary" of custom nbt of loop-value = 1:
+				set {_primary} to loop-value
+			else if byte tag "secondary" of custom nbt of loop-value = 1:
+				set {_secondary} to loop-value
+		
+		set {_null} to gray dye named "&7No Primary Found" with lore "", formatParagraph("They don't have a primary weapon equipped! This player either has no weapons equipped right now or is offline."), "" with all item flags
+		format gui slot 19 with {_primary} ? {_null}
+		set {_null} to gray dye named "&7No Secondary Found" with lore "", formatParagraph("They don't have a secondary weapon equipped! This player either has no weapons equipped right now or is offline."), "" with all item flags
+		format gui slot 20 with {_secondary} ? {_null}
+
+		set {_kills} to {data::%uuid of {_t}%::kills} ? 0
+		set {_deaths} to {data::%uuid of {_t}%::deaths} ? 0
+		set {_kd} to min({data::%uuid of {_t}%::kills}, ({data::%uuid of {_t}%::kills} / {data::%uuid of {_t}%::deaths})) ? 0
+
+		
+		set {_weapon-size} to size of (indices of {-weapons::*} where [{-weapons::%input%::hidden} != true])
+		set {_owned} to min((size of {data::%uuid of {_t}%::weapons::*}+4), {_weapon-size})
+
+		set {_runes} to runes({data::%uuid of {_t}%::runes})
+		set {_completed-challenges} to ((size of {data::%uuid of {_t}%::challenges::*}) / (size of indices of {-challenges::*}))*100
+		set {_completed-challenges-str} to "%(size of {data::%uuid of {_t}%::challenges::*})%/%(size of indices of {-challenges::*})%"
+		set {_owned-weapons} to (({_owned}) / ({_weapon-size}))*100
+		set {_owned-weapons-str} to "%({_owned})%/%({_weapon-size})%" # +4 = rubi, gild, shimmer and resonance
+		set {_time} to formatTime(time played of {_t})
+		
+		format gui slot 22 with lectern named "&dPlayer Stats" with lore "&8sᴛᴀᴛs", "", "<##ff9b24>Kills: <##dbdbdb>%{_kills}%", "<##ffbf73>Deaths: <##dbdbdb>%{_deaths}%", "<##ff9b24>KDR: <##dbdbdb>%{_kd}%", "", {_runes}, "", "&cWeapons Owned: &f%{_owned-weapons-str}% &8(&e%{_owned-weapons}%%%&8)", "<##FFED16>Challenges: &f%{_completed-challenges-str}% &8(&e%{_completed-challenges}%%%&8)", "&aTime Played: &f%{_time}%", "" with all item flags
+
+
+		set {_ind::*} to sorted indices of {data::%uuid of {_t}%::kills::*} in descending order
+		loop {_ind::*}:
+			mod(loop-value, 2) = 0:
+				set {_mod} to "&6"
+			else:
+				set {_mod} to "&e"
+			
+
+			if {-weapons::%loop-value%::name} is set:
+				set {_target-ind} to loop-counter
+				set {_name} to {-weapons::%loop-value%::name}
+			else:
+				set {_target-ind} to loop-counter + 50
+				set {_name} to "&e&n%{-attunements::%loop-value%::name}%"
+
+				#{_divider} isn't set
+				#add "" to {_kills::*}
+				#set {_divider} to true
+
+			set {_kills::%{_target-ind}%} to "%{_name}%&8 » %{_mod}%%{data::%uuid of {_t}%::kills::%loop-value%} ? 0%"
+
+		format gui slot 23 with enchanted book named "&cWeapon Stats" with lore "&8sᴛᴀᴛs", "", ({_kills::*} ? "&7No available kill records."), ""
+
+
+		set {_skill} to {data::%uuid of {_t}%::equipped::skills}
+		set {_item} to {-skills::%{_skill}%::item}
+		set {_name} to {-skills::%{_skill}%::name}
+		set {_desc::*} to formatParagraph({-skills::%{_skill}%::desc})
+
+		if {_skill} is set:
+			set {_skill} to ({-skills::%{_skill}%::item} named {_name} with lore "&8sᴋɪʟʟ", "", {_desc::*}, "", "" with all item flags)
+		else:
+			set {_skill} to gray dye named "&7No skill equipped." with lore "", formatParagraph("This player doesn't have a skill equipped!"), formatParagraph("Equip skills at the Skills shop in spawn.") and "" with all item flags
+		
+		format gui slot 25 with {_skill}

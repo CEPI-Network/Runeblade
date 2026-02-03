@@ -1,0 +1,384 @@
+
+on load:
+	loop indices of {-colours::*}:
+		clear {-colours::%loop-value%::*}
+	clear {-colours::*}
+
+	locally suppress variable save warnings
+	loadColours()
+
+function loadColours():
+
+	set {_i} to iron sword
+	set item model of {_i} to "rubishine"
+	registerColour("&c&lRubishine", {_i}, 1, (rgb(255,63,81), rgb(191,32,48), rgb(133,22,32)), 0, true, ("sapphire" and "golden"))
+	registerColour("&c&lRubishine", {_i}, 2, (rgb(168,168,168), rgb(80,80,80), rgb(40,40,40)), 0, true, ("sapphire" and "golden"))
+	registerColour("&c&lRubishine", {_i}, 3, (rgb(253,131,116), rgb(252,100,91), rgb(252,71,77)), 0, true, ("sapphire" and "golden"))
+	
+	set {_i} to iron sword
+	set item model of {_i} to "rubishine-sapphire"
+	registerColour("&c&lRubishine &8» <##3f8eff>&lSAPPHIRE", {_i}, 1, (rgb(63,142,255), rgb(32,98,191), rgb(22,67,133)), 150, false)
+	registerColour("&c&lRubishine &8» <##3f8eff>&lSAPPHIRE", {_i}, 2, (rgb(168,168,168), rgb(80,80,80), rgb(40,40,40)), 150, false)
+	registerColour("&c&lRubishine &8» <##3f8eff>&lSAPPHIRE", {_i}, 3, (rgb(117,165,255), rgb(77,147,255), rgb(51,149,255)), 150, false)
+	
+	set {_i} to iron sword
+	set item model of {_i} to "rubishine-golden"
+	registerColour("&c&lRubishine &8» <#F2CB05>&lGOLDEN", {_i}, 1, (rgb(242,203,5), rgb(242,184,75), rgb(217,139,72)), 20000, true)
+	registerColour("&c&lRubishine &8» <#F2CB05>&lGOLDEN", {_i}, 2, (rgb(217,139,72), rgb(166,71,36), rgb(72,44,33)), 20000, true)
+	registerColour("&c&lRubishine &8» <#F2CB05>&lGOLDEN", {_i}, 3, (rgb(255,213,0), rgb(242,203,5), rgb(242,184,75)), 20000, true)
+    
+
+	set {_i} to golden sword
+	set item model of {_i} to "gilded_greatsword"
+	registerColour("<##FCDB47>&lGilded Greatsword", {_i}, 1, (rgb(255,220,63), rgb(191,161,32), rgb(133,113,22)), 0, true, "demon")
+	registerColour("<##FCDB47>&lGilded Greatsword", {_i}, 2, (rgb(177,134,203), rgb(88,48,112), rgb(44,24,56)), 0, true, "demon")
+	registerColour("<##FCDB47>&lGilded Greatsword", {_i}, 3, (rgb(255,220,63), rgb(191,161,32), rgb(133,113,22)), 0, true, "demon")
+	registerColour("<##FCDB47>&lGilded Greatsword", {_i}, 4, (rgb(208,105,244), rgb(114,0,152), rgb(60,5,82)), 0, true, "demon")
+
+	set {_i} to golden sword
+	set item model of {_i} to "gilded_greatsword-demon"
+	registerColour("<##FCDB47>&lGilded Greatsword &8» <##c82525>&lDEMON", {_i}, 1, (rgb(200, 37, 37), rgb(184, 61, 61), rgb(75, 25, 25)), 150, false)
+	registerColour("<##FCDB47>&lGilded Greatsword &8» <##c82525>&lDEMON", {_i}, 2, (rgb(35, 35, 35), rgb(75, 25, 25), rgb(20, 20, 20)), 150, false)
+	registerColour("<##FCDB47>&lGilded Greatsword &8» <##c82525>&lDEMON", {_i}, 3, (rgb(200, 37, 37), rgb(184, 61, 61), rgb(75, 25, 25)), 150, false)
+	registerColour("<##FCDB47>&lGilded Greatsword &8» <##c82525>&lDEMON", {_i}, 4, (rgb(35, 35, 35), rgb(184, 61, 61), rgb(20, 20, 20)), 150, false)
+
+
+	set {_i} to diamond sword
+	set item model of {_i} to "shimmerfang"
+	registerColour("<##3BD7EE>&lShimmerfang", {_i}, 1, (rgb(219, 219, 219), cyan, rgb(219, 219, 219)), 0, true, ("aurora", "skyburn", "democracy"))
+	registerColour("<##3BD7EE>&lShimmerfang", {_i}, 2, (rgb(85, 201, 255), rgb(172, 229, 255)), 0, true, ("aurora", "skyburn", "democracy"))
+
+	set {_i} to diamond sword
+	set item model of {_i} to "shimmerfang-aurora"
+	registerColour("<##3BD7EE>&lShimmerfang &8» <##1dc690>&lAURORA", {_i}, 1, (rgb(29, 198, 144), rgb(0, 178, 164), rgb(1, 88, 105)), 150, false)
+	registerColour("<##3BD7EE>&lShimmerfang &8» <##1dc690>&lAURORA", {_i}, 2, (rgb(222, 109, 223), rgb(159, 82, 211)), 150, false)
+
+	set {_i} to diamond sword
+	set item model of {_i} to "shimmerfang-skyburn"
+	set {_grad} to minimessage from "<gradient:#2894d8:#d80000><bold>SKYBURN"
+	registerColour("<##3BD7EE>&lShimmerfang &8» %{_grad}%", {_i}, 1, (rgb(41, 149, 217), rgb(41, 118, 232), rgb(45, 95, 187)), 20000, true)
+	registerColour("<##3BD7EE>&lShimmerfang &8» %{_grad}%", {_i}, 2, (rgb(201, 0, 50), rgb(201, 18, 114), rgb(190, 63, 167)), 20000, true)
+
+	set {_i} to diamond sword
+	set item model of {_i} to "shimmerfang-democracy"
+	registerColour("<##3BD7EE>&lShimmerfang &8» <#F05454>&lDemocracy", {_i}, 1, (rgb(240, 84, 84), rgb(194, 60, 60), rgb(132, 36, 40)), 20000, true)
+	registerColour("<##3BD7EE>&lShimmerfang &8» <#F05454>&lDemocracy", {_i}, 2, (rgb(245, 245, 245), rgb(48, 71, 94), rgb(200, 200, 200)), 20000, true)
+
+	set {_i} to netherite hoe
+	set item model of {_i} to "bladerender"
+	registerColour("<##7D53FF>&lBladerender", {_i}, 1, (rgb(125,83,255), rgb(82,50,191), rgb(58,34,133)), 0, true, "cherry")
+	registerColour("<##7D53FF>&lBladerender", {_i}, 2, (rgb(101,101,101), rgb(48,48,48), rgb(25,25,25)), 0, true, "cherry")
+	registerColour("<##7D53FF>&lBladerender", {_i}, 3, (rgb(117,58,255), rgb(101,45,255), rgb(81,35,255)), 0, true, "cherry")
+
+	set {_i} to netherite hoe
+	set item model of {_i} to "bladerender-cherry"
+	registerColour("<##7D53FF>&lBladerender &8» <##f7a5d7>&lCHERRY", {_i}, 1, (rgb(246, 130, 197), rgb(222, 108, 164), rgb(165, 74, 109)), 200, false)
+	registerColour("<##7D53FF>&lBladerender &8» <##f7a5d7>&lCHERRY", {_i}, 2, (rgb(128, 128, 128), rgb(57, 57, 57), rgb(29, 29, 29)), 200, false)
+	registerColour("<##7D53FF>&lBladerender &8» <##f7a5d7>&lCHERRY", {_i}, 3, (rgb(246, 139, 198), rgb(245, 126, 194), rgb(246, 117, 198)), 200, false)
+
+
+	set {_i} to iron axe
+	set item model of {_i} to "earthshaker"
+	registerColour("<##43F53E>&lEarthshaker", {_i}, 1, (rgb(63,255,185), rgb(40,100,40), rgb(30,30,30)), 0, true, ("molten", "toadshaker"))
+	registerColour("<##43F53E>&lEarthshaker", {_i}, 2, (rgb(67,245,62), rgb(45,100,45), rgb(25,25,23)), 0, true, ("molten", "toadshaker"))
+	registerColour("<##43F53E>&lEarthshaker", {_i}, 3, (rgb(100,100,100), rgb(70,70,70), rgb(30,30,30)), 0, true, ("molten", "toadshaker"))
+	registerColour("<##43F53E>&lEarthshaker", {_i}, 4, (rgb(63,255,185), rgb(50,100,50), rgb(30,30,30)), 0, true, ("molten", "toadshaker"))
+
+	set {_i} to iron axe
+	set item model of {_i} to "earthshaker-molten"
+	registerColour("<##43F53E>&lEarthshaker &8» <##fca722>&lMOLTEN", {_i}, 1, (rgb(252, 167, 34), rgb(249, 75, 7), rgb(71, 17, 14)), 200, false)
+	registerColour("<##43F53E>&lEarthshaker &8» <##fca722>&lMOLTEN", {_i}, 2, (rgb(255, 180, 0), rgb(246, 103, 0), rgb(46, 0, 0)), 200, false)
+	registerColour("<##43F53E>&lEarthshaker &8» <##fca722>&lMOLTEN", {_i}, 3, (rgb(84, 57, 70), rgb(47, 35, 41), rgb(21, 17, 19)), 200, false)
+	registerColour("<##43F53E>&lEarthshaker &8» <##fca722>&lMOLTEN", {_i}, 4, (rgb(255, 180, 0), rgb(246, 103, 0), rgb(46, 0, 0)), 200, false)
+	
+	set {_i} to iron axe
+	set item model of {_i} to "earthshaker-toadshaker"
+	registerColour("<##43F53E>&lEarthshaker &8» &f&lTOADSHAKER", {_i}, 1, (rgb(221, 100, 71), rgb(252, 248, 252), rgb(228, 210, 207)), 20000, true)
+	registerColour("<##43F53E>&lEarthshaker &8» &f&lTOADSHAKER", {_i}, 2, (rgb(221, 100, 71), rgb(182, 72, 64), rgb(125, 49, 44)), 20000, true)
+	registerColour("<##43F53E>&lEarthshaker &8» &f&lTOADSHAKER", {_i}, 3, (rgb(221, 100, 71), rgb(252, 248, 252), rgb(228, 210, 207)), 20000, true)
+	registerColour("<##43F53E>&lEarthshaker &8» &f&lTOADSHAKER", {_i}, 4, (rgb(221, 100, 71), rgb(182, 72, 64), rgb(125, 49, 44)), 20000, true)
+
+	set {_i} to stone sword
+	set item model of {_i} to "hellbent_dagger"
+	registerColour("<##FF6D3F>&lHellbent Dagger", {_i}, 1, (rgb(255,109,63), rgb(191,69,32), rgb(30,30,30)), 0, true, "ignition")
+	registerColour("<##FF6D3F>&lHellbent Dagger", {_i}, 2, (rgb(255,178,80), rgb(255,121,27), rgb(40,40,40)), 0, true, "ignition")
+	registerColour("<##FF6D3F>&lHellbent Dagger", {_i}, 3, (rgb(255,109,63), rgb(191,69,32), rgb(30,30,30)), 0, true, "ignition")
+	registerColour("<##FF6D3F>&lHellbent Dagger", {_i}, 4, (rgb(255,178,80), rgb(255,155,51), rgb(255,121,27)), 0, true, "ignition")
+
+	set {_i} to stone sword
+	set item model of {_i} to "hellbent_dagger-ignition"
+	registerColour("<##FF6D3F>&lHellbent Dagger &8» <##3fd0ff>&lIGNITION", {_i}, 1, (rgb(63, 208, 255), rgb(32, 154, 191), rgb(22, 106, 133)), 200, false)
+	registerColour("<##FF6D3F>&lHellbent Dagger &8» <##3fd0ff>&lIGNITION", {_i}, 2, (rgb(80, 80, 80), rgb(38, 38, 38), rgb(19, 19, 19)), 200, false)
+	registerColour("<##FF6D3F>&lHellbent Dagger &8» <##3fd0ff>&lIGNITION", {_i}, 3, (rgb(63, 208, 255), rgb(32, 154, 191), rgb(22, 106, 133)), 200, false)
+	registerColour("<##FF6D3F>&lHellbent Dagger &8» <##3fd0ff>&lIGNITION", {_i}, 4, (rgb(0, 132, 255), rgb(0, 107, 255), rgb(0, 150, 255)), 200, false)
+	
+	set {_i} to iron hoe
+	set item model of {_i} to "chainblade"
+	registerColour("<#556577>&lChainblade", {_i}, 1, (rgb(132, 139, 161), rgb(92, 110, 130), rgb(77, 88, 117)), 0, true, ("blood"))
+	registerColour("<#556577>&lChainblade", {_i}, 2, (rgb(132, 139, 161), rgb(91, 85, 120), rgb(95, 100, 120)), 0, true, ("blood"))
+	registerColour("<#556577>&lChainblade", {_i}, 3, (rgb(133, 140, 163), rgb(92, 110, 135), rgb(77, 88, 117)), 0, true, ("blood"))
+	registerColour("<#556577>&lChainblade", {_i}, 4, (rgb(92, 110, 135), rgb(77, 88, 117), rgb(91, 85, 120)), 0, true, ("blood"))
+
+	set {_i} to iron hoe
+	set item model of {_i} to "chainblade-blood"
+	registerColour("<#556577>&lChainblade &8» <#BD2828>&lBLOOD", {_i}, 1, (rgb(189, 40, 40), rgb(128, 37, 37), rgb(89, 26, 26)), 250, false)
+	registerColour("<#556577>&lChainblade &8» <#BD2828>&lBLOOD", {_i}, 2, (rgb(237, 50, 50), rgb(194, 23, 23), rgb(158, 25, 25)), 250, false)
+	registerColour("<#556577>&lChainblade &8» <#BD2828>&lBLOOD", {_i}, 3, (rgb(189, 40, 40), rgb(128, 37, 37), rgb(89, 26, 26)), 250, false)
+	registerColour("<#556577>&lChainblade &8» <#BD2828>&lBLOOD", {_i}, 4, (rgb(133, 17, 17), rgb(107, 30, 30), rgb(59, 13, 13)), 250, false)
+    
+
+	
+	set {_i} to iron pickaxe
+	set item model of {_i} to "crossblade"
+	registerColour("<##E2644E>&lCrossblade", {_i}, 1, (rgb(246, 241, 217), rgb(215, 198, 139), rgb(198, 186, 195), rgb(113, 62, 57)), 0, true, ("emerald", "wendigo"))
+	registerColour("<##E2644E>&lCrossblade", {_i}, 2, (rgb(250, 231, 198), rgb(219, 178, 124), rgb(189, 157, 135), rgb(86, 51, 37)), 0, true, ("emerald", "wendigo"))
+	registerColour("<##E2644E>&lCrossblade", {_i}, 3, (rgb(250, 231, 198), rgb(219, 178, 124), rgb(189, 157, 135), rgb(86, 51, 37)), 0, true, ("emerald", "wendigo"))
+	registerColour("<##E2644E>&lCrossblade", {_i}, 4, (rgb(255, 238, 195), rgb(252, 211, 137), rgb(221, 207, 197), rgb(77, 47, 40)), 0, true, ("emerald", "wendigo"))
+
+	set {_i} to iron pickaxe
+	set item model of {_i} to "crossblade-emerald"
+	registerColour("<##E2644E>&lCrossblade &8» <##2fe9ad>&lEMERALD", {_i}, 1, (rgb(47, 233,173), rgb(9, 177, 108), rgb(8, 133, 92), rgb(4, 89, 61)), 250, false)
+	registerColour("<##E2644E>&lCrossblade &8» <##2fe9ad>&lEMERALD", {_i}, 2, (rgb(216, 216, 216), rgb(150, 150, 150), rgb(99, 99, 99), rgb(30, 30, 30)), 250, false)
+	registerColour("<##E2644E>&lCrossblade &8» <##2fe9ad>&lEMERALD", {_i}, 3, (rgb(3, 209, 121), rgb(2, 143, 93), rgb(5, 118, 81), rgb(4, 89, 61)), 250, false)
+	registerColour("<##E2644E>&lCrossblade &8» <##2fe9ad>&lEMERALD", {_i}, 4, (rgb(47, 233,173), rgb(9, 177, 108), rgb(8, 133, 92), rgb(4, 89, 61)), 250, false)
+    
+	set {_i} to iron pickaxe
+	set item model of {_i} to "crossblade-wendigo"
+	registerColour("<##E2644E>&lCrossblade &8» &4&lWENDIGO", {_i}, 1, (rgb(166, 3, 33), rgb(166, 3, 17), rgb(115, 2, 12), rgb(64, 2, 7)), 20000, true)
+	registerColour("<##E2644E>&lCrossblade &8» &4&lWENDIGO", {_i}, 2, (rgb(64, 17, 17), rgb(64, 1, 1), rgb(115, 92, 92), rgb(38, 1, 1)), 20000, true)
+	registerColour("<##E2644E>&lCrossblade &8» &4&lWENDIGO", {_i}, 3, (rgb(166, 3, 33), rgb(166, 3, 17), rgb(115, 2, 12), rgb(64, 2, 7)), 20000, true)
+	registerColour("<##E2644E>&lCrossblade &8» &4&lWENDIGO", {_i}, 4, (rgb(64, 17, 17), rgb(64, 1, 1), rgb(115, 92, 92), rgb(38, 1, 1)), 20000, true)
+	
+
+
+	set {_i} to netherite sword
+	set item model of {_i} to "onimaru_pair"
+	registerColour("<##5BC0BE>&lOnimaru",{_i}, 1, (rgb(135, 247, 245), rgb(91, 192, 190), rgb(58, 58, 107)), 0, true, ("shadow", "sakura", "nichirin"))
+	registerColour("<##5BC0BE>&lOnimaru",{_i}, 2, (rgb(93, 162, 247), rgb(65, 114, 173), rgb(28, 37, 65)), 0, true, ("shadow", "sakura", "nichirin"))
+	registerColour("<##5BC0BE>&lOnimaru",{_i}, 3, (rgb(192, 231, 246), rgb(106, 159, 177), rgb(28, 48, 67)), 0, true, ("shadow", "sakura", "nichirin"))
+
+	set {_i} to netherite sword
+	set item model of {_i} to "onimaru_pair-shadow"
+	registerColour("<##5BC0BE>&lOnimaru &8» <##333333>&lSHADOW", {_i}, 1, (rgb(35, 35, 35), rgb(27, 27, 27), rgb(11, 11, 11)), 250, false)
+	registerColour("<##5BC0BE>&lOnimaru &8» <##333333>&lSHADOW", {_i}, 2, (rgb(200, 206, 199), rgb(84, 87, 88), rgb(17, 19, 21)), 250, false)
+	registerColour("<##5BC0BE>&lOnimaru &8» <##333333>&lSHADOW", {_i}, 3, (rgb(32, 32, 32), rgb(25, 25, 25), rgb(10, 10, 10)), 250, false)
+    
+	set {_i} to netherite sword
+	set item model of {_i} to "onimaru_pair-sakura"
+	registerColour("<##5BC0BE>&lOnimaru &8» <#F288B6>&lSAKURA", {_i}, 1, (rgb(255, 220, 235), rgb(242, 136, 182), rgb(240, 206, 221)), 20000, true)
+	registerColour("<##5BC0BE>&lOnimaru &8» <#F288B6>&lSAKURA", {_i}, 2, (rgb(242, 136, 182), rgb(213, 152, 178), rgb(112, 63, 84)), 20000, true)
+	registerColour("<##5BC0BE>&lOnimaru &8» <#F288B6>&lSAKURA", {_i}, 3, (rgb(255, 220, 235), rgb(242, 136, 182), rgb(240, 206, 221)), 20000, true)
+    
+	set {_i} to netherite sword
+	set item model of {_i} to "onimaru_pair-nichirin"
+	registerColour("<##5BC0BE>&lOnimaru &8» <#2575CB>&lNICHIRIN",{_i}, 1, (rgb(195, 242, 255), rgb(37, 117, 203), rgb(24, 39, 79)), 20000, true)
+	registerColour("<##5BC0BE>&lOnimaru &8» <#2575CB>&lNICHIRIN",{_i}, 2, (rgb(106, 169, 127), rgb(173, 229, 190), rgb(163, 220, 162)), 20000, true)
+	registerColour("<##5BC0BE>&lOnimaru &8» <#2575CB>&lNICHIRIN",{_i}, 3, (rgb(1, 157, 144), rgb(2, 81, 138), rgb(24, 39, 79)), 20000, true)
+
+
+
+
+	set {_i} to bow
+	set item model of {_i} to "resonance"
+	registerColour("<##3FFFB9>&lResonance", {_i}, 1, (rgb(63, 255, 185), rgb(32, 191, 132), rgb(63, 63, 63)), 0, true)
+	registerColour("<##3FFFB9>&lResonance", {_i}, 2, (rgb(63, 255, 185), rgb(55, 132, 104), rgb(36, 43, 41)), 0, true)
+	registerColour("<##3FFFB9>&lResonance", {_i}, 3, (rgb(69, 231, 151), rgb(80, 80, 80), rgb(29, 224, 115)), 0, true)
+
+
+
+	set {_i} to stick
+	set item model of {_i} to "arcanum"
+	registerColour("<##9A3FFF>&lArcanum", {_i}, 1, (rgb(223, 173, 244), rgb(168, 80, 214), rgb(105, 42, 161)), 0, true)
+	registerColour("<##9A3FFF>&lArcanum", {_i}, 2, (rgb(192, 40, 255), rgb(168, 80, 214), rgb(50, 50, 50)), 0, true)
+
+
+	set {_i} to bow
+	set item model of {_i} to "ashfire"
+	registerColour("<##FF6253>&lAshfire", {_i}, 1, (rgb(255, 98, 84), rgb(128, 108, 106), rgb(85, 70, 68)), 0, true)
+	registerColour("<##FF6253>&lAshfire", {_i}, 2, (rgb(255, 98, 84), rgb(128, 108, 106), rgb(85, 70, 68)), 0, true)
+
+
+	set {_i} to iron shovel
+	set item model of {_i} to "frostfall"
+	registerColour("<##70EDFC>&lFrostfall", {_i}, 1, (rgb(180, 245, 252), rgb(73, 196, 221)), 0, true)
+	registerColour("<##70EDFC>&lFrostfall", {_i}, 2, (rgb(210, 245, 252), rgb(180, 245, 252), rgb(210, 196, 221), rgb(73, 196, 221)), 0, true)
+	registerColour("<##70EDFC>&lFrostfall", {_i}, 3, (rgb(180, 245, 252), rgb(73, 196, 221)), 0, true)
+	registerColour("<##70EDFC>&lFrostfall", {_i}, 4, (rgb(210, 245, 252), rgb(180, 245, 252)), 0, true)
+
+
+	set {_i} to tipped arrow
+	set int tag "minecraft:potion_contents;custom_color" of nbt of {_i} to 5620757
+	set item model of {_i} to "bone_blade"
+	registerColour("<##73EE2C>&lBone Blade", {_i}, 1, (rgb(204, 255, 51), rgb(112, 224, 0), rgb(0, 128, 0)), 0, true)
+	registerColour("<##73EE2C>&lBone Blade", {_i}, 2, (rgb(204, 255, 51), rgb(112, 224, 0), rgb(0, 128, 0)), 0, true)
+
+
+	set {_i} to poppy
+	set item model of {_i} to "bloodthorn"
+	registerColour("<##CD0A1B>&lBloodthorn", {_i}, 1, (rgb(205, 10, 27), rgb(168, 36, 47), rgb(51, 37, 38)), 0, true)
+	registerColour("<##CD0A1B>&lBloodthorn", {_i}, 2, (rgb(222, 2, 17), rgb(179, 32, 42), rgb(52, 35, 36)), 0, true)
+	registerColour("<##CD0A1B>&lBloodthorn", {_i}, 3, (rgb(224, 40, 47), rgb(168, 39, 32), rgb(110, 32, 36)), 0, true)
+
+
+
+
+	# registerColour("<##A4E5FF>&lMoonveil", iron sword, 1, (rgb(153, 217, 255), rgb(130, 178, 232), rgb(211, 222, 235)), 0, true)
+
+	
+	
+
+	clear {-sorted-colours::*}
+	loop (indices of {-colours::*}) where [{-colours::%input%::hidden} != true]:
+		set {-sorted-colours::%loop-value%} to {-colours::%loop-value%::order}
+
+
+# migrate from "hellbent dagger;ignition" --> "hellbent_dagger-ignition"
+local function migrateSyst():
+	loop (indices of {data::*}) where [{data::%input%::colours::*} is set]:
+		loop {data::%loop-value%::colours::*}:
+			set {_txt} to loop-value-2
+			replace all ";" in {_txt} with "-"
+			replace all " " in {_txt} with "_"
+			set {data::%loop-value-1%::colours::%loop-counter-2%} to {_txt}
+		add 1 to {_c}
+	broadcast "%{_c} ? 0%"
+
+function migrate2():
+	loop (indices of {data::*}) where [{data::%input%::equipped::colours::*} is set]:
+		clear {data::%loop-value%::equipped::colours::*}
+
+
+
+
+function registerColour(name: text, item: item, hit: integer, col: objects, kill-req: integer, hidden: boolean=false, palettes: texts=""):
+	set {_index} to uncolored {_name} in lowercase
+	if {_index} contains "»":
+		replace all " » " in {_index} with "-"
+	replace all " " in {_index} with "_"
+
+	set {_spl::*} to {_index} split at "-"
+
+	set {_model} to item model of {_item}
+	replace all "pair" in {_model} with "main"
+
+	set {-colours::%{_index}%::name} to {_name}
+	set {-colours::%{_index}%::item} to {_item}
+	set {-colours::%{_index}%::weapon} to {_spl::1}
+	set {-colours::%{_index}%::kill-req} to {_kill-req}
+	set {-colours::%{_index}%::hidden} to {_hidden}
+	set {-colours::%{_index}%::palettes::*} to {_palettes::*}
+	set {-colours::%{_index}%::model-data} to {_model}
+	
+	# reversed -> first col brightest, last col darkest
+	loop reversed {_col::*}:
+		set {-colours::%{_index}%::%{_hit}%::%loop-counter%} to loop-value
+
+	loop (indices of {-colours::*}) where [{-colours::%input%::hidden} = false]:
+		set {_entry::%loop-counter%} to {-colours::%loop-value%::order} ? 0
+	set {-colours::%{_index}%::order} to max({_entry::*}) + 1
+
+
+
+function openWeaponColours(p: player, menu: string="main"):
+
+	create gui with virtual chest inventory with 5 rows named "&b&l      WEAPON COLOURS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with light blue stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			if {_menu} = "main":
+				openCosmetics({_p})
+			else:
+				openWeaponColours({_p}, "main")
+
+
+
+		if {_menu} = "main":
+			format gui slot 21 with golden sword named "&6&lMASTERY SKINS" with lore "", formatParagraph("Unlock weapon skins after reaching a kill requirement!"), "" with all item flags:
+				openWeaponColours({_p}, "mastery")
+			format gui slot 23 with iron pickaxe named "&d&lCUSTOM SKINS" with lore "", formatParagraph("Buy and create custom skins from our store!"), "" with all item flags:
+				openWeaponColours({_p}, "custom")
+
+		else:
+
+			set {_slot} to 12
+			if {_menu} = "mastery":			
+				set {_ind::*} to sorted indices of {-sorted-colours::*} in ascending order
+			else if {_menu} = "custom":
+				loop {data::%uuid of {_p}%::colours::*}: # paid for colours
+					indices of {-sorted-colours::*} doesn't contain loop-value
+					add loop-value to {_ind::*}
+
+			if size of {_ind::*} = 0:
+				format gui slot 22 with barrier named "&c&lNO CUSTOM SKINS" with lore "", formatParagraph("You don't own any custom skins! Buy one in the store! &8(&e/buy&8)"), "" with all item flags
+				stop
+
+			loop {_ind::*}:
+				set {_name} to {-colours::%loop-value%::name}
+				set {_item} to {-colours::%loop-value%::item}
+				set {_kill-req} to {-colours::%loop-value%::kill-req}
+				set {_weapon} to {-colours::%loop-value%::weapon}
+				set {_palettes::*} to {-colours::%{_weapon}%::palettes::*}
+
+				# don't feel like changing how weapon indices are saved EVERYWHERE for colour changes
+				set {_kill-weapon} to {_weapon}
+				replace all "_" in {_kill-weapon} with " "
+
+
+				# owns colour palette
+				if any:
+					{data::%uuid of {_p}%::kills::%{_kill-weapon}%} >= {_kill-req}
+					{data::%uuid of {_p}%::colours::*} contains loop-value
+				then:
+				
+					if {data::%uuid of {_p}%::kills::%{_kill-weapon}%} >= {_kill-req}:
+						set {_display::*} to "&fRequires: &e%{_kill-req}% %{_weapon} in strict proper case% Kills", "&fYour Kills: &a%{data::%uuid of {_p}%::kills::%{_kill-weapon}%} ? 0% &8(&a✔&8)"
+					else:
+						set {_display::*} to "&eThanks for supporting the server!"
+				
+					if loop-value contains {data::%uuid of {_p}%::equipped::colours::%{_weapon}%}:
+						enchant {_item} with unbreaking 1
+						set {_lore::*} to "&e&lCLICK TO UNEQUIP"
+					else:
+						set {_lore::*} to "&a&lCLICK TO EQUIP"
+					set {_target} to loop-value
+					format gui slot {_slot} with {_item} named {_name} with lore "&8ᴄᴏʟᴏᴜʀ sᴇᴛ", "", {_display::*}, "", "", {_lore::*} and "" with all item flags:
+						toggleCosmetic({_p}, "colours", {_target})
+						openWeaponColours({_p}, {_menu})
+				
+				else:
+					set {_lore::*} to "&c&lLOCKED"
+
+					format gui slot {_slot} with {_item} named {_name} with lore "&8ᴄᴏʟᴏᴜʀ sᴇᴛ", "", "&fRequires: &e%{_kill-req}% %{_weapon} in strict proper case% Kills", "&fYour Kills: &c%{data::%uuid of {_p}%::kills::%{_kill-weapon}%}% &8(&c✘&8)", "", "", {_lore::*} and "" with all item flags:
+						play sound "block.note_block.pling" at pitch 0.5 to {_p}
+						send "%prefix()% You don't have enough kills to equip that! &8(&7Missing &f%difference between {data::%uuid of {_p}%::kills::%{_weapon}%} and {_kill-req}%&8)" to {_p}
+							
+				
+				add 9 to {_slot}
+				mod(loop-counter, 3) = 0:
+					remove 26 from {_slot}
+
+
+
+
+
+function getWeaponColour(p: player, weapon: text) :: text:
+	# returns the index to use in {-colours::%{_index}%::hit::section}
+
+	replace all " " in {_weapon} with "_"
+
+	# no palettes exist for this weapon
+	set {_palettes::*} to {-colours::%{_weapon}%::palettes::*}
+	if any:
+		{_palettes::*} = ""
+		{_palettes::*} is not set
+	then:
+		return {_weapon} 
+
+
+	if {_palettes::*} contains {data::%uuid of {_p}%::equipped::colours::%{_weapon}%}:
+		return "%{_weapon}%-%{data::%uuid of {_p}%::equipped::colours::%{_weapon}%}%"
+	else:
+		return {_weapon}
+

@@ -1,0 +1,145 @@
+
+on load:
+	clear {-killmessages::*}
+
+	registerKillMessage("<victim> was bested by <attacker>", diamond, 500, "none")
+	registerKillMessage("<victim> was felled by <attacker>", iron axe, 500, "none")
+	registerKillMessage("<victim> was ensnared by <attacker>", vine, 1000, "none")
+	registerKillMessage("<victim> was destroyed by <attacker>", quartz, 1000, "none")
+	registerKillMessage("<victim> was conquered by <attacker>", gold ingot, 1500, "none")
+	registerKillMessage("<victim> was consumed by <attacker>", charcoal, 1500, "none")
+	registerKillMessage("<victim> was flawlessed by <attacker>", golden helmet, 3000, "none")
+
+	
+	registerKillMessage("<victim> was brought to their knees by <attacker>", filled map, 3000, "none")
+	registerKillMessage("<victim>'s light was extinguished by <attacker>", nether star, 3000, "none")
+	registerKillMessage("<victim> failed to escape <attacker>", iron chain, 5000, "none")
+	registerKillMessage("<victim>'s fate was decided by <attacker>", iron sword, 3000, "grand")
+	registerKillMessage("<victim> was krilled by <attacker>", tropical fish, 3000, "grand")
+	
+
+	clear {-sorted-kill-messages::*}
+	loop indices of {-killmessages::*}:
+		set {_entry::%loop-value%} to {-killmessages::%loop-value%::order} ? 0
+	set {-sorted-kill-messages::*} to sorted indices of {_entry::*} in ascending order
+
+
+
+
+
+function registerKillMessage(name: text, item: item, cost: integer, requires: string):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-killmessages::%{_index}%::name} to {_name}
+	set {-killmessages::%{_index}%::item} to {_item}
+	set {-killmessages::%{_index}%::cost} to {_cost}
+	set {-killmessages::%{_index}%::requires} to {_requires}
+
+
+	loop indices of {-killmessages::*}:
+		set {_entry::%loop-value%} to {-killmessages::%loop-value%::order} ? 0
+	set {-killmessages::%{_index}%::order} to max({_entry::*}) + 1
+
+
+
+function openKillMessages(p: player):
+
+	create gui with virtual chest inventory with 6 rows named "&6&l        KILL MESSAGES":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with orange stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&6&lKILL MESSAGES" with lore "", formatParagraph("Change the message shown in chat when you get a kill!") and "" with all item flags
+		format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			openCosmetics({_p})
+
+		set {_slot} to 18
+		loop {-sorted-kill-messages::*}:
+			add 1 to {_slot}
+
+			set {_name} to {-killmessages::%loop-value%::name}
+			set {_display-name} to "&7%{-killmessages::%loop-value%::name}%"
+			replace all "<victim>" in {_display-name} with "&fVictim&7"
+			replace all "<attacker>" in {_display-name} with "&e%{_p}%&7"
+			set {_item} to {-killmessages::%loop-value%::item}
+			set {_cost} to {-killmessages::%loop-value%::cost}
+			set {_requires} to {-killmessages::%loop-value%::requires}
+
+			if {data::%uuid of {_p}%::killmessages::*} contains loop-value:
+				if {data::%uuid of {_p}%::equipped::killmessages} = loop-value:
+					set {_status} to "&e&lCLICK TO UNEQUIP"
+					enchant {_item} with unbreaking 1
+				else:
+					set {_status} to "&a&lCLICK TO EQUIP"
+
+				set {_target} to loop-value
+				format gui slot {_slot} with {_item} named {_display-name} with lore "&8ᴋɪʟʟ ᴍᴇssᴀɢᴇ", "", "", {_status}, "" with all item flags:
+					toggleCosmetic({_p}, "killmessages", {_target})
+					openKillMessages({_p})
+			
+			else:
+				if ({data::%uuid of {_p}%::runes} ? 0) > {_cost}:
+					set {_status::*} to "&e&lCLICK TO PURCHASE", "", "&7Costs: %runes({_cost})%"
+				else:
+					set {_status::*} to "&c&lLOCKED", "", "&7Costs: %runes({_cost})%"
+				if {_requires} != "none":
+					add "&7Requires: &e%{_requires} in strict proper case%" to {_status::*}
+
+				format gui slot {_slot} with {_item} named {_display-name} with lore "&8ᴋɪʟʟ ᴍᴇssᴀɢᴇ", "", "", {_status::*}, "" with all item flags:
+					if {_p} doesn't have permission "group.%{_requires}%":
+						send "%prefix()% You don't meet the requirements to buy this!" to {_p}
+						play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					else:
+						buy({_p}, {_item} named {_name}, "killmessages")
+
+
+
+			mod(loop-counter, 7) = 0
+			add 3 to {_slot}
+
+
+
+
+
+function killMessage(attacker: entity, victim: entity):
+	if {data::%uuid of {_attacker}%::equipped::killmessages} is set:
+		set {_msg} to {data::%uuid of {_attacker}%::equipped::killmessages}
+	else:
+		set {_msg} to "<victim> was slain by <attacker>"
+	replace all "<victim>" in {_msg} with "&f%name of {_victim} ? {_victim}%&7"
+	replace all "<attacker>" in {_msg} with "&e%name of {_attacker} ? {_attacker}%&7"
+	{_attacker} is alive:
+		set {_msg} to "%{_msg}% &8(&c%{_attacker}'s health% ❤&8)"
+	{-tempdata::%uuid of {_attacker}%::last-used} is set:
+		set {_spl::*} to ({-tempdata::%uuid of {_attacker}%::last-used} split at " &8| ")
+		#broadcast "%raw {_spl::*}%"
+		if length of {_spl::2} > 3:
+			set {_x} to {_spl::2}
+		else:
+			set {_x} to {_spl::1}
+		set {_using} to "&7 using %{_x}%"
+	else:
+		set {_using} to ""
+
+
+	# find assists
+	set {_sort::*} to sorted indices of {-tempdata::%uuid of {_victim}%::assist::*} in descending order
+	remove uuid of {_attacker} from {_sort::*}
+	loop {_sort::*}:
+		set {_assister} to offlineplayer(loop-value)
+
+		# assist count as kill
+		if {-tempdata::%uuid of {_victim}%::assist::%loop-value%} > 8:
+			set {_assist-type::%loop-counter%} to "&e+Assist Count as Kill &8(&f%{_assister}%&8)"
+
+		# reg assist
+		else:
+			set {_assist-type::%loop-counter%} to "&e+Assist &8(&f%{_assister}%&8)"
+
+
+	set {_txt} to text component of "&c☠ &8| %{_msg}%%{_using}%"
+	set hover event of {_txt} to hover event showing {_assist-type::*}
+	broadcast component {_txt}
+
+	postEmbed({_victim}, "%uncolored {_msg}%%uncolored {_using}%", "FFDB24", "1140453816601427989")
+	postEmbed({_victim}, "%uncolored {_msg}%%uncolored {_using}%", "FFDB24", "1294824268722470973")

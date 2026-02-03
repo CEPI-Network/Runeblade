@@ -1,0 +1,81 @@
+
+
+on load:
+	loop indices of {-dialogue::*}:
+		clear {-dialogue::%loop-value%::*}
+	clear {-dialogue::*}
+
+
+	registerDialogue("&a&lTUTORIAL", 1, "Welcome to Runeblade!")
+	registerDialogue("&a&lTUTORIAL", 2, "To get started, go to the &cSwordsmith &7over there and get yourself some weapons.")
+	registerDialogue("&a&lTUTORIAL", 3, "You can only equip a single &cPrimary Weapon &7and &aSecondary Weapon &7at once.")
+	registerDialogue("&a&lTUTORIAL", 4, "After you've got your two weapons, head over to the &5Attunement Master&7.")
+	registerDialogue("&a&lTUTORIAL", 5, "Each weapon can be enchanted with an &5Attunement &7that gives you another ability.")
+	registerDialogue("&a&lTUTORIAL", 6, "You can swing your weapon with &eLeft-Click &7and use your &5Attunement &7with &eRight-Click&7.")
+	registerDialogue("&a&lTUTORIAL", 7, "Your weapons have cooldowns on them. You're allowed to attack faster than the cooldowns, but you'll &cdeal less damage&7.")
+	registerDialogue("&a&lTUTORIAL", 8, "Also keep in mind &5Attunements &7cost mana, which is visible in <##2eadd7>&lBLUE <##2eadd7>★ &7above your hotbar!")
+	registerDialogue("&a&lTUTORIAL", 9, "Double press your &fSPACEBAR &7to double jump, and enter the arena to get started! Good luck!")
+
+
+
+function registerDialogue(npc: text, index: integer=1, text: text):
+	set {_raw-npc} to uncolored {_npc} in lowercase
+	set {-dialogue::%{_raw-npc}%::name} to {_npc}
+	set {-dialogue::%{_raw-npc}%::%{_index}%} to {_text}
+
+
+
+
+
+
+
+
+#function prioritybar(p: player, text: text, duration: timespan):
+#	set {-tempdata::%uuid of {_p}%::priority-bar} to {_text}
+#	wait {_duration}
+#	{-tempdata::%uuid of {_p}%::priority-bar} = {_text} # don't clear different messages
+#	clear {-tempdata::%uuid of {_p}%::priority-bar}
+#	actionbar({_p})
+
+
+
+function sendDialogue(p: player, npc: text, index: string):
+	{-tempdata::%uuid of {_p}%::priority-bar} isn't set
+
+	set {_spl::*} to {_index} split at "-"
+	set {_start} to {_spl::1} parsed as integer
+	set {_end} to {_spl::2} parsed as integer
+
+	set {_raw-npc} to uncolored {_npc} in lowercase
+	set {_name} to {-dialogue::%{_raw-npc}%::name}
+
+	loop integers between {_start} and {_end}:
+
+		set {_line} to {-dialogue::%{_raw-npc}%::%loop-value%}
+		loop length of {_line} times:
+
+			set {_chars} to first loop-value-2 characters of {_line}
+			set {-tempdata::%uuid of {_p}%::priority-bar} to "%{_name}% &8» &7%{_chars}%"
+			actionbar({_p})
+
+
+			set {_char} to raw character at loop-value-2 in {_line}
+			set {_prev-char} to raw character at (loop-value-2)-1 in {_line}
+
+			# skip colour code waits
+			if any:
+				{_prev-char} = "&"
+				{_char} = "&"
+			then:
+				continue
+			else if {_char} = "<":
+				set {_wait} to false
+			else if {_char} = ">":
+				clear {_wait}
+
+			if {_wait} != false:
+				wait 1 tick
+		
+		wait "%20 + length of {_line}% ticks" parsed as timespan
+	
+	clear {-tempdata::%uuid of {_p}%::priority-bar}

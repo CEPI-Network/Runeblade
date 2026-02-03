@@ -1,0 +1,155 @@
+
+options:
+	dark_gray: <##555555>
+	gray: <##8f8f8f>
+	white: <##dbdbdb>
+	orange: <##ff9b24>
+	cyan: <##2eadd7>
+
+
+
+
+
+
+on join:
+
+	wait 1 tick
+	
+	resourcepack(player)
+	
+	loop all players:
+		score(loop-player)
+	teleport player to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers
+	if player hasn't played before:
+		broadcast "<##ff2458>🗡 &fA new fighter has entered the arena!"
+		postEmbed(player, "🗡 A new fighter has entered the arena!", "3694FE", "1140453816601427989")
+		postEmbed(player, "🗡 A new fighter has entered the arena!", "3694FE", "1294824268722470973")
+		equipArmour(player, "iron")
+		wait 1 tick
+	broadcast "&a&l+ &7%player%"
+	postEmbed(player, "+  %player%", "55FF55", "1140453816601427989")
+	postEmbed(player, "+  %player%", "55FF55", "1294824268722470973")
+
+	
+	wait 1 tick # trying to stop it from breaking when multiple ppl join at the same time
+
+	if player's inventory contains {-dungeon::bag}:
+		clear player's inventory
+		equipArmour(player)
+		send "%prefix()% You were previously in a dungeon, and so have lost your items." to player
+
+	clear {-tempdata::%uuid of player%::*}
+	set {-tempdata::%uuid of player%::max-mana} to 10
+	set {-tempdata::%uuid of player%::mana-rate} to 15 ticks
+	set player's gamemode to adventure
+	apply infinite weakness 255 to player:
+		hide particles
+		hide icon
+
+	set player's metadata "mana" to 10
+	set player's level to 0
+	set player's level progress to 0.99
+
+	applyOption(player, "game time")
+	updateSkill(player)
+
+	# hp regen regen is in updateSkill()
+	set player's food level to 10
+	set player's saturation to 0
+
+	# if they should get boosts
+	if player has permission "skript.dailyboost":
+		set {_diff} to difference between {data::%uuid of player%::daily-boost} and now
+		set {_diff} to 10 days if {data::%uuid of player%::daily-boost} is not set
+		if {_diff} >= 1 day:
+		
+			add 1 to {data::%uuid of player%::boosts}
+			send "&f+1 Daily <##2eadd7>₪ &fRune Boost" to player
+			play sound "block.note_block.pling" to player
+			set {data::%uuid of player%::daily-boost} to now
+
+
+	while player is online:
+		player's metadata "mana" < {-tempdata::%uuid of player%::max-mana}:
+			set player's metadata "mana" to (player's metadata "mana" + 1)
+		actionbar(player)
+		
+		{-tempdata::%uuid of player%::dungeon} is set:
+			mod(loop-counter, 5) = 0
+			
+			set {_time} to (difference between now and {-tempdata::%uuid of player%::dungeon})
+			set {_time} to 99 days if {_time} isn't set
+			set line 6 of player's fastboard to "&8&l| &6Time: {@white}%formatTime({_time})%"
+
+		wait {-tempdata::%uuid of player%::mana-rate}
+
+
+on leave:
+	broadcast "&c&l- &7%player%"
+	postEmbed(player, "-  %player%", "ff5555", "1140453816601427989")
+	postEmbed(player, "-  %player%", "ff5555", "1294824268722470973")
+
+	# combat log
+	set {_attacker} to {-tempdata::%uuid of player%::attacker}
+	wait 1 tick
+	if all:
+		{_attacker} is set
+		{-tempdata::%uuid of player%::duel::in-duel} is not set
+		{-tempdata::%uuid of player%::combatlog} is set
+	then:
+		add 1 to {data::%uuid of player%::deaths}
+		add 1 to {data::%uuid of {_attacker}%::kills}
+		send title "<##ff2458>🗡" with subtitle "&fKilled &e%player%" to {_attacker} for 2.5 seconds
+
+		killMessage({_attacker}, player)
+		killEffect({_attacker}, player)
+		set {_amnt} to 100
+		send "&3 + %runes({_amnt})%" to {_attacker}
+		add {_amnt} to {data::%uuid of {_attacker}%::runes}
+
+		# challenges
+		set {_spl::*} to (uncolored {-tempdata::%uuid of {_attacker}%::last-used} in lowercase) split at " | "
+		{_spl::2} != "": # attunement is being used
+			# function checks for valid challenge objectives already
+			progressChallenge({_attacker}, {_spl::2}, 1)
+			add 1 to {stats::%last element out of {_spl::*}%::kills}
+		else:
+			add 1 to {stats::%first element out of {_spl::*}%::kills}
+		
+		loop (10, 30, 50, 100):
+			{data::%uuid of {_attacker}%::kills} = loop-value:
+				completeChallenge({_attacker}, "get %loop-value% kills")
+
+		remove regeneration from {_attacker}
+		apply regeneration 3 to {_attacker} for 6 seconds
+		score({_attacker})
+
+		loop {-tempdata::%uuid of player%::assist::*}:
+			send title "" with subtitle "&fAssist: &e%player%" to loop-value for 1.5 seconds
+			apply regeneration 2 to loop-value for 2 seconds
+			send "&3 + %runes(25)%" to loop-value
+			add 25 to {data::%uuid of loop-value%::runes}
+
+
+
+
+	# QUEUES
+	if {-dungeon::queue::*} contains player:
+		leaveDungeonQueue(player)
+		clear player's inventory
+	if {-queue::teamduel::*} contains player:
+		toggleTeamDuelQueue(player)
+	
+		
+
+
+
+
+
+
+	clear {-tempdata::%uuid of player%::*}
+	wait 1 tick
+	loop all players:
+		score(loop-player)
+	
+

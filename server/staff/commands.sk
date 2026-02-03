@@ -1,0 +1,322 @@
+
+
+
+
+
+
+
+on command:
+	if command = "ban" or "pardon":
+		set {_args::*} to full command split at " "
+		{_args::2} is set
+        
+		if command = "ban":
+			set {_word} to "banned"
+		else if command = "pardon":
+			set {_word} to "unbanned"
+        
+		wait 5 tick
+		postEmbed(event-commandsender, "%event-commandsender% %{_word}% %{_args::2}%", "e57d00", "1159525567297753209") # cepi reports
+		postEmbed(event-commandsender, "%event-commandsender% %{_word}% %{_args::2}%", "e57d00", "1140453886008774767") # runeblade staff
+
+
+
+
+
+
+command /broadcast [<text>]:
+	permission: op
+	trigger:
+    
+		if arg-1 is not set:
+			send "%prefix()% Specify a broadcast message!"
+			play sound "block.note_block.didgeridoo" at volume 10 at pitch 0.5 to player
+			stop
+    
+		play sound "block.note_block.pling" at volume 10 at pitch 0.5 to all players
+
+		broadcast ""
+		broadcast "%prefix()% &6&lBROADCAST&r &8» &f%arg-1%"
+		broadcast ""
+
+
+
+
+###
+command /migrate:
+	permission: op
+	trigger:
+		loop indices of {data::*} where [{data::%input%::weapons::*} contains "dragonbolt"]:
+			difference between now and last login of offlineplayer(loop-value, false) < 30 days:
+				set {data::%loop-value%::refund} to true
+			remove "dragonbolt" from {data::%loop-value%::weapons::*}
+			add 4000 to {data::%loop-value%::runes}
+            
+			set {_p} to player(loop-value)
+			if {_p} is set:
+				clear {data::%uuid of {_p}%::refund}
+				send "%prefix()% &7You have been refunded %runes(4000)% &7for <##FFF700>&lDragonbolt" to {_p}
+				play sound "entity.player.levelup" at volume 10 at pitch 0.75 to {_p}
+###
+
+
+
+
+
+
+
+
+
+
+on tab complete of "/eco":
+	set tab completions of position 1 to "add", "remove" and "set"
+	set tab completions of position 2 to "runes"
+	set tab completions of position 3 to all players
+	set tab completions of position 4 to "<number>"
+
+
+command /eco [<text>] [<text>] [<offlineplayer>] [<number>]:
+	permission: skript.admin
+	trigger:
+		if arg-2 is not set:
+			send "%prefix()% Specify a &fcurrency type &7first!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if arg-3 is not set:
+			send "%prefix()% Specify a &fplayer&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if arg-4 is not set:
+			send "%prefix()% Specify an &famount&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if ("runes") doesn't contain arg-2:
+			send "%prefix()% That's not a valid currency type!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player	
+
+		else if arg-1 = "add":
+			# add X to {data::%uuid of player%::runes}
+			add arg-4 to {data::%uuid of arg-3%::%arg-2%}
+			if arg-2 = "runes":
+				set {_amnt} to runes(arg-4)
+			else:
+				set {_amnt} to "&f%arg-4%"
+			send "%prefix()% Gave &f%arg-3% %{_amnt}%&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 2 to player
+			if arg-3 != player:
+				send "%prefix()% &f%player% &7gave you %{_amnt}%&7!" to arg-3
+				play sound "block.note_block.pling" at volume 10 at pitch 2 to arg-3
+		
+		else if arg-1 = "remove":
+			# remove X from {data::%uuid of player%::runes}
+			remove arg-4 from {data::%uuid of arg-3%::%arg-2%}
+			if arg-2 = "runes":
+				set {_amnt} to runes(arg-4)
+			else:
+				set {_amnt} to "&f%arg-4%"
+			send "%prefix()% Removed %{_amnt}% &7from &f%arg-3%&7." to player
+			play sound "block.note_block.pling" at volume 10 at pitch 2 to player
+			if arg-3 != player:
+				send "%prefix()% &f%player% &7removed %{_amnt}%&7." to arg-3
+				play sound "block.note_block.pling" at volume 10 at pitch 0.5 to arg-3
+		
+		else if arg-1 = "set":
+			# remove X from {data::%uuid of player%::runes}
+			set {_old} to {data::%uuid of arg-3%::%arg-2%}
+			set {data::%uuid of arg-3%::%arg-2%} to arg-4
+			if arg-2 = "runes":
+				set {_amnt} to runes(arg-4)
+				set {_old} to runes({_old})
+			else:
+				set {_amnt} to "&f%arg-4%"
+			send "%prefix()% Set &f%arg-3%&7's &6%arg-2% to %{_amnt}%&7! &8(&7prev. %{_old}%&8)" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 2 to player
+			if arg-3 != player:
+				send "%prefix()% &f%player% &7set your &6%arg-2% &7to %{_amnt}%&7! &8(&7prev. %{_old}%&8)" to arg-3
+				play sound "block.note_block.pling" at volume 10 at pitch 0.5 to arg-3
+		score(arg-3)
+
+
+
+
+
+on tab complete of "/unlock":
+	set tab completions of position 1 to all players	
+	set tab completions of position 2 to "add", "remove"
+	set tab completions of position 3 to "weapons", "attunements", "challenges", "armour", "suffixes", "killmessages", "killeffects", "colours"
+	set tab completions of position 4 to indices of {-%tab argument 3%::*}
+
+
+command /unlock [<offlineplayer>] [<text>] [<text>] [<text>]:
+	permission: skript.admin
+	trigger:
+		if arg-1 is not set:
+			send "%prefix()% Specify a &fplayer&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if arg-2 is not set:
+			send "%prefix()% Specify whether to &fadd&7/&fremove &7first!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if arg-3 is not set:
+			send "%prefix()% Specify an &funlock type &7first!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if arg-4 is not set:
+			send "%prefix()% Specify the &funlock&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+
+		else if ("weapons", "attunements", "challenges", "armour", "suffixes", "killmessages", "killeffects", "colours") doesn't contain arg-3:
+			send "%prefix()% That's not a valid unlock type!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else if (indices of {-%arg-3%::*}) doesn't contain arg-4:
+			send "%prefix()% That's not a valid unlock! &8(&7%arg-4%&8)" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+
+		else if arg-2 = "add":
+			if {data::%uuid of arg-1%::%arg-3%::*} contains arg-4:
+				send "%prefix()% &f%arg-1% &7already has that!" to player
+				play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+				stop
+			add arg-4 to {data::%uuid of arg-1%::%arg-3%::*}
+			send "%prefix()% Gave &f%arg-1% %{-%arg-3%::%arg-4%::name}%&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 2 to player
+			if arg-1 != player:
+				send "%prefix()% &f%player% &7gave you %{-%arg-3%::%arg-4%::name}%&7!" to arg-1
+				play sound "block.note_block.pling" at volume 10 at pitch 2 to arg-1
+		
+		else if arg-2 = "remove":
+			if {data::%uuid of arg-1%::%arg-3%::*} doesn't contain arg-4:
+				send "%prefix()% &f%arg-1% &7doesn't have that!" to player
+				play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+				stop
+			remove arg-4 from {data::%uuid of arg-1%::%arg-3%::*}
+			send "%prefix()% Removed %{-%arg-3%::%arg-4%::name}% &7from &f%arg-1%&7!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 2 to player
+			if arg-1 != player:
+				send "%prefix()% &f%player% &7removed your %{-%arg-3%::%arg-4%::name}%&7!" to arg-1
+				play sound "block.note_block.pling" at volume 10 at pitch 2 to arg-1
+
+
+
+
+
+
+
+
+
+
+
+
+command /staffchat:
+	permission: skript.staffchat
+	aliases: sc
+	trigger:
+		if {-tempdata::%uuid of player%::staffchat} isn't set:
+			set {-tempdata::%uuid of player%::staffchat} to true
+			send "<##B74BFE>&lSC &8| &7Enabled Staff Chat" to player
+			play sound "block.note_block.hat" at pitch 1.5 to player
+		else:
+			clear {-tempdata::%uuid of player%::staffchat}
+			send "<##B74BFE>&lSC &8| &7Disabled Staff Chat" to player
+			play sound "block.note_block.hat" to player
+
+
+
+command /giverank <offlineplayer> <text>:
+	permission: op
+	trigger:
+		if arg-2 = "grand":
+			set {_disp} to minimessage from "<gradient:#FFEE00:#E36E0D><bold>GRAND"
+			set {_disp-2} to " &eRank"
+		else if arg-2 = "emerald":
+			set {_disp} to minimessage from "<gradient:#0AE572:#59FFA1><bold>EMERALD"
+			set {_disp-2} to " &eRank"
+		else if arg-2 = "colour":
+			set {_disp} to "&dCustom Weapon Colour"
+			set {_disp-2} to ""
+
+		broadcast "&8&m                                                             "
+		broadcast ""
+		broadcast "&f   %arg-1% &7purchased %{_disp} ? "&cError"%%{_disp-2}%&7!"
+		broadcast ""
+		broadcast "&8&m                                                             "
+
+		if {_disp-2} contains "Rank":
+			execute console command "/lp user %arg-1% parent add %arg-2%"
+
+		if arg-2 = "emerald":
+			add 5000 to {data::%uuid of arg-1%::runes}
+			send "&3 + %runes(5000)%" to arg-1
+		else if arg-2 = "colour":
+			post "**%arg-1%** bought a **Custom Weapon Colour**! <@334103925626241031>" in channel with id "1140453886008774767"
+			send "%prefix()% Contact &f@grimmace. &7in the discord about your weapon colour!" to arg-1
+			send "%prefix()% To join the discord: &e/discord" to arg-1
+
+
+command /giveboost <offlineplayer> <integer=1>:
+	permission: op
+	trigger:
+		add arg-2 to {data::%uuid of arg-1%::boosts}
+		send "%prefix()% Gave &f%arg-2% &7boost to &f%arg-1%"
+
+
+
+
+
+
+
+
+import:
+	com.destroystokyo.paper.profile.ProfileProperty
+	com.mojang.authlib.GameProfile
+	org.bukkit.Bukkit
+	java.net.URL
+
+
+function skin(p: player, skin: string):
+	
+
+	if {_skin} = "default":
+		
+		set {_profile} to {_p}.getPlayerProfile()
+		{_profile}.clearProperties()
+		{_profile}.complete()
+		{_p}.setPlayerProfile({_profile})
+		stop
+
+	set {_o} to Bukkit.createProfile({_skin})
+	{_o}.complete()
+	set {_profile} to {_p}.getPlayerProfile()
+	{_profile}.setProperties({_o}.getProperties())
+	{_p}.setPlayerProfile({_profile})
+
+	#else if {_type} = "value":
+	#	if {_skin} is "spectator":
+	#		stop
+	#	if {-skins::%{_skin}%::value} is not set:
+	#		send "&cError loading skin for &e%{_skin}%&c." to {_p}
+	#		play sound "block.note_block.didgeridoo" at volume 10 at pitch 0.5 to {_p}
+	#		stop
+
+	#	set {_profile} to {_p}.getPlayerProfile()
+	#	set {_value} to {-skins::%{_skin}%::value}
+	#	set {_signature} to {-skins::%{_skin}%::signature}
+	#	set {_prop} to new ProfileProperty("textures", {_value}, {_signature})
+	#	{_profile}.setProperty({_prop})
+	#	{_profile}.complete()
+			
+	#	{_p}.setPlayerProfile({_profile})
+
+on tab complete of "skin":
+	set tab completions for position 1 to all players
+	set tab completions for position 2 to "default" and all players
+
+command /skin [<player>] [<text>]:
+	permission: op
+	trigger:
+		if arg-1 is not set:
+			send "%prefix()% Enter a player!" to player
+			stop
+		if arg-2 is not set:
+			send "%prefix()% Enter a valid skin name!" to player
+			stop
+		send "&fSet your skin to &e%arg-1% &7> &b%arg-2%" to player
+		skin(arg-1, arg-2)
+		
+
+

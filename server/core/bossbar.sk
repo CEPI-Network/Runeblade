@@ -1,0 +1,79 @@
+
+on load:
+	delete all boss bars
+
+on damage:
+	wait 1 tick
+	event is not canceled
+	attacker is a player
+	attacker != victim
+	"%victim%" != "interaction"
+	
+	set {_name} to name of victim ? victim
+	set {_dmg} to final damage
+	set {_hp} to (victim's health) ? 0
+	set {_max-hp} to (victim's maximum health) ? 0
+	set {_prog} to ({_hp} / {_max-hp}) * 100
+	
+	set {_ind} to boss bar with id "ind.%uuid of victim%:%attacker%" with title "&f%{_name}% &8(&c%{_hp}% ❤&8) &8| &f%{_dmg}%<##ff2458>🗡" with color red with progress {_prog}
+	set bar progress of boss bar with id "ind.%uuid of victim%:%attacker%" to {_prog}
+	set bar title of boss bar with id "ind.%uuid of victim%:%attacker%" to "&f%{_name}% &8(&c%{_hp}% ❤&8) &8| &f%{_dmg}%<##ff2458>🗡"
+	add attacker to {_ind}
+	set attacker's metadata "ind.%uuid of victim%:timer" to now
+	add "ind.%uuid of victim%:%attacker%" to {-tempdata::%uuid of victim%::bars::*}
+
+	loop 2 times:
+		wait 5 seconds
+		
+		if any:
+			victim is not alive
+			victim does not exist
+		then:
+			remove attacker from boss bar with id "ind.%uuid of victim%:%attacker%"
+			delete boss bar with id "ind.%uuid of victim%:%attacker%"
+			remove "ind.%uuid of victim%:%attacker%" from {-tempdata::%uuid of victim%::bars::*}
+			stop
+
+	if difference between attacker's metadata "ind.%uuid of victim%:timer" and now is greater than 9.9 seconds:
+		remove attacker from boss bar with id "ind.%uuid of victim%:%attacker%"
+		delete boss bar with id "ind.%uuid of victim%:%attacker%"
+		remove "ind.%victim%:%attacker%" from {-tempdata::%uuid of victim%::bars::*}
+
+
+
+
+
+
+
+on quit:
+	remove player from all bossbars
+    
+on join:
+	remove player from all bossbars
+
+
+
+on damage:
+	wait 1 tick
+	{-tempdata::%uuid of victim%::bars::*} is set
+	loop {-tempdata::%uuid of victim%::bars::*}:
+		boss bar with id loop-value is set
+
+		set {_hp} to victim's health ? 0
+		set {_max-hp} to victim's maximum health ? 0
+
+		set bar progress of boss bar with id loop-value to min(( {_hp} / {_max-hp}) * 100, 100)
+		set bar title of boss bar with id loop-value to "&f%name of victim ? victim% &8(&c%{_hp}% ❤&8) &8| &f%final damage%<##ff2458>🗡"
+
+on heal:
+	wait 1 tick
+	{-tempdata::%uuid of event-entity%::bars::*} is set
+
+	loop {-tempdata::%uuid of event-entity%::bars::*}:
+		boss bar with id loop-value is set
+
+		set {_hp} to event-entity's health ? 0
+		set {_max-hp} to event-entity's maximum health ? 0
+
+		set bar progress of boss bar with id loop-value to min(( {_hp} / {_max-hp}) * 100, 100)
+		set bar title of boss bar with id loop-value to "&f%name of event-entity ? event-entity% &8(&c%{_hp}% ❤&8)"

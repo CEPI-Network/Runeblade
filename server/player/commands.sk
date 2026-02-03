@@ -1,0 +1,373 @@
+
+# <#FFEE00>&lG<#F8CE03>&lR<#F1AE07>&lA<#EA8E0A>&lN<#E36E0D>&lD
+#	FFEE00 -> E36E0D
+
+
+
+
+command /spawn:
+	trigger:
+
+		if {-dungeon::queue::*} contains player:
+			make player execute command "/leavedungeon"
+			stop
+		else if player's gamemode = spectator:
+			make player execute command "/spectate"
+			stop
+
+
+		set {_loc} to location of player
+		set {_col} to minimessage from "<gradient:##FF5555:##FFDF55>-----</gradient>"
+		set {_col::*} to raw (elements from 1 to 5 out of ({_col} split at "-"))
+		loop reversed 5 times:
+			send title "%formatted {_col::%loop-value%}%%loop-value%s" with subtitle "&7Teleporting to &fSpawn &7in..." to player
+			if any:
+				distance between player and {_loc} > 1.25
+				{-tempdata::%uuid of player%::combatlog} is set
+			then:
+				send title "&c✘" with subtitle "" to player
+				play sound "block.note_block.guitar" at pitch 0.5 at player
+				stop
+
+			play sound "block.note_block.guitar" at player
+			wait 1 second
+
+		if any:
+			distance between player and {_loc} > 1.25
+			{-tempdata::%uuid of player%::combatlog} is set
+		then:
+			send title "&c✘" with subtitle "" to player
+			play sound "block.note_block.guitar" at pitch 0.5 at player
+			stop
+
+		teleport player to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retaining passengers
+		send title "" with subtitle "&7Teleported to &fSpawn&7." to player
+		send "%prefix()% Teleported to &fSpawn&7." to player
+		play sound "entity.enderman.teleport" to player
+		apply infinite weakness 255 to player:
+			hide particles
+			hide icon
+		clear {-tempdata::%uuid of player%::stunned}
+		clear {-tempdata::%uuid of player%::tutorial}
+
+
+command /discord:
+	trigger:
+    	# runeblade discord: https://discord.gg/9CZaRVMBVN
+        # cepi discord: https://discord.gg/D5uHfkua9p
+        
+		set {_click} to text component from "<##7289da>&lDISCORD &8» &7Click here to join!"
+		set hover event of {_click} to a new hover event showing "&7Click here to open the link!"
+		set click event of {_click} to a new click event to open url "https://discord.gg/D5uHfkua9p"
+		send component {_click} to player
+		play sound "block.note_block.pling" at volume 10 at pitch 1 to player
+
+
+on tab complete of "/report":
+	set tab completions of position 1 to all players
+	set tab completions of position 2 to "<reason>"
+
+
+command /report <player> <text>:
+	trigger:
+		arg-1 is not set:
+			send "%prefix()% &7Specify a player to report!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-2 is not set:
+			send "%prefix()% &7Specify a reason!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-1 = player:
+			send "%prefix()% &7You can't report yourself!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else:
+			post raw "**REPORT** » **%player ? command sender%** reported **%arg-1%** for %arg-2%. <@&1140449506228449280>" in channel with id "1140453886008774767"
+			postEmbed(arg-1, "%player ? command sender% reported %arg-1% for %arg-2%", "#FFC337", "1159525567297753209")
+			send "%prefix()% &7Reported &f%arg-1% &7for &e%arg-2%&7." to player
+			play sound "block.note_block.pling" at pitch 2 to player
+
+			set {_staff::*} to console and all players where [input has permission "skript.staff"]
+			send "" to {_staff::*}
+			send "&c&lREPORT &8| &f%player% &7reported &e%arg-1% &7for &f%arg-2%" to {_staff::*}
+			send "" to {_staff::*}
+			play sound "block.note_block.pling" to {_staff::*}
+
+
+command /block <player>:
+	trigger:
+		if arg-1 = player:
+			send "%prefix()% You can't block yourself!" to player
+			play sound "block.note_block.pling" at volume 10 at pitch 0.5 to player
+		else:
+			if {data::%uuid of player%::blocked::*} doesn't contain arg-1:
+				send "%prefix()% Blocked &f%arg-1%&7. All of their chat messages will now be hidden." to player
+				play sound "block.note_block.pling" at volume 10 at pitch 1 to player
+				add arg-1 to {data::%uuid of player%::blocked::*}
+			else:
+				send "%prefix()% Unblocked &f%arg-1%&7." to player
+				play sound "block.note_block.pling" at volume 10 at pitch 1 to player
+				remove arg-1 from {data::%uuid of player%::blocked::*}
+
+
+
+
+
+
+
+
+
+
+
+command /rules:
+	trigger:
+		send ""
+		send "&c&lRULES"
+		send ""
+		send "&8 - &fNo hacking or abusing bugs"
+		send "&8 - &fNo farming for runes, challenges, etc."
+		send "&8 - &fNo racism, slurs, etc."
+		send "&8 - &fNo spamming"
+		send "&8 - &fNo aggressive and unwarranted teaming"
+		send "&8 - &fAvoid excessive running; it ruins the fun!"
+		send "&8 - &fUse common sense"
+		send ""
+
+		play sound "block.note_block.didgeridoo" to player
+
+
+
+
+
+
+
+command /pay <player> <integer>:
+	trigger:
+		if arg-1 is not set:
+			send "%prefix()% &7Specify a player!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-2 is not set:
+			send "%prefix()% &7Specify an amount!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-1 = player:
+			send "%prefix()% &7You can't pay yourself money!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-2 <= 0:
+			send "%prefix()% &7You can't pay in negatives! That'd be theft!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		else if arg-2 > {data::%uuid of player%::runes}:
+			send "%prefix()% &7You don't have enough <##2eadd7>₪ &fRunes &7for that! &8(&7missing %runes(difference between arg-2 and {data::%uuid of player%::runes})%&8)" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+		
+		else:
+			remove arg-2 from {data::%uuid of player%::runes}
+			add arg-2 to {data::%uuid of arg-1%::runes}		
+
+			send "%prefix()% Gave &f%arg-1% %runes(arg-2)%&7!" to player
+			send "%prefix()% &f%player% &7gave you %runes(arg-2)%&7!" to arg-1
+
+			play sound "block.note_block.pling" at pitch 2 to player and arg-1
+
+			score(player)
+			score(arg-1)
+
+
+
+
+command /spectate:
+	trigger:
+		if all:
+			distance between player and spawn > 255
+			player's gamemode != spectator
+		then:
+			send "%prefix()% &7You need to be in spawn to use this!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+
+		else if player's gamemode != spectator:
+			send "%prefix()% &7Now spectating. Enter &e/spectate &7to stop spectating." to player
+
+			set {_currMap} to {-sorted-maps::%{map}%}
+			set {_center} to {-map::%{_currMap}%::center}
+
+			set player's gamemode to spectator
+			teleport player to location 15 above {_center} retaining passengers
+			play sound "block.note_block.pling" at pitch 2 to player
+
+		
+		else if player's gamemode = spectator:
+			send "%prefix()% &7No longer spectating." to player
+
+			set player's gamemode to adventure
+			teleport player to spawn() retain passengers
+			play sound "block.note_block.pling" at pitch 2 to player
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+on tab complete of "/nick":
+	set tab completions of position 1 to "<nick>" and "reset"
+	player has permission "skript.nickothers":
+		set tab completions of position 2 to "<player>"
+	else:
+		set tab completions of position 2 to ""
+
+command /nick [<text>] [<offlineplayer>]:
+	permission: skript.nick
+	trigger:
+		if arg-1 is not set:
+			send "%prefix()% &7You need to specify a nickname!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+			stop
+		
+		if length of unformatted arg-1 >= 25:
+			send "%prefix()% &7That nickname is too long!" to player
+			play sound "block.note_block.pling" at pitch 0.5 to player
+			stop
+
+		if any:
+			player does not have permission "skript.nickothers"
+			arg-2 is not set
+		then:
+			if arg-1 = "reset":
+				send "%prefix()% &7Reset your nickname!" to player
+				play sound "block.note_block.pling" at pitch 2 to player
+				clear {data::%uuid of player%::nickname}
+			else:
+            
+				if offlineplayer(uncolored arg-1, false) is set:
+					send "%prefix()% &7You can't take someone else's name!" to player
+					play sound "block.note_block.pling" at pitch 0.5 to player
+					stop
+            
+				set {_nick} to unformatted arg-1
+				send "%prefix()% &7Set nickname to &e%{_nick}%&7!" to player
+				play sound "block.note_block.pling" at pitch 2 to player
+				set {data::%uuid of player%::nickname} to {_nick}
+		
+		else:
+			if arg-1 = "reset":
+				send "%prefix()% &7Cleared &f%arg-2%&7's nickname&7!" to player
+				send "%prefix()% &f%player% &7cleared your nickname." to arg-2
+				play sound "block.note_block.pling" at pitch 2 to player
+				clear {data::%uuid of arg-2%::nickname}
+			else:
+				set {_nick} to unformatted arg-1
+				send "%prefix()% &7Set &f%arg-2%&7's nickname to &e%{_nick}%&7!" to player
+				send "%prefix()% &f%player% &7changed your nickname to &e%{_nick}%&7." to arg-2
+				play sound "block.note_block.pling" at pitch 2 to player
+				set {data::%uuid of arg-2%::nickname} to {_nick}
+
+
+
+
+command /chatcolor:
+	aliases: chatcolour, cc
+	permission: skript.chatcolor
+	trigger:
+		openChatColour(player)
+
+
+function openChatColour(p: player):
+	create a gui with virtual chest inventory with 4 rows named "Chat Color":
+		open gui to {_p}
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 27 and 35) with black stained glass pane named "&0"
+
+		set {_funny::*} to "So true...", "False...", "True...", "So toxic...", "Helper, how buy gems?", "Is water wet?", "You the homies?", "Hey there, can I help?" and "Lorem ipsum dolor sit amet."
+		format gui slot 31 with spruce sign named "%{data::%uuid of {_p}%::chatcolor} ? "&7"%&lCURRENT CHAT COLOR" with lore "", "%{_p}'s prefix%%{data::%uuid of {_p}%::nickname} ? {_p}% &8» %{data::%uuid of {_p}%::chatcolor} ? "&7"%%random element out of {_funny::*}%" and "" with all item flags
+
+		set {_lore::*} to "" and "&7Click to &aSelect" and ""
+		format gui slot 9 with red dye named "&c&lRED" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 18 with redstone named "&4&lDARK RED" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 10 with yellow dye named "&e&lYELLOW" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 19 with orange dye named "&6&lORANGE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 11 with lime dye named "&a&lLIME" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 20 with green dye named "&2&lGREEN" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 12 with diamond named "&b&lAQUA" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 21 with cyan dye named "&3&lCYAN" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 13 with light blue dye named "<#00AAFF>&lLIGHT BLUE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 22 with blue dye named "&9&lBLUE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 14 with magenta dye named "&d&lMAGENTA" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 23 with purple dye named "&5&lPURPLE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 15 with pink dye named "<#FFAAFF>&lPINK" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 24 with dragon breath named "<#FF298E>&lROSE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 16 with white dye named "&f&lWHITE" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 25 with light gray dye named "&7&lLIGHT GRAY" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 17 with gray dye named "&8&lGRAY" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+		format gui slot 26 with black dye named "<#2F2F2F>&lBLACK" with lore {_lore::*}:
+			changeChatColor({_p}, name of gui item)
+
+
+local function changeChatColor(p: player, color: text):
+	set {_raw} to uncolored {_color}
+	replace all "&l%{_raw}%" in {_color} with ""
+	set {data::%uuid of {_p}%::chatcolor} to {_color} ? "&7"
+	set {_color} to formatted "%{_color} ? "&7"%&l"
+	send "%prefix()% &7Changed your chat color to %{_color}%%{_raw} ? "N/A"%" to {_p}
+	play sound "block.note_block.harp" to {_p}
+	
+	openChatColour({_p})
+
+	
+
+
+on tab complete of "/setmap":
+	set tab completions of position 1 to indices of {-map::*}
+
+
+command /setmap [<text>]:
+	cooldown: 10 minutes
+	trigger:
+		if player doesn't have permission "skript.setmap":
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% You need <#0AE572>&lE<#17E97A>&lM<#24EE82>&lE<#32F28A>&lR<#3FF691>&lA<#4CFB99>&lL<#59FFA1>&lD &7to do that!" to player
+		else if arg-1 isn't set:
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% Specify a map!" to player
+		else if (indices of {-map::*}) doesn't contain arg-1:
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% That's not a map!" to player
+		else if {-tempdata::%uuid of player%::combatlog} is set:
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% You're still in combat!" to player
+		else:
+            
+			send "" to player
+			send "%prefix()% Setting map to &f%arg-1 in strict proper case%&7!" to player
+			send "" to player
+			play sound "block.note_block.pling" to player
+            
+			broadcast ""
+			broadcast "<##ff9b24>&lMAP CHANGE &fin %formatTime(30 seconds)%!"
+			broadcast ""
+			size of all players > 0:
+				post "> **MAP CHANGE** in 30 seconds!" to text channel with id "1140453816601427989"
+				post "> **MAP CHANGE** in 30 seconds!" to text channel with id "1294824268722470973"
+
+			wait 30 seconds
+			changeMap(arg-1)

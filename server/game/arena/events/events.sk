@@ -1,0 +1,373 @@
+
+
+on skript start:
+	wait 1 second
+	clear {event}
+	clearMap()
+
+command /startevent <text>:
+	permission: skript.startevent
+	cooldown: 2 hours
+	trigger:
+
+		if {event} is set:
+			send "%prefix()% Can't start another event, there's already one happening!" to player
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+		
+		else:
+			send "%prefix()% Started &e%arg-1 in strict proper case%&7!"
+			startEvent(arg-1)
+
+on tab complete of "/startevent":
+	set tab completions of position 1 to "koth"
+
+
+# event status
+command /event:
+	trigger:
+		if {event} = "koth":
+
+			set {_ind::*} to all players where [{-tempdata::%uuid of input%::koth} is set]
+			loop {_ind::*}:
+				set {_entry::%uuid of loop-value%} to {-tempdata::%uuid of loop-value%::koth}
+			set {_sort::*} to sorted indices of {_entry::*} in descending order
+
+			send ""
+			send "  &d&lEVENT &8» &6&lKING OF THE HILL"
+			send ""
+			loop {_sort::*}:
+				set {_player} to offlineplayer(loop-value)
+				send "  <##FFD855>%loop-counter%&8. &f%{_player}% &8» &a%{-tempdata::%loop-value%::koth} ? 0% Points"
+			send ""
+
+
+
+
+
+
+function findValidSpawn(center: location, rad: number) returns location:
+	loop 10 times:
+		set {_x} to location (random number between {_rad} and ({_rad} * -1)) to the left and (random number between {_rad} and ({_rad} * -1)) horizontally infront of {_center}
+		set {_highest} to highest solid block at {_x}
+
+		if difference between {_center}'s y coordinate and {_highest}'s y coordinate < 32:
+			return {_highest}
+
+
+
+
+
+
+function startEvent(event: string="random"):
+	if {_event} = "random":
+		set {_event} to random element out of "koth"
+
+	set {_currMap} to {-sorted-maps::%{map}%}
+	set {_center} to {-map::%{_currMap}%::center}
+	set {_rad} to {-map::%{_currMap}%::radius}
+
+	if {_event} = "koth":
+
+		set {event} to "koth" # used for /event command
+
+		broadcast ""
+		broadcast " &d&lEVENT &8» &6&lKING OF THE HILL"
+		broadcast ""
+		broadcast "   &7Remain within the circle and accumulate points!"
+		broadcast "   &7The players with the most points at the end gain bonus <##2eadd7>₪ &fRunes&7!"
+		broadcast ""
+
+		play sound "entity.ender_dragon.growl" at volume 10 at pitch 1.1 to all players
+
+		# find spawn loc
+		set {_highest} to findValidSpawn({_center}, {_rad})
+		
+		
+		if y coordinate of {_highest} is less than 20:
+			set {_highest} to location of {_center}
+
+
+		set {_spawn} to block at location 1 above {_highest}
+
+		kill {event-ent::koth::*}
+
+		spawn block display at location 1.1 below {_spawn}:
+			set {event-ent::koth::1} to block display
+			set block data of block display to yellow terracotta
+			set transformation scale of block display to vector(1.25, 2, 4)
+			set transformation translation of block display to vector(-0.625, -0.85, -2)
+			set byte tag "display" of custom nbt of block display to 1
+		spawn block display at location 1.1 below {_spawn}:
+			set {event-ent::koth::2} to block display
+			set display block data of block display to red terracotta
+			set transformation scale of block display to vector(4, 2, 1.25)
+			set transformation translation of block display to vector(-2, -0.75, -0.625)
+			set byte tag "display" of custom nbt of block display to 1
+		spawn block display at location 1.1 below {_spawn}:
+			set {event-ent::koth::3} to block display
+			set display block data of block display to cobblestone
+			set transformation scale of block display to vector(3, 3, 3)
+			set transformation translation of block display to vector(-1.5, -2, -1.5)
+			set byte tag "display" of custom nbt of block display to 1
+		spawn item display at location 2 above {_spawn}:
+			set {event-ent::koth::4} to item display
+			set display item of item display to red banner
+			set transformation scale of item display to vector(1.5, 2, 1.5)
+			set left rotation of item display to axisAngle(180, vector(0, 1, 0))
+			set interpolation duration of item display to 10 ticks
+			set byte tag "display" of custom nbt of item display to 1
+		spawn text display at location 5.25 above {_spawn}:
+			set {event-ent::koth::5} to text display
+			set text of text display to "&6&lKING OF THE HILL"
+			set billboard of text display to vertical
+			set transformation scale of text display to vector(2.25, 2.25, 2.25)
+			set byte tag "display" of custom nbt of item display to 1
+
+		
+		set display brightness of {event-ent::koth::*} to displayBrightness(10, 10)
+		set {_v} to spherical vector with radius 8, yaw 0, pitch 0
+		set {_draw} to location 0.5 below {_spawn}
+		loop 600 times: # 5m duration
+
+			loop 36 times:
+				add 10 to {_v}'s yaw
+				draw 1 wax off particles with extra value 0 at {_draw} ~ {_v}
+
+
+			set interpolation delay of {event-ent::koth::4} to 0 ticks
+			# rot
+			set {_rot} to left rotation of {event-ent::koth::4} rotated around vector(0,50,0)
+			set left rotation of {event-ent::koth::4} to {_rot}
+
+			if {_currMap} != {-sorted-maps::%{map}%}:
+				exit loop
+			if {eee} is set:
+				exit loop
+
+
+			mod(loop-value, 4) = 0: # once every 2s
+				loop players in radius 8 of {_spawn}:
+					loop-player's gamemode = adventure or survival
+					add 1 to {-tempdata::%uuid of loop-player%::koth}
+					play sound "block.note_block.chime" at volume 10 at pitch 2 to loop-player
+					score(loop-player)
+			
+			mod(loop-value, 200) = 0:
+				loop-value != 600
+
+				set {_highest} to findValidSpawn({_center}, {_rad})
+
+				set {_spawn} to block at location 1 above {_highest}
+				teleport {event-ent::koth::1} to location 1.1 below {_spawn}
+				teleport {event-ent::koth::2} to location 1.1 below {_spawn}
+				teleport {event-ent::koth::3} to location 1.1 below {_spawn}
+				teleport {event-ent::koth::4} to location 2 above {_spawn}
+				teleport {event-ent::koth::5} to location 5.25 above {_spawn}
+				set {_draw} to location 0.5 below {_spawn}
+
+				play sound "entity.enderman.teleport" at volume 5 at {_spawn}
+
+				if {event-ent::koth::4} is not set:
+					broadcast "&cSomeone tell Shiki about this..."
+					exit loop 
+
+
+			wait 10 ticks
+		
+		kill {event-ent::koth::*}
+
+		set {_ind::*} to all players where [{-tempdata::%uuid of input%::koth} is set]
+		loop {_ind::*}:
+			set {_entry::%uuid of loop-value%} to {-tempdata::%uuid of loop-value%::koth}
+		set {_sort::*} to sorted indices of {_entry::*} in descending order
+
+		broadcast ""
+		broadcast ""
+		broadcast "&6&lKING OF THE HILL &7has ended!"
+		broadcast ""
+		broadcast "  &eRESULTS"
+		broadcast ""
+		loop {_sort::*}:
+			set {_player} to offlineplayer(loop-value)
+			broadcast "  <##FFD855>%loop-counter%&8. &f%{_player}% &8» &a%{-tempdata::%loop-value%::koth} ? 0% Points"
+			clear {-tempdata::%loop-value%::koth}
+		if {_sort::*} is not set:
+			broadcast "  <##FFD855>No one gained any points!"
+		else:
+			play sound "ui.toast.challenge_complete" at volume 10 at pitch 1.5 to all players
+		broadcast ""
+
+		set {_gains::*} to 500, 350, 200, 100, 50
+
+		# give runes
+		loop {_sort::*}:
+			set {_amnt} to {_gains::%loop-counter%} ? 50
+			set {_player} to offlineplayer(loop-value)
+			send "&3 + %runes({_amnt})%" to {_player}
+			add {_amnt} to {data::%uuid of {_player}%::runes}
+			score({_player})
+
+			exit loop if loop-counter >= 3
+		
+		clear {event}
+
+		clearMap()
+
+
+
+
+	
+	else if {_event22} = "raid":
+
+		set {event} to "raid" # used for /event command
+
+		broadcast ""
+		broadcast " &d&lEVENT &8» &c&lRAID"
+		broadcast ""
+		broadcast "   &7Defeat the incoming hordes of enemies and"
+		broadcast "   &7close the &5Gates &7as fast as possible!"
+		broadcast ""
+
+		play sound "entity.ender_dragon.growl" at volume 10 at pitch 1.1 to all players
+
+		# find spawn loc
+		set {_highest} to findValidSpawn({_center}, {_rad})
+		if y coordinate of {_highest} is less than 20:
+			set {_highest} to location of {_center}
+
+		if size of all players in radius 300 of {_center} >= 1:
+
+			set {_spawn::1} to block at location 0.75 above {_highest}
+
+			spawn item display at location 4 above {_spawn::1}:
+				set {_ent::1} to item display
+				set item of item display to respawn anchor
+				set interpolation delay of item display to 0 ticks
+				set interpolation duration of item display to 10 ticks
+				set byte tag "display" of custom nbt of item display to 1
+
+			add 1 to {_total-gate-count}
+			add 1 to {_active-gate-count}
+
+
+		loop 1200 times: # 5 minutes w/ 5 tick wait
+			add loop-value*10 to {_yaw}
+
+			if {eee} is set:
+				clear {eee}
+				exit loop
+
+			# spawn new gate
+			chance of 1%:
+				{_total-gate-count} < 5
+				{_active-gate-count} < 5
+				size of all players in radius 300 of {_center} >= 1
+
+				set {_highest} to findValidSpawn({_center}, {_rad})
+				if y coordinate of {_highest} is less than 20:
+					set {_highest} to location of {_center}
+
+				add block at location 0.75 above {_highest} to {_spawn::*}
+
+				spawn item display at location 4 above (block at location 0.75 above {_highest}):
+					add item display to {_ent::*}
+					set item of item display to respawn anchor
+					set interpolation delay of item display to 0 ticks
+					set interpolation duration of item display to 10 ticks
+					set byte tag "display" of custom nbt of item display to 1
+
+				add 1 to {_total-gate-count}
+				add 1 to {_active-gate-count}
+
+
+
+			loop indices of {_spawn::*}:
+				set {_loc-center} to {_spawn::%loop-value-2%}
+				set {_ent-center} to {_ent::%loop-value-2%}
+				# entity rot
+				set interpolation delay of {_ent-center} to 0 ticks
+				set {_q} to right rotation of {_ent-center} rotated around vector(0,15,15)
+				set right rotation of {_ent-center} to {_q}
+
+				# particle circle
+				loop 20 times:
+					add loop-value-3*2.5 to {_yaw}
+					set {_v} to spherical vector with radius 8, yaw {_yaw}, pitch 0
+					set {_v2} to {_v}
+					add 20 to {_v2}'s yaw
+					draw 0 witch particles with offset {_v2} with extra value 0.3 at {_loc-center} ~ {_v}
+					draw 1 purple dust particles of size 1.5 that transitions to black at {_loc-center} ~ {_v}
+
+
+				# spawn entities, every 10s
+				mod(loop-value-1, 40) = 0:
+					set {_nearby-mobs::*} to all entities in radius 64 of {_loc-center} where [byte tag "mob" of custom nbt of input = 1]
+					if size of {_nearby-mobs::*} <= 8:
+						set {_next-spawn::%loop-value-2%} to 6 if {_next-spawn::%loop-value-2%} is not set # X loops, 5 ticks each
+				
+				{_next-spawn::%loop-value-2%} > 0:
+					remove 1 from {_next-spawn::%loop-value-2%}
+					if {_next-spawn::%loop-value-2%} = 0:
+						clear {_next-spawn::%loop-value-2%}
+
+						distance between {_loc-center} and nearest player at {_loc-center} <= 500 # tryna avoid spawning them in an unloaded arena
+
+						play sound "block.fire.extinguish" at volume 3 at pitch 0.75 at {_loc-center}
+						play sound "elemental.magic_aura" at volume 3 at pitch 1 at {_loc-center}
+
+						draw 16 large smoke particles with offset vector(4, 0, 4) with extra value 0.1 at {_loc-center}
+
+						set {_times} to (random integer between 3 and 4)
+						loop {_times} times:
+							set {_rand} to vector(random number between -4 and 4, 0, random number between -4 and 4)
+							set {_loc} to {_loc-center} ~ {_rand}
+
+							set {_rng} to random integer between 1 and 100
+							if {_rng} is between 1 and 50:
+								spawn_knight({_loc})
+							else if {_rng} is between 51 and 90:
+								spawn_fencer({_loc})
+							else if {_rng} is between 91 and 99:
+								spawn_brute({_loc})
+							else:
+								spawn_necromancer({_loc})
+						add {_times} to {_spawns-used::%loop-value-2%}
+
+						{_spawns-used::%loop-value-2%} >= 20
+						clear {_spawn::%loop-value-2%}
+						play sound "block.respawn_anchor.deplete" at volume 5 at pitch 0.75 at {_loc-center}
+						draw 50 dragon breath particles with extra value 0.4 at {_ent-center}
+						draw 50 purple dust particles of size 3 that transitions to white with offset vector(0, 25, 0) at {_ent-center}
+						kill {_ent::%loop-value-2%}
+						remove 1 from {_active-gate-count}
+						broadcast ""
+						broadcast "&c&lRAID &8» &7A &5Gate &7has closed! &8(&5Gates &fClosed: &e%({_total-gate-count} - {_active-gate-count}) ? 0%&8)"
+						broadcast ""
+
+
+
+			# win condition
+			if all:
+				{_total-gate-count} >= 5
+				{_active-gate-count} = 0
+			then:
+				exit loop
+
+			wait 5 tick
+		
+		kill {_ent::*}
+
+		broadcast ""
+		broadcast ""
+		broadcast "&c&lRAID &7has ended!"
+		broadcast ""
+		broadcast "  &5Gates Closed &8» &e%({_total-gate-count} - {_active-gate-count}) ? 0%"
+		broadcast "  &cEnemies Killed &8» &6%{-raid-kills} ? 0%"
+		broadcast ""
+
+		clear {event}
+		clear {-raid-kills}
+		kill all entities in radius 255 of {_center} where [byte tag "mob" of custom nbt of input = 1]
+		clearMap()
+
+

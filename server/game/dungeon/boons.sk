@@ -1,0 +1,169 @@
+
+on load:
+	loop indices of {-boons::*}:
+		clear {-boons::%loop-value%::*}
+	clear {-boons::*}
+
+	registerBoon("<##F0CDA4>&lBestial Boon", quartz, "Grants the user a passive increase in cooldown speed. Though savages the beasts might be, their power left something to be desired.", 2)
+	registerBoon("<##CD47FF>&lBoon of the Mystics", amethyst shard, "Grants the user a passive damage buff to attunements. Only by channeling the power of the mystics are we able to conjure such power.", 3)
+	registerBoon("<##FFE01F>&lBoon of the Greedy", gold ingot, "Grants the user an increased loot bonus. Only those with ambition truly win.", 2)
+	registerBoon("<##7CFF3A>&lBoon of the Earth", lily of the valley, "Grants the user a passive increase in health regeneration. Mother Nature heals all wounds, through time and time alone.", 1.5)
+	registerBoon("<##1FDDFF>&lBoon of the Spellbound", conduit, "Reduces the user's health, but doubles their mana production in exchange. What need does one have for health if they don't get hit?", 2)
+	registerBoon("<##FF3A70>&lBoon of the Desperate", wither rose, "Grants the user a lifesteal effect, but all attacks take life from the user in exchange. A perilous gamble indeed.", 1.5)
+	registerBoon("<#F2A011>&lBoon of the Impervious", music disc relic, "Grants the user increased defenses when at high health. A safe choice, if ever there was one.", 1.5)
+	registerBoon("<#C32941>&lBoon of Vengeance", torchflower, "Upon an ally's defeat, the user is granted a permanent damage buff. May their deaths not have been in vain.", 1.5)
+	registerBoon("<#55D5DC>&lBoon of Frost", prismarine crystals, "The user's attacks are imbued with a chilling mist, freezing targets. May the howling wind consume us all.", 1.5)
+
+
+function registerBoon(name: text, item: item, desc: text, weight: number):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-boons::%{_index}%::name} to {_name}
+	set {-boons::%{_index}%::item} to {_item}
+	set {-boons::%{_index}%::desc} to {_desc}
+	set {-boons::%{_index}%::weight} to {_weight}
+
+
+
+
+on rightclick on enchanting table:
+	byte tag "dungeon" of custom nbt of clicked block = 1
+	player's gamemode != spectator
+	cancel event
+	openBoon(player, location of clicked block)
+
+
+
+function spawnBoon(loc: location):
+	set block at {_loc} to enchanting table
+	set {_table} to block at {_loc}
+	set byte tag "dungeon" of custom nbt of {_table} to 1
+	add {_loc} to {-dungeon::chests::*}
+
+
+	spawn text display at location 1 above {_table}:
+		set {_ent} to text display
+		add {_ent} to {display::dungeon::*}
+		set text of {_ent} to "&d&lTABLE OF BOONS"
+		set billboard of {_ent} to center
+
+	spawn text display at location 0.75 above {_table}:
+		set {_ent} to text display
+		add {_ent} to {display::dungeon::*}
+		set text of {_ent} to "&7CLICK TO USE"
+		set billboard of {_ent} to center
+		set transformation scale of {_ent} to vector(0.75, 0.75, 0.75)
+
+
+
+function openBoon(p: player, loc: location=location of {_p}):
+	set {_table} to block at {_loc}
+
+	# open table for the first time
+	if all:
+		byte tag "opened" of custom nbt of {_table} != 1
+		{_table} is an enchanting table
+	then:
+
+		set byte tag "opened" of custom nbt of {_table} to 1
+		remove {_loc} from {-dungeon::chests::*}
+		
+		play sound "block.enchantment_table.use" at volume 1.5 at pitch 1.2 at {_loc}
+		draw 20 enchanting particles with offset vector(0.8, 0.4, 0.8) at location 1 above {_loc}
+
+		wait 10 tick
+		play sound "elemental.eerie_magic" at volume 1.5 at pitch 2 at {_loc}
+		wait 10 tick
+
+		play sound "elemental.magic_aura" at volume 1.5 at pitch 2 at {_loc}
+		draw 10 witch particles with extra value 1.5 at location 0.5 above {_loc}
+		draw 8 smoke particles with extra value 0.1 at location 0.5 above {_loc}
+
+		play sound "entity.item.pickup" at {_loc}
+
+		set {_ind::*} to indices of {-boons::*}
+		loop {_ind::*}:
+			set {_weight::%loop-value%} to {-boons::%loop-value%::weight}
+
+		set {_index} to weighted_choice({_ind::*}, {_weight::*})
+		set {_name} to {-boons::%{_index}%::name}
+		set {_item} to {-boons::%{_index}%::item}
+		set {_spl::*} to {-boons::%{_index}%::desc} split at ". "
+		loop {_spl::*}:
+			set {_desc::%loop-counter%::*} to formatParagraph(loop-value)
+		set {_last} to last element out of indices of {_desc::1::*}
+		set {_desc::1::%{_last}%} to "%{_desc::1::%{_last}%}%." # add a period, removed from splitting
+
+		set {_i} to {_item} named {_name} with lore "&8ʙᴏᴏɴ", "", {_desc::1::*}, "", {_desc::2::*}, "", "", "&e&lUSABLE IN TABLE OF BOONS", "" with all item flags
+		set byte tag "boon" of custom nbt of {_i} to 1
+		set string tag "name" of custom nbt of {_i} to {_index}
+
+		drop {_i} at location 0.55 above {_loc}
+		set name of last dropped item to {_name}
+		modify nbt of dropped item:
+			set byte tag "CustomNameVisible" of nbt to 1
+		set byte tag "pickup" of custom nbt of dropped item to 1
+
+		push {_i} up at speed 0.65
+
+
+
+	else:
+
+		create a gui with virtual chest inventory with 5 rows named "&d&lTABLE OF BOONS":
+			open gui to {_p}
+
+			format gui slot (integers between 0 and 8) with magenta stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			format gui slot 4 with spruce sign named "&d&lBOONS" with lore "", formatParagraph("A Boon provides you with a single, additional buff to your character."), "", formatParagraph("Only one Boon can be equipped at a time. Boons break after being unequipped, and do not carry over to the main game."), "" with all item flags
+			
+			if {-tempdata::%uuid of {_p}%::boon} is not set:
+				set {_i} to iron bars named "&fNo Boon Equipped" with lore "", formatParagraph("You don't have a Boon equipped! Place one here to equip it!"), "" with all item flags
+				set {_type} to "unequipped"
+			else:
+				set {_equipped-boon} to {-tempdata::%uuid of {_p}%::boon}
+				set {_name} to {-boons::%{_equipped-boon}%::name}
+				set {_item} to {-boons::%{_equipped-boon}%::item}
+				set {_spl::*} to {-boons::%{_equipped-boon}%::desc} split at ". "
+				loop {_spl::*}:
+					set {_desc::%loop-counter%::*} to formatParagraph(loop-value)
+				set {_last} to last element out of indices of {_desc::1::*}
+				set {_desc::1::%{_last}%} to "%{_desc::1::%{_last}%}%." # add a period, removed from splitting
+
+				set {_i} to {_item} named {_name} with lore "", {_desc::1::*}, "", {_desc::2::*}, "", "", "&e&lCLICK TO REMOVE", "", "&8[&c!&8] &fRemoving a Boon will destroy it.", "" with all item flags
+				set {_type} to "equipped"
+
+			format gui slot 22 with {_i}:
+				{_type} = "equipped"
+
+				play sound "ui.button.click" to {_p}
+				play sound "block.enchantment_table.use" at volume 1.5 at pitch 0.8 at {_p}
+				play sound "block.grindstone.use" at volume 1.5 at pitch 0.8 at {_p}
+				play sound "entity.item.break" at volume 1.5 at pitch 0.8 at {_p}
+
+				draw 10 enchanting particles with offset vector(0.8, 0.4, 0.8) at location 1 above {_p}
+				clear {-tempdata::%uuid of {_p}%::boon}
+				openBoon({_p}, {_loc})
+				updateSkill({_p})
+
+
+on inventory click:
+	name of player's top inventory = "&d&lTABLE OF BOONS"
+	event-inventory = player's inventory
+	byte tag "boon" of custom nbt of event-item = 1
+	# put item into GUI
+	cancel event
+	
+	play sound "ui.button.click" to player
+	play sound "ui.toast.out" to player
+	play sound "block.enchantment_table.use" at volume 1.5 at pitch 1.6 at player
+
+	draw 10 enchanting particles with offset vector(0.8, 0.4, 0.8) at location 1 above {_p}
+
+	set {-tempdata::%uuid of player%::boon} to (string tag "name" of custom nbt of event-item)
+	remove 1 of event-item from player's inventory
+	openBoon(player)
+	updateSkill(player)
+
+
+

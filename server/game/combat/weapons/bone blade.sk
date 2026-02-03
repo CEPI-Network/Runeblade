@@ -1,0 +1,200 @@
+
+
+
+function bonebladeAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 1.2
+	set {_particle-scale::2} to 1.2
+	set {_particle-scale::3} to 1.4
+
+	set {_weapon} to "bone_blade"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+	set {_draw} to location of {_p}'s head ~ {_v}
+
+	if {_hit} = 1:
+
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to -90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw - 5
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.2, {_dir}, {_arc}, 1, {_angle}-2)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 2.5, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 2.8, {_dir}, {_arc}, 1, {_angle}+2)
+
+		play sound "entity.player.attack.sweep" at volume 2.5 at pitch 1.35+{_sound-scale} at {_p}
+		play sound "entity.stray.death" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.wither_skeleton.step" at volume 2 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "sword.whoosh" at volume 2.5 at pitch 2 at {_p}
+
+		loop {_arc} times:
+			set {_loop-scale} to max(0.75, (loop-value * -0.015) + 1.25)
+
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_weapon}%::1::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+
+			
+			chance of 15%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				draw 1 rgb(158, 239, 25) entity effect particles at {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+			
+			chance of 20%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				draw 2 ash particles at {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+				draw 2 smoke particles with extra value 0.075 at {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+
+
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.6 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					{_hit::*} doesn't contain loop-entity
+					isDamageableEntity(loop-entity, {_p}) = true
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.wither_skeleton.hurt" at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.35 * {_kb-scale}
+					push loop-entity up at speed 0.25 * {_kb-scale}
+
+					if all:
+						{-tempdata::%uuid of loop-entity%::quickstep} != true
+						{-tempdata::%uuid of loop-entity%::parry} != true
+					then:
+						apply poison 1 to loop-entity for ("%40 * {_atk-scale}% ticks" parsed as timespan)
+
+			mod(loop-value, 25) = 0:
+				wait 1 tick
+	
+
+
+	else if {_hit} is set:
+
+		set {_arrow} to tipped arrow
+		set int tag "minecraft:potion_contents;custom_color" of nbt of {_arrow} to 5620757
+
+		set {_prev} to location 1.3 above {_p}
+		set {_draw} to location 1.3 above and 1 infront of {_p}
+		set {_yaw} to {_p}'s yaw
+
+		set {_speed::1} to 0.5
+		set {_speed::2} to 0.65
+		set {_speed::3} to 0.5
+
+		loop 3 times:
+
+			set {_draw}'s yaw to ({_yaw} - (7.5 * (loop-value - 2)))
+			set {_prev}'s yaw to {_draw}'s yaw
+			
+			set {_loop} to loop-value
+			spawn item display at {_draw}:
+				set {_ent::%{_loop}%} to item display
+				set item of item display to random element out of ({_arrow} and bone)
+
+			set {_prev::%loop-value%} to {_prev}
+			set {_draw::%loop-value%} to {_draw}
+
+			set {_rand} to -5*sin(loop-value*30)
+			add {_rand} to {_prev::%loop-value%}'s pitch
+			add {_rand} to {_draw::%loop-value%}'s pitch
+
+			
+		set teleport duration of {_ent::*} to 1 ticks
+		set left rotation of {_ent::*} to axisAngle(90, vector(1, 0, 0))
+		set right rotation of {_ent::*} to axisAngle(-45, vector(0, 0, 1))
+		
+		play sound "item.trident.shoot" at volume 2.5 at pitch 1.8+{_sound-scale} at {_p}
+		play sound "entity.wither_skeleton.death" at volume 2.5 at pitch 1.8+{_sound-scale} at {_p}
+		play sound "sword.throw" at volume 2.5 at pitch 2 at {_p}
+		play sound "sword.light_slash" at volume 2.5 at pitch 2 at {_p}
+		play sound "sword.thrust" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "elemental.shroud" at volume 2.5 at pitch 2 at {_p}
+
+		draw 5 poof particles with extra value 0.12 at {_draw}
+
+		loop 100 times:
+			loop 3 times:
+				{_collide::%loop-value-2%} != true # collide w/ entity or block
+
+				set {_v} to vector from {_prev::%loop-value-2%} to {_draw::%loop-value-2%}
+				set {_temp} to {_draw::%loop-value-2%}
+				set {_temp}'s yaw to {_v}'s yaw
+				set {_temp}'s pitch to {_v}'s pitch
+
+				teleport {_ent::%loop-value-2%} to {_temp}
+
+				chance of 30%:
+					set {_rand} to random vector
+					set {_rand}'s vector length to 0.2
+					draw 1 rgb(158, 239, 25) entity effect particles at {_temp} ~ {_rand}
+					draw 1 {-colours::%{_weapon}%::1::3} dust particles that transitions to {-colours::%{_weapon}%::1::1} at {_temp}
+				chance of 12%:
+					draw 1 smoke particles with extra value 0.1 at {_temp}
+					
+				chance of 30%:
+					draw 1 ash particles at {_temp}
+
+
+				set {_acc} to max(({_speed::%loop-value-2%} - (loop-counter-1 / 250)), 0.1) # higher div number -> more range
+				set {_prev::%loop-value-2%} to {_draw::%loop-value-2%}
+				set {_draw::%loop-value-2%} to location {_acc} infront and (loop-counter-1 * 0.01) below {_draw::%loop-value-2%}
+				set {_prev::%loop-value-2%} to location 0.1 above {_draw::%loop-value-2%} if {_draw::%loop-value-2%} = {_prev::%loop-value-2%}
+
+				loop entities in radius 2 of {_ent::%loop-value-2%} where [input is not an item display]:
+					loop-entity != {_p}
+					{_hit::*} doesn't contain loop-entity
+					isDamageableEntity(loop-entity, {_p}) = true
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.arrow.hit_player" at pitch 1.5+{_sound-scale} at loop-entity
+					set {_dist} to (-0.0125 * distance between {_p} and loop-entity)
+					{_dist} > 2:
+						set {_dmg-scale} to first element out of clamp(({_dmg} - {_dist}), 0, 0.6)
+					else:
+						set {_dmg-scale} to {_dmg}
+
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg-scale}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.3 * {_kb-scale}
+					push loop-entity up at speed 0.15 * {_kb-scale}
+
+					if all:
+						{-tempdata::%uuid of loop-entity%::quickstep} != true
+						{-tempdata::%uuid of loop-entity%::parry} != true
+					then:
+						apply poison 1 to loop-entity for ("%40 * {_atk-scale}% ticks" parsed as timespan)
+
+					set {_collide::%loop-value-2%} to true
+					kill {_ent::%loop-value-2%}
+
+
+				loop blocks in radius 1.25 of {_ent::%loop-value-2%}:
+					loop-block is solid
+
+					set {_collide::%loop-value-2%} to true
+					draw 5 (random element out of (green glazed terracotta, green concrete powder and azalea leaves)) item particles with extra value 0.15 at {_ent::%loop-value-2%}
+					play sound "entity.skeleton.step" at pitch 0.8+{_sound-scale} at {_ent::%loop-value-2%}
+					kill {_ent::%loop-value-2%}
+
+			mod(loop-value, 3) = 0:
+				wait 1 tick
+
+		kill {_ent::*}
+		
+

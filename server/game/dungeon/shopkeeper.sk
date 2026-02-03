@@ -1,0 +1,183 @@
+
+
+
+on entity target:
+	event-entity is a zombie or a husk
+	target of event-entity is a villager
+	cancel event
+
+
+
+
+function spawnShopkeeper(loc: location):
+	set {_sizes::*} to 5, 7 and 14
+	set {_weights::*} to 3, 2, 0.5
+
+	set {_size} to weighted_choice({_sizes::*}, {_weights::*})
+	set {_seed} to generateSeed({_size})
+
+	spawn villager at {_loc}:
+		set {_ent} to villager
+		set {-dungeon::shopkeeper::%{_seed}%} to villager
+		add villager to {display::dungeon::*}
+
+		set villager level of villager to 5
+		set villager profession of villager to random element out of (cartographer profession and librarian profession)
+
+		modify custom nbt of villager:
+			set byte tag "mob" of nbt to 1
+			set string tag "name" of nbt to "shopkeeper"
+			set string tag "seed" of nbt to {_seed}
+			set int tag "size" of nbt to {_size}
+		modify nbt of villager:
+			set byte tag "Invulnerable" of nbt to 1
+			set byte tag "Silent" of nbt to 1
+
+	set {_ent}'s movement speed attribute to 0
+	#apply infinite potion of jump boost of tier -10 without particles to {_ent}
+
+
+	spawn text display at location 2 above {_loc}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set text of {_ent} to "&a&lSHOPKEEPER"
+	set billboard of {_ent} to center
+
+	spawn text display at location 1.75 above {_loc}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set text of {_ent} to "&7CLICK TO TRADE"
+	set billboard of {_ent} to center
+	set transformation scale of {_ent} to vector(0.75, 0.75, 0.75)
+
+
+on rightclick on villager:
+	cancel event
+	string tag "name" of custom nbt of clicked entity = "shopkeeper"
+	
+	set {_seed} to string tag "seed" of custom nbt of clicked entity
+	if {_seed} is not set:
+		set {_seed} to generateSeed(5)
+		set string tag "seed" of custom nbt of clicked entity to {_seed}
+		set int tag "size" of custom nbt of clicked entity to 5
+
+	openShopkeeper(player, {_seed})
+
+
+function generateSeed(size: integer=5) :: string:
+	set {_seed} to random number between 0 and 10000
+	set {_seed} to random number between 0 and 10000 if {-dungeon::seed::%{_seed}%::*} is set # collision
+	set {_seed} to round({_seed}, 2)
+
+	loop {_size} times:
+		set {_ind::*} to (indices of {-dungeon::loot::*}) where [{-dungeon::loot::%input%::name} doesn't contain "runes"]
+		clear {_weight::*}
+		loop {_ind::*}:
+			set {_weight::%loop-value-2%} to {-dungeon::loot::%loop-value-2%::weight}
+
+		set {_index} to weighted_choice({_ind::*}, {_weight::*})
+		set {_name} to {-dungeon::loot::%{_index}%::name}
+		set {_item} to {-dungeon::loot::%{_index}%::item}
+		set {_desc::*} to {-dungeon::loot::%{_index}%::desc::*}
+
+		if {_index} = "bandage":
+			set {_amnt} to random integer between 2 and 5
+		else if {_index} = "golden apple":
+			set {_amnt} to random integer between 1 and 3
+		else:
+			set {_amnt} to 1
+
+		set {_price} to {-dungeon::loot::%{_index}%::price} * (random number between 0.8 and 1.35)
+
+		set {_i} to {_amnt} of {_item} named {_name} with lore {_desc::*} with all item flags
+		set {_amnt} to 1
+		if {_name} contains "boon":
+			set byte tag "boon" of custom nbt of {_i} to 1
+			set string tag "name" of custom nbt of {_i} to {_index}
+		set int tag "price" of custom nbt of {_i} to {_price}
+
+		add {_i} to {-dungeon::seed::%{_seed}%::*}
+	
+	return "%{_seed}%"
+
+
+function openShopkeeper(p: player, seed: string):
+
+	set {_size} to int tag "size" of custom nbt of {-dungeon::shopkeeper::%{_seed}%}
+	set {_char::*} to characters from "a" to "n"
+	if mod({_size}, 7) = 0:
+		set {_slot} to 1
+	else:
+		set {_slot} to 2
+	
+	if {_size} <= 7:
+		set {_rows} to 5
+		set {_shape::*} to "zzzzszzzz", "---------", "-abcdefg-", "---------", "yyyyyyyyy"
+	else:
+		set {_rows} to 6
+		set {_shape::*} to "zzzzszzzz", "---------", "-abcdefg-", "-hijklmn-", "---------", "yyyyyyyyy"
+
+
+
+	create a gui with virtual chest inventory with {_rows} rows named "&a&lSHOPKEEPER" with shape {_shape::*}:
+		open gui to {_p}
+
+		format gui slot "z" with lime stained glass pane named "&0"
+		format gui slot "y" with black stained glass pane named "&0"
+		format gui slot "s" with spruce sign named "&a&lSHOPKEEPER" with lore "", formatParagraph("Trade in your Runes for weapons, attunements or consumables to help you on your journey!"), "" with all item flags
+		
+
+		loop {_size} times:
+			set {_loop} to loop-value # used for click
+			set {_i} to {-dungeon::seed::%{_seed}%::%loop-value%}
+			set {_index} to uncolored unformat(name of {_i})
+			set {_price} to (int tag "price" of custom nbt of {_i} ? 5) # {-dungeon::loot::%{_index}%::price} ? 0
+
+			set {_cached::*} to {_i}'s lore
+			set {_desc::*} to {_i}'s lore
+			loop {_desc::*}:
+				loop-value-2 = ""
+				set {_init::*} to elements from 1 to loop-counter-2 out of {_desc::*}
+				remove {_init::*} from {_desc::*}
+				exit loop
+
+			set {_i}'s lore to {_init::*}, "&7Costs: %runes({_price}, true)%", "", "", {_desc::*}
+
+
+			if {_i} isn't set:
+				set {_i} to barrier named "&c&lOUT OF STOCK" with lore "", formatParagraph("This item has already been purchased!"), "" with all item flags
+				set {_price} to -1
+			
+			format gui slot {_char::%{_slot}%} with {_i}:
+				set {_consumable} to true # will the shopkeeper run out of stock?
+
+				if {_price} = -1: # out of stock
+					play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					send "%prefix()% This item is out of stock!" to {_p}
+				
+				else if {-tempdata::%uuid of {_p}%::shattered-runes} >= {_price}:
+					remove {_price} from {-tempdata::%uuid of {_p}%::shattered-runes}
+					score({_p})
+					play sound "block.note_block.harp" at pitch 2 to {_p}
+					play sound "block.grindstone.use" at pitch 1.2 to {_p}
+					send "%prefix()% Bought 1x %name of {_i}%&7!" to {_p}
+
+					set {_i}'s lore to {_cached::*}
+					give or drop 1 of {_i} to {_p}
+					
+					if {_consumable} = true:
+						set {_amnt} to item number of {_i}
+						set {_sub} to {_amnt} - 1
+						if {_sub} <= 0:
+							clear {-dungeon::seed::%{_seed}%::%{_loop}%}
+						else:
+							set item number of {_i} to {_sub}
+							set {-dungeon::seed::%{_seed}%::%{_loop}%} to {_i}
+					
+					openShopkeeper({_p}, {_seed})
+
+				else:
+					play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					send "%prefix()% You don't have enough <##2eadd7>₪ &fShattered Runes &7to afford that!" to {_p}
+			
+			add 1 to {_slot}

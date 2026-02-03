@@ -1,0 +1,109 @@
+
+on load:
+	set {filter::*} to ":popcorn:", "/skill", "kys" and "k y s" and "retard" and "ez" and "e.z" and "nigga" and "niga" and "n igga" and "n i g g a" and "n1gga" and "nigg" and "n1gger" and "nigger" and "niger" and "negar" and "nugar" and "neger" and "n igger" and "n i g g e r" and "nlgga" and "nlgger" and "n lgga" and "n l g g a" and "skibidi" and "gyatt"
+	set {filter-replace::*} to "Real?", "Real...", "Real!", "So toxic...", "True!", "False...", "Can I have admin?", "Hi, I'm new here!", "How do you play this again?", "Gameplay!", "Likely liar ahead.", "Hidden path ahead." and "Behold, dog!"
+
+
+
+function filter(message: text) :: boolean:
+	replace all "freeze" and "freezing" in {_message} with ""
+	loop {filter::*}:
+		if {_message} contains loop-value:
+			return true
+	return false
+
+
+
+
+
+
+on async chat:
+
+	set {_viewers::*} to console and all players where [{data::%uuid of input%::blocked::*} doesn't contain player] 
+
+	set {_msg} to async chat message
+	set chat viewers to {_viewers::*}
+
+	replace all "@everyone" in {_msg} with "@/everyone"
+	replace all "@here" in {_msg} with "@/here"
+	replace all "<@" in {_msg} with "<@/"
+
+	if filter("%{_msg}%") = true:
+		set {_msg} to (random element out of {filter-replace::*})
+	
+	
+
+	if player doesn't have permission "skript.chat-bypass":
+		if {-tempdata::%uuid of player%::last-chat} = {_msg}:
+			{_msg} != "gg"
+			cancel event
+			set {_rand} to random element out of ("You already sent that message!", "No spamming!")
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% %{_rand}%" to player
+			stop
+		else if difference between {-tempdata::%uuid of player%::last-chat-timestamp} and now < 1.5 seconds:
+			cancel event
+			set {_rand} to random element out of ("You're sending messages too frequently!", "No spamming!")
+			play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+			send "%prefix()% %{_rand}%" to player
+			add 1 to {-tempdata::%uuid of player%::spam}
+
+			if {-tempdata::%uuid of player%::spam} >= 50:
+				kick player due to "Spamming"
+			stop
+
+		else:
+			set {-tempdata::%uuid of player%::last-chat-timestamp} to now
+
+	replace all ":skull:" in {_msg} with "☠"
+	replace all ":heart:" in {_msg} with "❤"
+	replace all ":fire:" in {_msg} with "🔥"
+	replace all ":shrug:" in {_msg} with "¯\_(ツ)_/¯"
+	replace all ":100:" in {_msg} with "💯"
+
+	if {data::%uuid of player%::equipped::suffixes} is set:
+		set {_suffix} to " &8(%{-suffixes::%{data::%uuid of player%::equipped::suffixes}%::name}%&8)"
+	else:
+		set {_suffix} to ""
+
+	if {-tempdata::%uuid of player%::staffchat} = true:
+		cancel event
+		set {_sc::*} to all players where [input has permission "skript.staffchat"]
+		send "<##B74BFE>&lSC &8| &f%player%%{_suffix}% &8» %{data::%uuid of player%::chatcolor} ? "&7"%%{_msg}%" to {_sc::*}
+		play sound "block.note_block.hat" at pitch 1.5 to {_sc::*}
+		stop
+
+
+	loop all players:
+		{_msg} contains name of loop-player
+		loop-player != player
+		replace name of loop-player in {_msg} with "&e%loop-player%%{data::%uuid of player%::chatcolor} ? "&7"%"
+		play sound "block.note_block.pling" at volume 10 at pitch 2 to loop-player
+	if player has permission "group.grand":
+		set {_msg} to formatted {_msg}
+	
+	set {_prefix} to formatted "%player's prefix%%{data::%uuid of player%::nickname} ? player%%{_suffix}% &8» "
+	set {_content} to "%{data::%uuid of player%::chatcolor} ? "&7"%%{_msg}%"
+	set {_merge} to merge components {_prefix} and {_content}
+	#set async chat format to {_merge}
+	
+	# Bypass Minehut chat filter
+	cancel event
+	send formatted {_merge} to {_viewers::*}
+	# ==---
+
+	if player's prefix != "&7":
+		set {_prefix} to "**%uncolored player's prefix%**"
+	else:
+		set {_prefix} to ""
+
+
+
+	set {_msg} to uncolored {_msg}
+	replace all "@everyone" in {_msg} with "@##everyone"
+	post raw "%{_prefix}%%player% » %{_msg}%" in channel with id "1140453816601427989"
+	post raw "%{_prefix}%%player% » %{_msg}%" in channel with id "1294824268722470973"
+
+	player doesn't have permission "skript.chat-bypass"
+	set {-tempdata::%uuid of player%::last-chat} to {_msg}
+	

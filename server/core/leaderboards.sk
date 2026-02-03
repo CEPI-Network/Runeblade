@@ -1,0 +1,103 @@
+
+
+
+
+
+every 10 minutes:
+	reloadLeaderboards()
+
+
+function loadLeaderboards():
+	spawnLeaderboards()
+	wait 1 tick
+	reloadLeaderboards()
+
+on load:
+	reloadLeaderboards()
+
+
+function spawnLeaderboards():
+
+	loop indices of {displays::leaderboards::*}:
+		kill {displays::leaderboards::%loop-value%::*}
+	
+
+	wait 1 tick
+
+	set {_base::kills} to location(-0.5, 76.5, -65.5, world "runeblade", 0, 0)
+	set {_base::deaths} to location(-5.5, 76.5, -64.5, world "runeblade", 0, 0)
+	set {_base::kdr} to location(4.5, 76.5, -64.5, world "runeblade", 0, 0)
+
+	loop {_base::*}:
+		kill all text displays in radius 1 of loop-value
+
+	set {_col::kills} to "<##FF2458>"
+	set {_col::deaths} to "<##EA1547>"
+	set {_col::kdr} to "<##EA1547>"
+
+	set {_symbol::kills} to "🗡"
+	set {_symbol::deaths} to "☠"
+	set {_symbol::kdr} to "⚔"
+
+	loop "kills", "deaths" and "kdr":
+		# base
+		set {_base} to {_base::%loop-value%}
+
+		loop reversed 10 times:
+			spawn text display at {_base}
+			set {displays::leaderboards::%loop-value-1%::%loop-value-2%} to last spawned text display
+			set text of {displays::leaderboards::%loop-value-1%::%loop-value-2%} to "N/A"
+			set {_base} to location 0.4 above {_base}
+
+		# header
+		spawn text display at location 0.4 above {_base}
+		set {displays::leaderboards::%loop-value-1%::header} to last spawned text display
+		set text of {displays::leaderboards::%loop-value-1%::header} to "%{_col::%loop-value-1%}%&l%loop-value-1 in uppercase% <##FF2458>%{_symbol::%loop-value%}%"
+		set transformation scale of {displays::leaderboards::%loop-value-1%::header} to vector(2, 2, 2)
+		
+		set billboard of {displays::leaderboards::%loop-value-1%::*} to vertical
+		add drop shadow to {displays::leaderboards::%loop-value-1%::*}
+		set color of {displays::leaderboards::%loop-value-1%::*} to rgb(0, 0, 0, 0)
+
+
+function reloadLeaderboards():
+
+	set {_grad} to minimessage from "<gradient:##FF4848:##FFD855>----------"
+	set {_spl::*} to raw {_grad} split at "-"
+
+	loop "kills", "deaths" and "kdr":
+		clear {_ind::*}
+		clear {_raw::*}
+
+		if loop-value = "kills":
+			set {_symbol} to "<##FF2458>🗡"
+		else if loop-value = "deaths":
+			set {_symbol} to "<##EA1547>☠"
+		else:
+			set {_symbol} to "<##EA1547>⚔"
+
+		if loop-value != "kdr":
+			set {_ind::*} to sorted (indices of {data::*}) where [{data::%input%::%loop-value%} is set]
+			loop {_ind::*}:
+				set {_raw::%loop-value-2%} to {data::%loop-value-2%::%loop-value-1%}
+			set {_ind::*} to sorted indices of {_raw::*} in descending order
+
+		else:
+			set {_ind::*} to sorted ((indices of {data::*}) where [{data::%input%::kills} is set]) where [difference between now and last login of offlineplayer(input, false) <= 6 month]
+			loop {_ind::*}:
+				{data::%loop-value-2%::deaths} >= 20
+				set {_raw::%loop-value-2%} to first element out of clamp(({data::%loop-value-2%::kills} / {data::%loop-value-2%::deaths}), 0, {data::%loop-value-2%::kills})
+			set {_ind::*} to sorted indices of {_raw::*} in descending order
+
+
+		loop reversed 10 times:
+			set {_ent} to {displays::leaderboards::%loop-value-1%::%loop-value-2%}
+			set {_player} to offlineplayer({_ind::%loop-value-2%}) ? "N/A"
+			set {_rank} to {_player}'s prefix ? ""
+			{_player} != "N/A":
+				set {_stat} to "  &f%{_raw::%{_ind::%loop-value-2%}%} ? 0%%{_symbol}%"
+			else:
+				set {_stat} to ""
+
+			draw 1 flame particles with extra value 0.025 at {_ent}
+			set display text of {_ent} to formatted "%{_spl::%loop-value-2%}%&l%loop-value-2% &8» <##FFD855>%{_rank}%%{_player}%%{_stat}%"

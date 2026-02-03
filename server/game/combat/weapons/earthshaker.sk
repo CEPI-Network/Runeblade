@@ -1,0 +1,288 @@
+
+
+
+function earthshakerAction(p: entity, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 1
+	set {_particle-scale::2} to 1.2
+	set {_particle-scale::3} to 1.4
+
+	set {_weapon} to "earthshaker"
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+	set {_draw} to location 0.5 behind {_p}'s head ~ {_v}
+
+	if {_hit} = 1:
+		set {_dir} to 1
+		set {_arc} to 80
+		set {_angle} to -50 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 0.75+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "entity.ender_dragon.hurt" at volume 2.5 at pitch 2+{_sound-scale} at {_p}
+		play sound "sword.heavy_slash" at volume 3 at pitch 1.35+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_loop-scale} to max(1, (loop-value * -0.02) + 2)
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+				set {_v} to {_arc::2::%loop-value%}
+				draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+
+				if {_palette} = {_weapon}:
+					draw 0 wax off particles with offset {_v} with extra value 2 at {_temp}
+				else:
+					draw 0 lava particles with offset {_v} with extra value 1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.65 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 0.65 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.7 * {_kb-scale})
+					push loop-entity up at speed (0.4 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+	
+
+
+	else if {_hit} = 2:
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to 50 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 0.7+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "entity.ender_dragon.hurt" at volume 2.5 at pitch 1.6+{_sound-scale} at {_p}
+		play sound "sword.heavy_slash" at volume 3 at pitch 1.1+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_loop-scale} to max(1, (loop-value * -0.02) + 2)
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+				set {_v} to {_arc::2::%loop-value%}
+				draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+
+				if {_palette} = {_weapon}:
+					draw 0 wax off particles with offset {_v} with extra value 2 at {_temp}
+				else:
+					draw 0 lava particles with offset {_v} with extra value 1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.65 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 0.65 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.7 * {_kb-scale})
+					push loop-entity up at speed (0.45 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+	
+
+	else if {_hit} = 3:
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to 90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 0.6+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.65+{_sound-scale} at {_p}
+		play sound "entity.ender_dragon.hurt" at volume 2.5 at pitch 1.4+{_sound-scale} at {_p}
+		play sound "sword.heavy_slash" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_loop-scale} to max(1, (loop-value * -0.02) + 2)
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+				set {_v} to {_arc::2::%loop-value%}
+				draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+				
+				if {_palette} = {_weapon}:
+					draw 0 wax off particles with offset {_v} with extra value 2 at {_temp}
+				else:
+					draw 0 lava particles with offset {_v} with extra value 1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.65 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 0.65 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.8 * {_kb-scale})
+					push loop-entity up at speed (0.5 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+		
+	
+
+
+	else:
+		set {_dir} to -1
+		set {_arc} to 80
+		set {_angle} to 90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		set {_shockwave-loc} to location 3.3 infront of {_p}
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 0.6+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 0.65+{_sound-scale} at {_p}
+		play sound "entity.player.attack.crit" at volume 2.6 at pitch 1+{_sound-scale} at {_p}
+		play sound "entity.ender_dragon.hurt" at volume 2.5 at pitch 1.25+{_sound-scale} at {_p}
+		play sound "sword.heavy_slash" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_loop-scale} to max(1, (loop-value * -0.02) + 2)
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+				set {_v} to {_arc::2::%loop-value%}
+				draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+				
+				if {_palette} = {_weapon}:
+					draw 0 wax off particles with offset {_v} with extra value 2 at {_temp}
+				else:
+					draw 0 lava particles with offset {_v} with extra value 1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.65 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 0.65 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.4 * {_kb-scale})
+					push loop-entity up at speed (0.3 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+
+
+		# shockwave
+		wait 8 ticks
+
+		play sound "entity.player.attack.crit" at volume 2.6 at pitch 0.6+{_sound-scale} at {_p}
+		loop blocks in radius 3 of {_shockwave-loc}:
+
+			loop-block is solid
+			block above loop-block is not solid
+
+			draw 8 loop-block block particles with offset vector(0, 0.75, 0) with extra value 2 at loop-block
+			draw 2 mossy cobblestone block particles with offset vector(0, 0.75, 0) with extra value 2 at loop-block
+			draw 2 smoke particles with offset vector(0.2, 0.2, 0.2) with extra value 0.075 at loop-block
+			loop 5 times:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.35
+				draw 0 loop-block block particles with offset vector(0,10,0) with extra value 2 at (loop-block ~ vector(0,1,0) ~ {_rand})
+
+			chance of 50%:
+				draw 1 sweep attack particles with offset vector(0, 0.75, 0) at loop-block
+				if any:
+					{_palette} = "earthshaker"
+					chance of 60%
+				then:
+					set {_blockType} to type of block at loop-block
+				else:
+					set {_blockType} to magma block
+
+				spawn ("falling %{_blockType}%" parsed as entity type) at loop-block
+				set {_e} to last spawned entity
+				modify nbt of {_e}:
+					set byte tag "DropItem" of nbt to 0
+					set byte tag "CancelDrop" of nbt to 1
+
+				push {_e} up at speed 0.3+(random number between -0.1 and 0.1)
+
+		loop entities in radius 3 of {_shockwave-loc} where [input != {_p}]:
+			isDamageableEntity(loop-entity, {_p}) = true
+
+			play sound "entity.player.attack.knockback" at pitch 0.65 at {_p}
+
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed (0.8 * {_kb-scale})
+			push loop-entity up at speed (0.5 * {_kb-scale})
+
+		play sound "entity.iron_golem.hurt" and "entity.iron_golem.step" at volume 2 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "entity.ender_dragon.hurt" at volume 2 at pitch 1+{_sound-scale} at {_p}
+		play sound "elemental.earth_shake" at volume 2 at pitch 1+{_sound-scale} at {_p}

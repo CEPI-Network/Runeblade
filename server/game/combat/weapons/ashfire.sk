@@ -1,0 +1,394 @@
+
+
+
+function ashfireAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 1.2
+	set {_particle-scale::2} to 2.5
+	set {_particle-scale::4} to 1.5
+
+	set {_weapon} to "ashfire"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+	
+	# BOLT
+	if {_hit} = 1:
+
+		play sound "block.fire.extinguish" at volume 2.5 at pitch 1.5 at {_p}
+		loop 4 times:
+			draw 3 smoke particles with offset vector(0.1, 0.1, 0.1) with extra value 0.075 at location 1.25 infront of {_p}'s head
+			draw 1 flame particles with offset vector(0.1, 0.1, 0.1) with extra value 0.075 at location 1.25 infront of {_p}'s head
+			wait 2 tick
+		
+		set {_prev} to location 0.25 infront of {_p}'s head
+		set {_draw} to location 1.25 infront of {_p}'s head
+
+		spawn block display at {_draw}:
+			set {_ent::1} to block display
+			set block data of {_ent::1} to fire
+			set transformation scale of {_ent::1} to vector(0.3, 0.75, 0.3)
+			set transformation translation of {_ent::1} to vector(-0.15, 0.15, 0)
+
+		spawn block display at {_draw}:
+			set {_ent::2} to block display
+			set block data of {_ent::2} to blackstone wall
+			set transformation scale of {_ent::2} to vector(0.5, 1, 0.5)
+			set transformation translation of {_ent::2} to vector(-0.25, 0.25, 0)
+
+		spawn block display at {_draw}:
+			set {_ent::3} to block display
+			set block data of {_ent::3} to black_candle[lit=true]
+			set transformation scale of {_ent::3} to vector(1, 0.75, 1)
+			set transformation translation of {_ent::3} to vector(-0.5, 0.5, 1)
+
+		set left rotation of {_ent::*} to axisAngle(90, vector(1, 0, 0))
+		set teleport duration of {_ent::*} to 1 ticks
+		loop 3 times:
+			set byte tag "display" of custom nbt of {_ent::%loop-value%} to 1
+
+		play sound "entity.tnt.primed" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.blaze.ambient" at volume 3 at pitch 2 at {_p}
+		play sound "entity.generic.explode" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "sword.throw" at volume 3 at {_p}
+
+		draw 5 flame particles with extra value 0.15 at {_draw}
+		
+		# arrow projectile
+		loop 15 times:
+			set {_v} to vector from {_prev} to {_draw}
+			set {_temp-draw} to {_draw}
+			set {_temp-draw}'s yaw to {_v}'s yaw
+			set {_temp-draw}'s pitch to {_v}'s pitch
+			teleport {_ent::*} to {_temp-draw}
+			
+			draw 3 smoke particles with extra value 0.05 at {_ent::1}
+
+			loop entities in radius 1.75 of {_ent::1} where [input is not a block display]:
+				loop-entity != {_p}
+				isDamageableEntity(loop-entity, {_p}) = true
+				exit all loops
+
+			set {_acc} to max((2 - (loop-counter / 20)), 0.1)
+			set {_prev} to {_draw}
+			set {_draw} to location {_acc} infront and (loop-counter * 0.05) below {_draw}
+
+			if block at {_draw} is solid:
+				exit loop
+		
+			wait 1 tick
+		
+		set {_draw} to location of {_ent::1}
+		kill {_ent::*}
+
+
+		# explosion
+		loop entities in radius 1.75 of {_draw} where [input != {_p}]:
+			isDamageableEntity(loop-entity, {_p}) = true
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed 0.6 * {_kb-scale}
+			push loop-entity up at speed 0.3 * {_kb-scale}
+			
+
+		draw 1 explosion particles at {_draw}
+		draw 10 lava particles with extra value 0.3 at {_draw}
+		draw 30 flame particles with extra value 0.25 at {_draw}
+		draw 10 large smoke particles with extra value 0.2 at {_draw}
+
+		play sound "entity.generic.explode" at volume 3.5 at pitch 0.75+{_sound-scale} at {_draw}
+		play sound "entity.blaze.shoot" at volume 3 at pitch 1+{_sound-scale} at {_draw}
+		play sound "elemental.flames" at volume 1.25 at pitch 1.5+{_sound-scale} at {_draw}
+
+		loop 10 times:
+			spawn falling fire at {_draw} ~ vector(random number between -1.25 and 1.25, random number between 0.5 and 1.5, random number between -1.25 and 1.25)
+			set {_ent::%loop-value%} to last spawned falling block
+			modify nbt of {_ent::%loop-value%}:
+				set byte tag "DropItem" of nbt to 0
+				set byte tag "CancelDrop" of nbt to 1
+
+			set {_v} to vector from {_draw} to {_ent::%loop-value%}
+			set {_v}'s vector length to 0.2
+			set {_rand} to random vector
+			set {_rand}'s pitch to random number between -35 and -75
+			set {_rand}'s vector length to 0.05
+			set {_ent::%loop-value%}'s velocity to {_v} + {_rand}
+
+
+		loop 40 times:
+
+			loop {_ent::*}:
+				set {_loc::%loop-counter-2%} to location of loop-value-2
+
+				
+				if all:
+					loop-value-2 is not alive
+					block at {_loc::%loop-counter-2%} is air
+					{_set::%loop-value-2%} != true
+				then:
+					set {_set::%loop-value-2%} to true
+					loop blocks in radius 1 of {_loc::%loop-counter-2%}:
+						loop-block is air
+						block at location 1 below loop-block is solid
+						chance of 80%
+						add location of loop-block to {_scorched-earth::*}
+						make all players see block at loop-block as fire
+		
+			loop {_scorched-earth::*}:
+				loop entities in radius 1.5 of loop-value-2:
+					loop-entity is not on fire
+					loop-entity != {_p}
+					isDamageableEntity(loop-entity, {_p}) = true
+					set {-tempdata::%uuid of loop-entity%::attacker} to {_p}
+					ignite loop-entity for 20 ticks # damage in game.sk, `on damage:`
+
+			wait 1 tick
+
+		kill {_ent::*}
+		
+
+		loop {_scorched-earth::*}:
+			draw 3 smoke particles with offset vector(0.2, 0.2, 0.2) with extra value 0.1 at loop-value
+			make all players see block at loop-value as air
+
+			mod(loop-counter, 2) = 0:
+				wait 1 tick
+	
+
+
+
+
+	# RAIN OF FIRE
+	else if {_hit} = 2:
+		
+		set {_draw} to location 0.2 above {_p}
+
+		play sound "block.fire.extinguish" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		
+
+		loop 90 times:
+			set {_v} to spherical vector with radius 1, yaw loop-value*4, pitch 0
+			draw 0 flame particles with offset {_v} with extra value 0.2 at {_draw} ~ {_v}
+		
+		wait 10 tick
+		play sound "elemental.flames" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+
+		set {_draw} to location 4.5 above and 1.5 infront of {_p}'s head
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		
+		loop 24 times:
+
+			set {_v}'s vector length to (1.25*mod(loop-value, 2))+0.75
+			set {_draw} to {_draw} ~ {_v}
+
+			set {_rand} to random vector
+			set {_rand}'s y component to 0
+			set {_rand}'s vector length to random number between 0 and 1.25
+			rain_of_fire({_p}, ({_draw} ~ {_rand}), {_dmg}, {_atk-scale})
+
+
+			wait 1 ticks
+
+
+
+
+
+
+
+	# MAGMA WALL
+	else:
+		set {_v::1} to vector from yaw {_p}'s yaw + 30 and pitch 0
+		set {_v::2} to vector from yaw {_p}'s yaw - 30 and pitch 0
+
+		set {_init} to location of {_p}
+		set {_cache::1} to {_p}'s yaw
+		set {_cache::2} to {_p}'s pitch
+
+		loop 10 times:
+			set {_init} to location of block at location 1 below {_init}
+			if block at location 1 below {_init} != air:
+				loop-value > 1:
+					set {_init} to location 0.65 below {_init}
+				else:
+					set {_init} to location 0.3 above {_init}
+				exit loop 
+		
+		set {_init}'s yaw to {_cache::1}
+		set {_init}'s pitch to {_cache::2}
+
+		set {_draw::1} to location 1 horizontally infront of {_init}
+		set {_draw::2} to location 1 horizontally infront of {_init}
+		set {_max-height} to {_draw::1}'s y coordinate + 0.05
+		set {_sound-loc} to location 6 horizontally infront of {_p}
+
+		set {_blocks::*} to ("magma block" parsed as block data), ("gilded blackstone" parsed as block data)
+
+		play sound "entity.blaze.death" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.blaze.shoot" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.iron_golem.attack" at volume 2.5 at pitch 0.5+{_sound-scale} at {_p}
+		play sound "elemental.flames" at volume 2 at pitch 1.5 at {_p}
+
+		draw 8 flame particles with extra value 0.15 at location 1.25 horizontally infront of {_p}'s head
+		draw 6 smoke particles with extra value 0.1 at location 1.25 horizontally infront of {_p}'s head
+
+		loop 75 times:
+
+			loop-value <= 10:
+				play sound "block.netherrack.break" at volume 2 at pitch 0.5+(loop-value/10) at {_p}
+				chance of 50%
+				play sound "block.lava.pop" at volume 2 at pitch 1 at {_p}
+
+			loop-value <= 15:
+				loop 2 times:
+					set {_draw::%loop-value-2%} to {_draw::%loop-value-2%} ~ {_v::%loop-value-2%}
+
+					set {_temp-draw} to location 0.5 below {_draw::%loop-value-2%}
+					add (random number between 0 and 360) to {_temp-draw}'s yaw
+					add (random number between 30 and -30) to {_temp-draw}'s pitch
+
+					set {_loop::1} to loop-value-1
+					set {_loop::2} to loop-value-2
+
+					spawn block display at {_temp-draw}:
+						set {_ent::%{_loop::1}%::%{_loop::2}%} to block display
+						set block data of {_ent::%{_loop::1}%::%{_loop::2}%} to random element out of {_blocks::*}
+						set transformation translation of {_ent::%{_loop::1}%::%{_loop::2}%} to vector(-0.5, -0.5, -0.5)
+						set teleport duration of {_ent::%{_loop::1}%::%{_loop::2}%} to 1 ticks
+						set interpolation duration of {_ent::%{_loop::1}%::%{_loop::2}%} to 1 ticks
+						set byte tag "display" of custom nbt of {_ent::%{_loop::1}%::%{_loop::2}%} to 1
+						set display brightness of {_ent::%{_loop::1}%::%{_loop::2}%} to displayBrightness(10,10) # does this still work?
+					
+					draw 1 lava particles at location 0.5 above {_ent::%loop-value-1%::%loop-value-2%}
+
+			loop indices of {_ent::*}:
+				loop 2 times:
+
+					loop-value-1 <= 15:
+						set {_temp} to location of {_ent::%loop-value-2%::%loop-value-3%}
+						set {_temp}'s y coordinate to min(({_temp}'s y coordinate + 0.05), {_max-height})
+
+						location of {_ent::%loop-value-2%::%loop-value-3%} != {_temp}
+						teleport {_ent::%loop-value-2%::%loop-value-3%} to {_temp}
+						
+						chance of 10%:
+							draw 1 lava particles at {_temp}
+						draw 2 smoke particles with extra value 0.1 at {_temp}
+						chance of 30%:
+							draw 1 flame particles with extra value 0.05 at location 0.5 above {_temp}
+					else:
+						set {_temp} to location of {_ent::%loop-value-2%::%loop-value-3%}
+							
+						chance of 8%:
+							draw 1 lava particles at {_temp}
+							draw 1 smoke particles with extra value 0.1 at {_temp}
+							draw 1 flame particles with extra value 0.05 at location 0.5 above {_temp}
+
+			chance of 6%:
+				play sound "block.lava.pop" at volume 2 at pitch 1+(random number between -0.3 and 0.3)+{_sound-scale} at {_sound-loc}
+			mod(loop-value, 20) = 0:
+				play sound "block.fire.ambient" at volume 2 at pitch 1+{_sound-scale} at {_sound-loc}
+
+			# hitbox
+			loop-value > 10:
+				loop indices of {_ent::*}:
+					mod(loop-counter-2, 2) = 0
+					loop 2 times:
+						loop entities in radius 1.5 of {_ent::%loop-value-2%::%loop-value-3%} where [input != {_p}]:
+							isDamageableEntity(loop-entity, {_p}) = true
+							{_hit::*} doesn't contain loop-entity
+							set {_hit::%uuid of loop-entity%} to loop-entity
+
+							hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+							make {_p} damage loop-entity by {_dmg}
+							push loop-entity up at speed 0.2*{_kb-scale}
+							push loop-entity (vector from loop-entity to {_sound-loc}) at speed 1*{_kb-scale}
+						
+						loop entities in radius 1.5 of (location 2.5 above {_ent::%loop-value-2%::%loop-value-3%}) where [input != {_p}]:
+							isDamageableEntity(loop-entity, {_p}) = true
+							{_hit::*} doesn't contain loop-entity
+							set {_hit::%uuid of loop-entity%} to loop-entity
+
+							hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+							make {_p} damage loop-entity by {_dmg}
+							push loop-entity up at speed 0.2*{_kb-scale}
+							push loop-entity (vector from loop-entity to {_sound-loc}) at speed 1*{_kb-scale}
+
+
+
+			wait 1 tick
+		play sound "block.fire.extinguish" at {_sound-loc}
+
+
+		loop 20 times:
+			loop indices of {_ent::*}:
+				loop-counter-2 <= loop-value-1 # lower closer ones first
+				loop 2 times:
+					set interpolation delay of {_ent::%loop-value-2%::%loop-value-3%} to 0 ticks
+					teleport {_ent::%loop-value-2%::%loop-value-3%} to location 0.075 below {_ent::%loop-value-2%::%loop-value-3%}
+
+			mod(loop-value, 2) = 0
+			wait 1 tick
+
+		loop indices of {_ent::*}:
+			kill {_ent::%loop-value%::*}
+		
+	
+
+
+	
+
+
+
+
+
+function rain_of_fire(p: player, draw: location, dmg: number, atk-scale: number):
+	loop 30 times:
+		set {_v} to spherical vector with radius 0.5, yaw loop-value*12, pitch 0
+		draw 0 smoke particles with offset {_v} with extra value 0.3 at {_draw} ~ {_v}
+	
+
+	set {_draw}'s pitch to 0
+	spawn block display at {_draw}:
+		set {_ent} to block display
+		set block data of {_ent} to fire
+		set transformation scale of {_ent} to vector(0.5, 1, 0.5)
+		set transformation translation of {_ent} to vector(-0.25, 0, 0.25)
+		set left rotation of {_ent} to axisAngle(180, vector(1, 0, 0))
+		set teleport duration of {_ent} to 2 ticks
+		set display brightness of {_ent} to displayBrightness(10,10) # does this work?
+
+	play sound "entity.blaze.shoot" at volume 2 at pitch (random number between 1.5 and 2) at {_draw}
+
+	loop 10 times:
+		teleport {_ent} to location 1.5 below {_ent}
+
+		loop entities in radius 1.75 of {_ent} where [input is not a block display]:
+			loop-entity != {_p}
+			isDamageableEntity(loop-entity, {_p}) = true
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, "ashfire")
+			make {_p} damage loop-entity by {_dmg}
+			ignite loop-entity for 22 ticks
+			exit all loops
+
+		if block at {_ent} is solid:
+			exit loop
+		
+		chance of 40%:
+			draw 1 flame particles with extra value 0.06 at {_ent}
+
+		wait 2 tick
+
+	draw 2 large smoke particles with offset vector(0.3, 0.3, 0.3) with extra value 0.2 at {_ent}
+	play sound "block.fire.extinguish" at volume 0.75 at pitch 2 at {_ent}
+	kill {_ent}
+
+
+
+
+
+
+
+
+

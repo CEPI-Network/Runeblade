@@ -1,0 +1,108 @@
+
+
+
+function hookAction(p: player, weapon: text, atk-scale: number):
+
+	set {-tempdata::%uuid of {_p}%::stunned} to true
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+
+	play sound "item.trident.throw" at volume 2.5 at pitch 1.75+{_sound-scale} at {_p}
+	play sound "entity.arrow.shoot" at volume 2.5 at pitch 1.6+{_sound-scale} at {_p}
+	play sound "sword.throw" at volume 2.5 at pitch 2 at {_p}
+		
+	draw 1 sweep attack particles at location 1.25 infront of {_p}'s head
+	draw 2 poof particles with extra value 0.15 at location 1.25 infront of {_p}'s head
+
+	make {_p} shoot an arrow at speed 3
+	set {_arrow} to last shot arrow
+	set gravity of {_arrow} to false
+	set {_arrow}'s metadata "hook" to true
+	set string tag "weapon" of custom nbt of {_arrow} to {_weapon}
+
+	make {_p} swing their main hand
+
+	while {_arrow} is not on the ground:
+		wait 1 tick
+
+		loop-counter = 4:
+			set {_clear-stun} to true
+			clear {-tempdata::%uuid of {_p}%::stunned}
+		
+		force draw 2 crit particles with offset vector(0.1, 0.1, 0.1) with extra value 0.2 at {_arrow}
+		chance of 40%:
+			force draw 1 poof particles with offset vector(0.05, 0.05, 0.05) with extra value 0.1 at {_arrow}
+
+		# hitbox
+		loop entities in radius 1.4 of {_arrow} where [input != {_arrow}]:
+			loop-entity != {_p}
+			isDamageableEntity(loop-entity, {_p}) = true
+			
+			hitCombo({_p}, 1, {_atk-scale}, {_weapon}, "hook")
+			make {_p} damage loop-entity by getDamage({_p}, {_weapon}, 1, "hook")
+
+			play sound "item.shield.break" at volume 4 at pitch 0.5 at loop-entity
+			play sound "item.shield.break" at volume 0.5 at pitch 0.5 to {_p}
+			
+			set {_div} to abs((vector from loop-entity to {_p})'s pitch / 30)
+			set {_div} to first element out of clamp({_div}, 1, 3)
+
+			push loop-entity up at speed 0.25
+			push loop-entity (vector from loop-entity to {_p}) at speed 1.5 / {_div}
+
+			progressChallenge({_p}, "hook", 1)
+
+			clear {_arrow}'s metadata "hook"
+			kill {_arrow}
+			{_clear-stun} != true:
+				clear {-tempdata::%uuid of {_p}%::stunned}
+			stop
+
+
+
+		if any:
+			distance between {_arrow} and {_p} > 48
+			{_arrow} is not alive
+			loop-counter >= 48
+		then:
+			exit loop
+
+	draw 3 crit particles with extra value 0.25 at {_arrow}
+	{_clear-stun} != true:
+		clear {-tempdata::%uuid of {_p}%::stunned}
+	clear {_arrow}'s metadata "hook"
+	kill {_arrow}
+
+
+
+
+on damage:
+	damage cause is projectile
+	event-projectile's metadata "hook" = true
+	isDamageableEntity(victim, attacker) = false:
+		cancel event
+		stop
+
+
+	set {_weapon} to string tag "weapon" of custom nbt of event-projectile
+	hitCombo(attacker, 1, 1, {_weapon}, "hook")
+	set damage to (getDamage(attacker, {_weapon}, 1, "hook") / 2)
+	clear event-projectile's metadata "hook"
+	kill event-projectile
+
+	play sound "item.shield.break" at volume 4 at pitch 0.5 at victim
+	play sound "item.shield.break" at volume 0.5 at pitch 0.5 to attacker
+	
+	set {_div} to abs((vector from victim to attacker)'s pitch / 30)
+	set {_div} to first element out of clamp({_div}, 1, 3)
+
+	push victim up at speed 0.25
+	push victim (vector from victim to attacker) at speed 1.75 / {_div}
+
+	if {-tempdata::%uuid of victim%::duel::rune gains} = true:
+		set {_changeStats} to true
+	else if {-tempdata::%uuid of victim%::duel::in-duel} is set:
+		set {_changeStats} to false
+	else:
+		set {_changeStats} to true
+	{_changeStats} = true
+	progressChallenge(attacker, "hook", 1)

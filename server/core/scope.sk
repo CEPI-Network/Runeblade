@@ -1,0 +1,74 @@
+
+
+
+function getScope(p: entity) :: objects:
+	{_p} is set
+
+	# tryna find scope of a mob
+	if {_p} is not a player:
+		if string tag "owner" of custom nbt compound from {_p} is set:
+			set {_owner} to player(string tag "owner" of custom nbt compound from {_p})
+			return getScope({_owner})
+		else:
+			return ({_none::*})
+	set {_scope::*} to all players
+    
+	
+	# in tutorial
+	if {-tempdata::%uuid of {_p}%::tutorial} is set:
+		return ({_p})
+
+	# in duel
+	if {-tempdata::%uuid of {_p}%::duel::in-duel} is set:
+		set {_id} to {-tempdata::%uuid of {_p}%::duel::id}
+
+		#broadcast "%{_id}% | %{-duel::%{_id}%::red::*}% | %{-duel::%{_id}%::blue::*}%"
+
+		loop all players where [input != {_p}]:
+			if any:
+				({-duel::%{_id}%::red::*} and {-duel::%{_id}%::blue::*}) contain loop-player
+				{-tempdata::%uuid of loop-player%::spectating} isn't set
+			then:
+				add loop-player to {_scope::*}
+
+	# spectating a duel
+	else if {-tempdata::%uuid of {_p}%::spectating} is set:
+		set {_id} to {-tempdata::%uuid of {_p}%::spectating}
+
+		loop all players where [input != {_p}]:
+			if any:
+				({-duel::%{_id}%::red::*} and {-duel::%{_id}%::blue::*}) contain loop-player
+				{-tempdata::%uuid of loop-player%::spectating} = {_id}
+			then:
+				add loop-player to {_scope::*}
+		
+	return {_scope::*}
+
+
+
+# hide entity {_e} from everyone not in {_p}'s scope
+function hideEntityWithinScope(p: player, e: entity):
+	set string tag "owner" of custom nbt compound of {_e} to "%{_p}%"
+	set {_scope::*} to getScope({_p})
+
+	loop all players where [input != {_p}]:
+		if {_scope::*} doesn't contain loop-player:
+			make {_e} disappear for loop-player
+		else:
+			make {_e} appear for loop-player
+
+
+function hidePlayerWithinScope(p: player):
+
+	set {_scope::*} to getScope({_p})
+	loop all players where [input != {_p}]:
+        
+		if {_scope::*} doesn't contain loop-player:
+			make loop-player disappear from {_p}
+		else:
+			make loop-player appear to {_p}
+            
+		if getScope(loop-player) doesn't contain {_p}:
+			make {_p} disappear from loop-player
+		else:
+			make {_p} appear to loop-player

@@ -1,0 +1,340 @@
+
+on load:
+	clear {-killeffects::*}
+
+	registerKillEffect("&9Splash", water bucket, 2000, "none")
+	registerKillEffect("&aSlime", slime ball, 2000, "none")
+	registerKillEffect("&4Bloodloss", red dye, 2500, "none")
+	registerKillEffect("&bFrostbite", ice, 3000, "none")
+	registerKillEffect("&3Sculk", sculk sensor, 3000, "none")
+
+	registerKillEffect("&7Ashen", gunpowder, 3500, "grand")
+	registerKillEffect("&6Ember", blaze powder, 4000, "grand")
+	registerKillEffect("&eLightning", lightning rod, 4500, "grand")
+    
+	registerKillEffect("&fGust", feather, 3000, "emerald")
+	registerKillEffect("&6Honey", honeycomb, 3500, "emerald")
+	registerKillEffect("&dWitchcraft", enchanted book, 3500, "emerald")
+	registerKillEffect("&aWealth", emerald, 4000, "emerald")
+	
+
+	clear {-sorted-killeffects::*}
+	loop indices of {-killeffects::*}:
+		set {_entry::%loop-value%} to {-killeffects::%loop-value%::order} ? 0
+	set {-sorted-killeffects::*} to sorted indices of {_entry::*} in ascending order
+
+
+
+
+
+function registerKillEffect(name: text, item: item, cost: integer, requires: string):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-killeffects::%{_index}%::name} to {_name}
+	set {-killeffects::%{_index}%::item} to {_item}
+	set {-killeffects::%{_index}%::cost} to {_cost}
+	set {-killeffects::%{_index}%::requires} to {_requires}
+
+
+	loop indices of {-killeffects::*}:
+		set {_entry::%loop-value%} to {-killeffects::%loop-value%::order} ? 0
+	set {-killeffects::%{_index}%::order} to max({_entry::*}) + 1
+
+
+
+function openKillEffects(p: player):
+
+	create gui with virtual chest inventory with 6 rows named "&c&l        KILL EFFECTS":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&c&lKILL MESSAGES" with lore "", formatParagraph("Create some cool effects every time you get a kill!") and "" with all item flags
+		format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			openCosmetics({_p})
+
+		set {_slot} to 18
+		loop {-sorted-killeffects::*}:
+			add 1 to {_slot}
+
+			set {_name} to {-killeffects::%loop-value%::name}
+			set {_item} to {-killeffects::%loop-value%::item}
+			set {_cost} to {-killeffects::%loop-value%::cost}
+			set {_requires} to {-killeffects::%loop-value%::requires}
+
+			if {data::%uuid of {_p}%::killeffects::*} contains loop-value:
+				if {data::%uuid of {_p}%::equipped::killeffects} = loop-value:
+					set {_status} to "&e&lCLICK TO UNEQUIP"
+					enchant {_item} with unbreaking 1
+				else:
+					set {_status} to "&a&lCLICK TO EQUIP"
+
+				set {_target} to loop-value
+				format gui slot {_slot} with {_item} named "%{_name}% &7Kill Effect" with lore "&8ᴋɪʟʟ ᴇғғᴇᴄᴛ", "", "", {_status}, "" with all item flags:
+					toggleCosmetic({_p}, "killeffects", {_target})
+					openKillEffects({_p})
+			
+			else:
+				if ({data::%uuid of {_p}%::runes} ? 0) > {_cost}:
+					set {_status::*} to "&e&lCLICK TO PURCHASE", "", "&7Costs: %runes({_cost})%"
+				else:
+					set {_status::*} to "&c&lLOCKED", "", "&7Costs: %runes({_cost})%"
+				if {_requires} != "none":
+					add "&7Requires: &e%{_requires} in strict proper case%" to {_status::*}
+
+				format gui slot {_slot} with {_item} named "%{_name}% &7Kill Effect" with lore "&8ᴋɪʟʟ ᴇғғᴇᴄᴛ", "", "", {_status::*}, "" with all item flags:
+					if {_p} doesn't have permission "group.%{_requires}%":
+						send "%prefix()% You don't meet the requirements to buy this!" to {_p}
+						play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					else:
+						buy({_p}, {_item} named {_name}, "killeffects")
+
+
+
+			mod(loop-counter, 7) = 0
+			add 3 to {_slot}
+
+
+
+
+
+function killEffect(p: player, v: entity):
+	set {_effect} to {data::%uuid of {_p}%::equipped::killeffects}
+	set {_draw} to location 1.2 above {_v}
+
+
+#	█▀▄ █▀▀ █▀▀ ▄▀█ █░█ █░░ ▀█▀
+# 	█▄▀ ██▄ █▀░ █▀█ █▄█ █▄▄ ░█░
+
+	if {_effect} = "splash":
+		play sound "entity.generic.splash" at volume 2 at pitch 1.2 at {_draw}
+		draw 60 splash particles with offset vector(0.32, 0.32, 0.32) at {_draw}
+	
+	else if {_effect} = "slime":
+		play sound "entity.tropical_fish.death" at volume 2 at pitch 0.8 at {_draw}
+		play sound "entity.slime.squish" at volume 2 at pitch 1 at {_draw}
+		draw 25 slime item particles with offset vector(0.35, 0.35, 0.35) with extra value 2 at {_draw}
+		loop 5 times:
+			drop slime ball at {_draw}
+			modify nbt of dropped item:
+				set short tag "Age" of nbt to 5980
+				set short tag "PickupDelay" of nbt to 32767
+			set {_v} to random vector
+			set {_v}'s vector length to random number between 0.15 and 0.4
+			set dropped item's velocity to {_v}
+			draw 2 slime item particles with offset vector(0.35, 0.35, 0.35) with extra value 2 at {_draw}
+			
+			mod(loop-value, 3) = 0:
+				wait 1 tick
+
+	else if {_effect} = "bloodloss":
+		play sound "entity.zombie.converted_to_drowned" at volume 2 at pitch 1.5 at {_draw}
+		loop 12 times:
+			drop red dye at {_draw}
+			modify nbt of dropped item:
+				set short tag "Age" of nbt to 5980
+				set short tag "PickupDelay" of nbt to 32767
+			set {_v} to random vector
+			set {_v}'s vector length to random number between 0.3 and 0.5
+			set dropped item's velocity to {_v}
+			draw 1 redstone block block particles with offset vector(0.2, 0.2, 0.2) at {_draw}
+			
+			mod(loop-value, 4) = 0:
+				wait 1 tick
+
+	
+	else if {_effect} = "frostbite":
+
+		play sound "entity.player.hurt_freeze" at volume 2 at pitch 0.8 at {_draw}
+		play sound "block.glass.place" at volume 2 at pitch 0.8 at {_draw}
+
+		draw 8 snowflake particles with offset vector(0.3, 0.6, 0.3) with extra value 0.05 at {_draw}
+		set {_v} to location of {_v}
+		set {_v}'s pitch to 0
+
+		loop 2 times:
+			set {_loop} to loop-value
+			spawn block display at location ({_loop} - 1) above {_v}:
+				set {_ent::%{_loop}%} to block display
+				set block data of block display to ice
+				set transformation translation of block display to vector(-0.5, 0, -0.5)
+
+		wait 3 seconds
+		play sound "block.glass.break" at volume 1.25 at pitch 0.75 at {_draw}
+		draw 10 ice block particles with offset vector(0.3, 0.3, 0.3) at {_ent::*}
+		kill {_ent::*}
+
+
+
+	else if {_effect} = "sculk":
+
+		play sound "block.sculk_sensor.clicking" at volume 2 at {_draw}
+		play sound "block.sculk_shrieker.break" at volume 2 at {_draw}
+
+		loop shuffled blocks in radius (random integer between 3.5 and 5) of {_draw}:
+			loop-block is solid:
+				y-coordinate of loop-block <= y-coordinate of {_draw}
+				add 1 to {_counter}
+				chance of 60%:
+					set {_loc::%{_counter}%} to location of loop-block
+					set {_type::%{_counter}%} to type of loop-block
+					make all players see loop-block as sculk
+				chance of 40%:
+					block at location 1 above loop-block is air
+					set {_alt-counter} to {_counter} + 200
+					set {_loc2::%{_alt-counter}%} to location 1 above loop-block
+					make all players see block at location 1 above loop-block as sculk_vein[down=true]
+				mod({_counter}, 12) = 0:
+					draw 2 sculk soul particles with offset vector(3, 0.5, 3) with extra value 0.15 at {_draw}
+					wait 1 tick
+		
+		wait 5 seconds
+
+		play sound "block.sculk_sensor.clicking_stop" at volume 2 at {_draw}
+		play sound "block.sculk_sensor.break" at volume 2 at {_draw}
+
+		loop {_loc2::*}:
+			set {_loc::%loop-index%} to loop-value
+		loop {_loc::*}:
+			set {_index} to loop-index
+
+			if {_index} parsed as number > 200:
+				make all players see block at loop-value as air
+			else:
+				make all players see block at loop-value as {_type::%{_index}%}
+			
+			mod(loop-counter, 8) = 0:
+				draw 1 sculk soul particles with offset vector(3, 0.5, 3) with extra value 0.1 at {_draw}
+				wait 1 tick
+
+
+	
+# 	█▀▀ █▀█ ▄▀█ █▄░█ █▀▄
+# 	█▄█ █▀▄ █▀█ █░▀█ █▄▀
+
+	else if {_effect} = "ashen":
+		set {_dir} to vector from {_v} to {_p}
+		set {_dir}'s pitch to random number between 10 and -10
+		add random element out of (90 and -90) to yaw of {_dir}
+		set {_dir}'s vector length to 5
+
+		play sound "block.fire.extinguish" at volume 2 at pitch 0.8 at {_draw}
+
+		loop 160 times:
+			set {_rand} to random vector
+			set {_rand}'s vector length to 0.5
+			
+			set {_i} to random integer between 1 and 3
+			if {_i} = 1:
+				draw 0 large smoke particles with offset {_dir}+{_rand} with extra value 0.03 at ({_draw} ~ {_rand})
+			else if {_i} = 2:
+				draw 0 smoke particles with offset {_dir}+{_rand} with extra value 0.04 at ({_draw} ~ {_rand})
+			else:
+				draw 3 ash particles with offset vector(0.3, 0.3, 0.3) with extra value 2 at {_draw}
+
+			mod(loop-value, 5) = 0:
+				wait 1 tick
+	
+
+	else if {_effect} = "ember":
+		draw 5 lava particles with offset vector(0.3, 0.3, 0.3) at {_draw}
+		draw 8 flame particles with offset vector(0.2, 0.2, 0.2) with extra value 0.2 at {_draw}
+		draw 3 large smoke particles with offset vector(0.2, 0.2, 0.2) with extra value 0.1 at {_draw}
+		draw 10 smoke particles with offset vector(0.2, 0.2, 0.2) with extra value 0.1 at {_draw}
+
+		play sound "entity.blaze.death" at volume 2 at pitch 0.75 at {_draw}
+		play sound "block.fire.extinguish" at volume 2 at pitch 1.25 at {_draw}
+
+	else if {_effect} = "lightning":
+		strike lightning effect at {_v}
+
+		loop 2 times:
+			draw 12 electric spark particles with offset vector(0.5, 0.5, 0.5) with extra value 0.25 at {_draw}
+			wait 4 tick
+
+
+	
+# 	█▀▀ █▀▄▀█ █▀▀ █▀█ ▄▀█ █░░ █▀▄
+# 	██▄ █░▀░█ ██▄ █▀▄ █▀█ █▄▄ █▄▀
+
+	else if {_effect} = "Gust":
+		draw 5 gust particles with offset vector(0.65, 0.65, 0.65) at {_draw}
+		draw 8 dust plume particles with offset vector(0.2, 0.2, 0.2) with extra value 0.2 at {_draw}
+		play sound "entity.breeze.wind_burst" at volume 2 at pitch 1 at {_draw}
+	
+
+	else if {_effect} = "Honey":
+		loop 3 times:
+			set {_rand} to random vector
+			set {_rand}'s vector length to random number between 0.3 and 1.2
+			set {_rand}'s pitch to random number between -30 and 30
+			spawn bee at {_v} ~ vector(0,1,0) ~ {_rand}:
+				modify nbt of bee:
+					set byte tag "Invulnerable" of nbt to 1
+					set byte tag "HasNectar" of nbt to 1
+					set short tag "CannotenterHiveTicks" of nbt to 1200
+
+				set name of bee to "&eHoney Bee"
+				set {_rand}'s vector length to {_rand}'s vector length * 0.5
+				set bee's velocity to {_rand}
+				add bee to {_bees::*}
+		
+
+		draw 20 honey block block particles with offset vector(1, 1, 1) at ({_v} ~ vector(0,1,0))
+		draw 40 falling honey particles with offset vector(1, 1, 1) at ({_v} ~ vector(0,1,0))
+
+		play sound "entity.bee.hurt" at volume 2 at {_draw}
+		play sound "entity.bee.sting" at volume 2 at {_draw}
+		play sound "block.honey_block.slide" at volume 2 at {_draw}
+		play sound "block.honey_block.break" at volume 2 at {_draw}
+
+		wait 3 seconds
+		draw 3 poof particles with extra value 0.05 at {_bees::*}
+		kill {_bees::*}
+	
+
+	else if {_effect} = "Witchcraft":
+
+		play sound "entity.zombie_villager.cure" at volume 2 at pitch 1.5 at {_draw}
+		play sound "block.enchantment_table.use" at volume 2 at pitch 1.5 at {_draw}
+
+		draw 15 enchanting particles with offset vector(0.65, 1, 0.65) at ({_v} ~ vector(0,1,0))
+
+		set {_cv} to spherical vector with radius 1, yaw 0, pitch 0
+		set {_height} to vector(0, 0, 0)
+		set {_draw} to {_v} ~ vector(0, 0.2, 0)
+
+		loop 145 times:
+			draw 0 witch particles with offset {_cv} with extra value 0.5 at ({_draw} ~ {_height} ~ {_cv})
+			add 8 to {_cv}'s yaw
+			add 0.0225 to {_height}'s y component
+			
+
+			mod(loop-value, 4) = 0:
+				add 0.04 to {_cv}'s vector length
+				wait 1 tick
+
+		draw 20 reverse portal particles at ({_draw} ~ {_height})
+		play sound "entity.ender_eye.death" at volume 2 at pitch 1.5 at ({_draw} ~ {_height} )
+	
+
+	else if {_effect} = "Wealth":
+
+		set {_items::*} to emerald named "&aGem", emerald named "&aGem", diamond named "&aGem", diamond named "&aGem", gold ingot named "&aGem"
+		loop 8 times:
+			loop 3 times:
+				set {_rand} to random element out of {_items::*}
+				set {_rand-v} to random vector
+				set {_rand-v}'s vector length to random number between 0.4 and 1.5
+				set {_rand-v}'s pitch to random number between -30 and 30
+				set {_drop-loc} to ({_draw} ~ vector(0, 1.35, 0) ~ {_rand-v})
+
+				drop {_rand} at {_drop-loc}
+				modify nbt of dropped item:
+					set short tag "Age" of nbt to 5940
+					set short tag "PickupDelay" of nbt to 32767
+				
+				draw 1 electric spark particles with extra value 0.2 at {_drop-loc}
+				play sound "entity.ender_eye.death" at volume 2 at pitch 2 at {_drop-loc}
+
+				wait 2 tick

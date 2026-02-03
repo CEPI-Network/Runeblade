@@ -1,0 +1,250 @@
+
+
+import:
+    io.papermc.paper.entity.TeleportFlag$EntityState
+
+effect teleport %entities% to %location% retain passengers:
+    trigger:
+        delay effect
+        loop exprs-1:
+            loop-value.teleport(expr-2, EntityState.RETAIN_PASSENGERS)
+        continue
+
+
+
+
+
+function prefix() returns string:
+	return "&8[<##AFAFAF>◆&8]&7"
+
+function servername() returns string:
+	return "<##ff9b24>&lRUNE<##2eadd7>&lBLADE"
+
+function spawn() returns location:
+	return location(-0.5, 75, -54.5, world "runeblade", 0, 0)
+
+function runes(num: integer, shattered: boolean=false) returns string:
+	if {_shattered} = false:
+		return "&f%{_num} ? 0%<##2eadd7>₪ &fRunes"
+	else:
+		return "&f%{_num} ? 0%<##d15228>₪ &fShattered &fRunes"
+
+
+
+
+
+
+
+function unformat(name: text) returns string:
+	replace all " &8[&c🗡&8]" in {_name} with ""
+	replace all " &8[&a🏹&8]" in {_name} with ""
+	replace all " &8[&9🛡&8]" in {_name} with ""
+	replace all " &8[&7◆&8]" in {_name} with ""
+	return {_name}
+
+function formatTime(time: timespan) :: text:
+	set {_time} to "%{_time}%"
+	if {_time} parsed as timespan < 1 minute:
+		set {_num} to first element of ("%{_time}%" split at " ")
+		replace {_num} in {_time} with "%ceil( ({_num} parsed as number) * 10 ) / 10%"
+	replace all " seconds" or " second" with "s" in {_time}
+	replace all " minutes" or " minute" with "m" in {_time}
+	replace all " hours" or " hour" with "h" in {_time}
+	replace all " days" or " day" with "d" in {_time}
+	replace all " weeks" or " week" with "w" in {_time}
+	replace all " months" or " month" with "mo" in {_time}
+	replace all " " with "" in {_time}
+	replace all "and" with " " in {_time}
+	return {_time}
+
+
+function formatParagraph(desc: text, len: integer=40, col: string="&7") :: objects:
+	set {_descindex} to 1
+	set {_check::*} to {_desc} split at " "
+	loop {_check::*}:
+		if {_desc::%{_descindex}%} is set:
+			set {_desc::%{_descindex}%} to "%{_desc::%{_descindex}%}% &7%loop-value%"
+		else:
+			set {_desc::%{_descindex}%} to "%{_col}%%loop-value%"
+		if length of {_desc::%{_descindex}%} is greater than or equal to {_len}:
+			add 1 to {_descindex}
+	return {_desc::*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function getModifier(p: player, type: string) :: number:
+	set {_init::speed} to 0.2
+	set {_init::jump} to 0.42
+
+	set {_init} to {_init::%{_type}%}
+	set {_sum} to sum({-tempdata::%uuid of {_p}%::modifier::%{_type}%::*})
+	return first element out of clamp({_init} + {_sum}, 0, {_init}*2)
+function setModifier(p: player, type: string, uuid: string, mod: number):
+	set {-tempdata::%uuid of {_p}%::modifier::%{_type}%::%{_uuid}%} to {_mod}
+function removeModifier(p: player, type: string, uuid: string):
+	clear {-tempdata::%uuid of {_p}%::modifier::%{_type}%::%{_uuid}%}
+function clearModifiers(p: player, type: string="all"):
+	if {_type} = "all":
+		clear {-tempdata::%uuid of {_p}%::modifier::*}
+	else:
+		clear {-tempdata::%uuid of {_p}%::modifier::%{_type}%::*}
+	setSpeed({_p}, getModifier({_p}, "speed"))
+	setJumpStrength({_p}, getModifier({_p}, "jump"))
+
+function updateModifiers(p: player):
+	setSpeed({_p}, getModifier({_p}, "speed"))
+	setJumpStrength({_p}, getModifier({_p}, "jump"))
+
+function setSpeed(p: player, num: number):
+	set {_p}'s walkspeed to {_num}
+function setJumpStrength(p: player, num: number):
+	set {_p}'s jump strength attribute to {_num}
+
+
+
+
+		
+
+
+
+
+
+
+
+
+function showVector(loc: location, v: vector, col: color):
+	set {_v}'s vector length to 0.1
+	loop 30 times:
+		draw 1 {_col} dust particles at {_loc}
+		set {_loc} to {_loc} ~ {_v}
+
+
+
+
+import:
+	org.bukkit.map.MinecraftFont
+
+function getWidth(text: string) :: number:
+	set {_s::*} to {_text} split at "&l"
+
+	loop {_s::*}:
+		add (MinecraftFont.Font.getWidth(unformatted loop-value) + (size of (loop-value split at "")) - (size of loop-value split at " ")) to {_result} if mod(loop-index parsed as integer, 2) = 0
+		add MinecraftFont.Font.getWidth(unformatted loop-value) to {_result} if mod(loop-index parsed as integer, 2) = 1
+	return {_result}
+
+# 154 for chat, 127 for motd, 64 for items
+function centeredText(text: string, length: integer) :: string:
+
+	# replace tiny text -- getWidth() doesn't support it
+	set {_repl-text} to {_text}
+	set {_lower::*} to "abcdefghijklmnopqrstuvwxyz" split at "" and "AAA" split at ""
+	set {_replace::*} to "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ" split at "" and ("🗡", "🏹", "•")
+	loop {_replace::*}:
+		replace all loop-value in {_repl-text} with {_lower::%loop-counter%}
+
+	while {_compensated} ? 0 < ({_length} - (getWidth({_repl-text}) / 2)):
+		set {_return} to "%{_return} ? ""%&r "
+		add (getWidth(" ") + 1) to {_compensated}
+	if {_return} isn't set:
+		set {_return} to ""
+	return {_return} + {_text}
+
+
+
+on load:
+	clear {-rgbFormatting::*}
+	set {_temp::*} to "A", "B", "C", "D", "E" and "F"
+	loop integers from 0 to 15:
+		if loop-value >= 10:
+			set {_col} to {_temp::%loop-value - 9%}
+		else:
+			set {_col} to "%loop-value%"
+
+		set {-rgbFormatting::%loop-value%} to {_col}
+
+function colorToHex(color: color) :: string:
+	set {_color} to {_color}.asBukkitColor()
+	set {_rgb::1} to {_color}.getRed()
+	set {_rgb::2} to {_color}.getGreen()
+	set {_rgb::3} to {_color}.getBlue()
+	loop 3 times:
+		set {_rgb::%loop-value%} to join {-rgbFormatting::%floor({_rgb::%loop-value%} / 16)%}, {-rgbFormatting::%mod({_rgb::%loop-value%}, 16)%}
+	return "<##%{_rgb::1}%%{_rgb::2}%%{_rgb::3}%>"
+
+
+
+
+
+# ░█████╗░██████╗░░█████╗░
+# ██╔══██╗██╔══██╗██╔══██╗
+# ███████║██████╔╝██║░░╚═╝
+# ██╔══██║██╔══██╗██║░░██╗
+# ██║░░██║██║░░██║╚█████╔╝
+# ╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░
+
+
+function baseArc(yaw: number, pitch: number, rad: number=2, dir: int=-1, length: integer=120, step: integer=2, angle: number=0, pt: number=0) :: vectors:
+
+	set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+	set {_ref} to vector from yaw {_yaw} and pitch {_pitch}-90
+	set {_cv} to vector from yaw {_yaw} and pitch {_pitch}
+	# dir = 1 or -1
+
+	set {_rot} to {_step} * {_dir}
+	set {_loops} to {_length} / {_step}
+	set {_x} to (180 - {_length}) / ({_dir} * 2)
+
+	set {_cv}'s vector length to {_rad}
+	rotate {_cv} around {_ref} by ({_length} / 2)
+	rotate {_cv} around {_ref} by 360-{_length} if {_dir} = 1 # rotates entire arc around for RIGHT -> LEFT
+	rotate {_cv} around {_ref} by {_pt}
+
+	loop {_loops} times:
+		set {_temp} to {_cv}
+		rotate {_temp} around {_v} by {_angle}
+		add {_temp} to {_vecs::*}
+
+		rotate {_cv} around {_ref} by {_rot}
+	
+	return {_vecs::*}
+
+
+
+
+
+function baseCircle(yaw: number, pitch: number, rad: number=2, step: integer=2, pt: number=0) :: vectors:
+	set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+	set {_ref} to vector from yaw {_yaw} and pitch {_pitch}+90
+
+	set {_ref}'s vector length to {_rad}
+	rotate {_ref} around {_v} by {_pt}
+
+	loop 360/{_step} times:
+		add {_ref} to {_vecs::*}
+		rotate {_ref} around {_v} by {_step}
+
+	return {_vecs::*}
+
+
+

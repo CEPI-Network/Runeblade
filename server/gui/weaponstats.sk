@@ -1,0 +1,78 @@
+
+
+on rightclick:
+	clicked entity is an interaction
+	{displays::stats::3} = clicked entity
+	openWeaponStats(player)
+	play sound "ui.button.click" to player
+
+
+function openWeaponStats(p: player):
+	play sound "block.bell.use" at volume 3 at pitch 0.8 to {_p}
+    
+	create gui with virtual chest inventory with 5 rows named "<#f42e82>&lWEAPON STATS":
+		open gui to {_p}
+        
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+
+		format gui slot 21 with iron sword with custom model data 1 named "&c&lWEAPONS" with lore "", formatParagraph("View the stats of primary and secondary weapons!"), "" with all item flags:
+			viewWeaponStats({_p}, "weapons")
+		format gui slot 23 with enchanted book named "&5&lATTUNEMENTS" with lore "", formatParagraph("View the stats of attunements!"), "" with all item flags:
+			viewWeaponStats({_p}, "attunements")
+
+    
+function viewWeaponStats(p: player, type: string="weapons"):
+	close {_p}'s inventory
+	play sound "ui.button.click" to {_p}
+    
+	if {_type} = "weapons":
+		set {_sort::*} to indices of {-weapons::*} where [{-weapons::%input%::hidden} != true]
+		loop {_sort::*}:
+			set {_entry::%loop-value%} to {stats::%loop-value%::kills} ? 0
+		set {_sort::*} to sorted indices of {_entry::*} in descending order
+		set {_type} to "weapons"
+		
+	else if {_type} = "attunements":
+		set {_sort::*} to indices of {-attunements::*}
+		loop {_sort::*}:
+			set {_entry::%loop-value%} to {stats::%loop-value%::kills} ? 0
+		set {_sort::*} to sorted indices of {_entry::*} in descending order
+		set {_type} to "attunements"
+
+
+
+	set {_col::1} to "&f"
+	set {_col::2} to "&7"
+	send "" to {_p}
+	send "&9&l%{_type} in uppercase% STATS &8» " to {_p}
+	send "" to {_p}
+	loop {_sort::*}:
+
+		set {_col} to {_col::%mod(loop-counter, 2)+1%}
+		set {_init} to "&e  %{-%{_type}%::%loop-value%::name}%&r %{_col}%»"
+		set {_concat} to ""
+		loop (20 - length of uncolored {_init}) times:
+			set {_concat} to "%{_concat}% "
+		send formatted "%{_init}%%{_concat}% &f%({stats::%loop-value%::kills} ? 0)%<##ff2458>🗡  &8|  &f%{stats::%loop-value%::selects} ? 0% <##2eadd7>Selects" to {_p}
+	send "" to {_p}
+
+
+
+
+
+
+
+command /ind:
+	permission: op
+	trigger:
+		set {_ind::*} to indices of {data::*} where [time played of offlineplayer(input, false) >= 1 hour]
+		loop {_ind::*}:
+			loop indices of {-weapons::*}:
+				add {data::%loop-value-1%::kills::%loop-value-2%} to {_kills::%loop-value-2%}
+
+		broadcast ""
+		loop sorted indices of {_kills::*} in descending order:
+			broadcast "%loop-counter%. %loop-value in strict proper case% - %{_kills::%loop-value%}%"
+		broadcast ""
+

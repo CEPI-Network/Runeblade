@@ -1,0 +1,388 @@
+
+options:
+	bar: "&8&m                                         "
+
+
+command /challenges:
+	trigger:
+		openChallenges(player)
+
+
+on load:
+	clear {-challenges::*}
+	clear {-dailychallenges::*}
+	loop indices of {-challenges-group::*}:
+		clear {-challenges-group::%loop-value%::*}
+	clear {-challenges-group::*}
+	
+	registerChallenge("&fGet &a10 &fKills", wooden sword, 1, "A fighter's first challenge in the arena.", "kills_10", "&e&nParry&f Attunement", {-attunements::parry::desc})
+	registerChallenge("&fGet &a30 &fKills", apple, 1, "Only by facing death can one overcome it.", "kills_30", "&c&nVigorous&f Skill", {-skills::vigorous::desc})
+	registerChallenge("&fGet &a50 &fKills", chainmail chestplate, 1, "Rage forth and put your life behind your blade.", "kills_50", "&e&nBlitz&f Attunement", {-attunements::blitz::desc})
+	registerChallenge("&fGet &a100 &fKills", enchanting table, 1, "The feeling of a blade striking you has grown dull with time.", "kills_100", "&e&nReinforce&f Attunement", {-attunements::reinforce::desc})
+
+	registerChallenge("&fGet &a15 &e&nUnsheathe&f Kills", iron sword with custom model data 1, 2, "The first step to mastering the art of the blade.", "unsheathe_kills_15", "&e&nThrust&f Attunement", {-attunements::thrust::desc})
+	registerChallenge("&fGet &a25 &e&nThrust&f Kills", diamond sword with custom model data 1, 2, "With each extra step, you grow closer to becoming invincible under the sun.", "thrust_kills_25", "&e&nFlame Dance&f Attunement", {-attunements::flame dance::desc})
+	registerChallenge("&fGet &a30 &e&nFlame Dance&f Kills", golden sword with custom model data 1, 2, "Burn your foes with nothing but the skill of your blade.", "flame dance_kills_30", "&e&nRippleblade&f Attunement", {-attunements::rippleblade::desc})
+	registerChallenge("&fGet &a40 &e&nRippleblade&f Kills", iron pickaxe with custom model data 1, 2, "Stay as calm as the night, then strike with the force of a tidal wave.", "rippleblade_kills_40", "&e&nEruption&f Attunement", {-attunements::eruption::desc})
+
+	registerChallenge("&fGet &a20 &fPerfect Combos", netherite sword, 3, "What purpose does the sword have if it does not hit its mark?", "combo_20", "&e&nHook&f Attunement", {-attunements::hook::desc})
+	registerChallenge("&e&nHook&f &a20 &fEnemies", tripwire hook, 3, "There is no escaping the endless spiral.", "hook_enemies_20", "&e&nShroud&f Attunement", {-attunements::shroud::desc})
+	registerChallenge("&fGet &a30 &e&nShroud&f Hits", charcoal, 3, "See everything in it's entirety effortlessly. That is what it means to truly ""see"".", "shroud_30", "&e&nThunderbolt&f Attunement", {-attunements::thunderbolt::desc})
+	registerChallenge("&fGet &a30 &e&nThunderbolt&f Hits", lightning rod, 3, "Strike fear into the hearts of your enemies with the mere sound of your blade.", "thunderbolt_30", "&e&nVortex&f Attunement", {-attunements::vortex::desc})
+
+	# add new requirements to progressChallenge() on bottom of .sk
+
+	registerDailyChallenge("&fGet &a5 &fKills with <any>", "<any>", "kills_5_<any>", 125)
+	registerDailyChallenge("&fGet &a10 &fKills with <any>", "<any>", "kills_10_<any>", 250)
+	registerDailyChallenge("&fGet &a20 &fKills with <weapon>", "<weapon>", "kills_20_<weapon>", 500)
+
+
+
+	
+	loop indices of {-sorted-challenges-group::*}:
+		clear {-sorted-challenges-group::%loop-value%::*}
+	clear {-sorted-challenges-group::*}
+
+	loop (1, 2 and 3):
+		set {-sorted-challenges-group::%loop-value%::*} to sorted indices of {-challenges-group::%loop-value%::*} in ascending order
+
+	wait 1 second
+	generateDailyChallenges()
+
+
+function registerChallenge(name: text, item: item, group: integer, desc: text, requires: text, reward: text, reward-desc: text=""):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-challenges::%{_index}%::name} to {_name}
+	set {-challenges::%{_index}%::item} to {_item}
+	set {-challenges::%{_index}%::group} to {_group}
+	set {-challenges::%{_index}%::desc} to {_desc}
+	set {-challenges::%{_index}%::requires} to {_requires}
+	set {-challenges::%{_index}%::reward} to {_reward}
+	set {-challenges::%{_index}%::reward-desc} to {_reward-desc}
+
+	loop (indices of {-challenges::*}) where [{-challenges::%input%::group} = {_group}]:
+		set {_entry::%loop-value%} to {-challenges-group::%{_group}%::%loop-value%} ? 0
+	set {-challenges-group::%{_group}%::%{_index}%} to max({_entry::*}) + 1
+
+
+
+function registerDailyChallenge(name: text, item: text, requires: text, reward: number):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-dailychallenges::%{_index}%::name} to {_name}
+	set {-dailychallenges::%{_index}%::item} to {_item}
+	set {-dailychallenges::%{_index}%::requires} to {_requires}
+	set {-dailychallenges::%{_index}%::reward} to {_reward}
+
+
+
+
+
+
+
+function generateDailyChallenges():
+
+	loop (indices of {data::*}) where [indices of {data::%input%::daily::*} is set]:
+		clear {data::%loop-value%::daily::*}
+		clear {data::%loop-value%::daily}
+	loop indices of {-daily::*}:
+		clear {-daily::%loop-value%::*}
+		clear {-daily::*}
+
+	loop 3 times:
+
+		# index = get 10 kills with <any>
+		# formatted index = get 10 kills with earthshaker
+
+		set {_index} to random element out of (indices of {-dailychallenges::*})
+		set {_formatted-index} to {_index}
+		if {_index} contains "<weapon>":
+			set {_type} to "weapons"
+			set {_rand} to random element out of (indices of {-weapons::*}) where [{-weapons::%input%::hidden} != true]
+			replace all "<weapon>" in {_formatted-index} with {_rand}
+		else if {_index} contains "<any>":
+			set {_ind::*} to (indices of {-weapons::*}) where [{-weapons::%input%::hidden} != true] and ((indices of {-attunements::*}) where [input != "Transient Moonlight"]) where [{stats::%input%::kills} > 0]
+			set {_rand} to random element out of {_ind::*}
+			if indices of {-weapons::*} contains {_rand}:
+				set {_type} to "weapons"
+			else:
+				set {_type} to "attunements"
+			replace all "<any>" in {_formatted-index} with {_rand}
+		
+		# formatted display name
+		if {_type} = "weapons":
+			set {_item-name} to {-weapons::%{_rand}%::name}
+		else:
+			set {_item-name} to "&e&n%{-attunements::%{_rand}%::name}%"
+		set {_name} to {-dailychallenges::%{_index}%::name}
+		replace all "<weapon>" and "<any>" in {_name} with {_item-name}
+
+
+		# item
+		set {_item} to ({-dailychallenges::%{_index}%::item} parsed as item) ? {-dailychallenges::%{_index}%::item}
+		if class info of {_item} = "text": # failed parse
+			if {_type} = "weapons":
+				set {_item} to {-%{_type}%::%{_rand}%::item}
+			else:
+				set {_item} to enchanted book
+		set {_item} to barrier if {_item} is not set
+
+
+		# requires
+		set {_requires} to {-dailychallenges::%{_index}%::requires}
+		replace all "<weapon>" and "<any>" in {_requires} with {_rand}
+
+		# reward
+		set {_raw} to random number between 0.8 and 1.2
+		set {_quality} to 0.2 * round({_raw} / 0.2)
+		set {_reward} to {-dailychallenges::%{_index}%::reward} * {_quality}
+		if {_rand} = "parry":
+			set {_reward} to {_reward} * 100
+
+
+		set {-daily::%{_formatted-index}%::name} to {_name}
+		set {-daily::%{_formatted-index}%::item} to {_item}
+		set {-daily::%{_formatted-index}%::requires} to {_requires}
+		set {-daily::%{_formatted-index}%::reward} to {_reward}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function openChallenges(p: player, menu: string="main", page: integer=1):
+
+	play sound "ui.button.click" to {_p}
+
+	if {_menu} = "main":
+		create gui with virtual chest inventory with 3 rows named "<##FFED16>&l         CHALLENGES":
+			open gui to {_p}
+
+			format gui slot (0 and 26) with yellow stained glass pane named "&0"
+			format gui slot (9 and 17) with orange stained glass pane named "&0"
+			format gui slot (18 and 8) with black stained glass pane named "&0"
+
+			format gui slot 12 with iron sword with custom model data 1 named "<##FFED16>&lMAIN CHALLENGES" with lore "", formatParagraph("Complete difficult challenges to unlock new attunements and equipment!"), "" with all item flags:
+				openChallenges({_p}, "challenges")
+			format gui slot 14 with clock named "&a&lDAILY CHALLENGES" with lore "", formatParagraph("Complete daily challenges to unlock rewards!"), "" with all item flags:
+				openChallenges({_p}, "daily")
+
+	# main challenges // unlocks attunements
+	else if {_menu} = "challenges":
+
+		create gui with virtual chest inventory with 6 rows named "<##FFED16>&l         CHALLENGES":
+			open gui to {_p}
+
+			format gui slot (integers between 0 and 8) with yellow stained glass pane named "&0"
+			format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+			format gui slot 4 with spruce sign named "<##FFED16>&lCHALLENGES" with lore "", formatParagraph("Complete challenges to unlock new equipment, attunements & cosmetics!") and "" with all item flags
+			format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu.", "" with all item flags:
+				openChallenges({_p}, "main")
+
+			set {_pged::*} to page {_page} of (indices of {-sorted-challenges-group::*}) with 3 lines
+
+			loop {_pged::*}:
+				set {_slot} to 9 + (loop-counter*2)
+				loop {-sorted-challenges-group::%loop-value%::*}:
+
+					set {_name} to {-challenges::%loop-value-2%::name}
+					set {_item} to {-challenges::%loop-value-2%::item}
+					set {_desc::*} to formatParagraph({-challenges::%loop-value-2%::desc})
+
+					# PROGRESS =======================================
+					set {_requires::*} to {-challenges::%loop-value-2%::requires} split at "_"
+					if {_requires::*} contains "kills":
+						set {_wrd} to " Kills"
+					else if {_requires::*} contains "enemies":
+						set {_wrd} to " Enemies"
+					else:
+						set {_wrd} to ""
+					
+					if {_requires::1} = "kills":
+						set {_stat} to {data::%uuid of {_p}%::kills} ? 0
+					else:
+						set {_stat} to {data::%uuid of {_p}%::challenge-progress::%{_requires::1}%} ? 0
+
+					#set {_len} to length of {_requires}
+					#set {_requires} to join (characters at (integers between {_len}-2 and {_len}) in {_requires}) with ""
+					#replace all "s" in {_requires} with "" # should try learning regex for this to exclude all alphanumeric chars
+					#replace all "_" in {_requires} with ""
+					set {_progress} to "&eProgress: &f%{_stat}%/%last element out of {_requires::*}%%{_wrd}%"
+					# ================================================
+
+
+					set {_reward} to {-challenges::%loop-value-2%::reward}
+					if {-challenges::%loop-value-2%::reward-desc} != "":
+						set {_reward-desc::*} to formatParagraph({-challenges::%loop-value-2%::reward-desc}) and ""
+					else:
+						set {_reward-desc::*} to ""
+					if {data::%uuid of {_p}%::challenges::*} contains loop-value-2:
+						set {_status::*} to "&a&lCOMPLETED"
+						enchant {_item} with unbreaking 1
+					else:
+						set {_status::*} to "&c&lNOT COMPLETED", "", {_progress}
+
+					format gui slot {_slot} with {_item} named {_name} with lore "&8ᴄʜᴀʟʟᴇɴɢᴇ", "", {_desc::*}, "", {@bar}, "", "&d&lREWARD: &f%{_reward}%", "", {_reward-desc::*}, {@bar}, "", {_status::*}, "" with all item flags
+
+					add 9 to {_slot}
+
+
+	else if {_menu} = "daily":
+		create gui with virtual chest inventory with 5 rows named "&a&l      DAILY CHALLENGES":
+			open gui to {_p}
+
+			format gui slot (integers between 0 and 8) with lime stained glass pane named "&0"
+			format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+			format gui slot 4 with spruce sign named "&a&lDAILY CHALLENGES" with lore "", formatParagraph("Complete daily challenges to unlock rewards!") and "" with all item flags
+			format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu.", "" with all item flags:
+				openChallenges({_p}, "main")
+
+			set {_slot} to 20
+			loop 3 times:
+				set {_index} to loop-valueth element out of indices of {-daily::*}
+
+				if size of indices of {-daily::*} = 0:
+					generateDailyChallenges()
+
+				set {_name} to {-daily::%{_index}%::name}
+				set {_item} to {-daily::%{_index}%::item}
+				set {_reward} to {-daily::%{_index}%::reward}
+				
+
+				# PROGRESS =======================================
+				set {_requires::*} to {-daily::%{_index}%::requires} split at "_"
+				if {_requires::*} contains "kills":
+					set {_wrd} to " Kills"
+				else:
+					set {_wrd} to ""
+				
+				if {_requires::1} = "kills":
+					set {_stat} to {data::%uuid of {_p}%::daily::%{_index}%} ? 0
+
+				set {_item-name} to {-weapons::%{_requires::3}%::name} ? "&e&n%{-attunements::%{_requires::3}%::name}%" ? "&c&lERROR"
+
+				if {_stat} < ({_requires::2} parsed as number):
+					set {_progress} to "&eProgress: &f%{_stat}%/%{_requires::2}%%{_wrd}%"
+				else:
+					set {_progress} to "&a&lCOMPLETED"
+					enchant {_item} with unbreaking 1
+				# ================================================
+
+
+
+				format gui slot {_slot} with {_item} named {_name} with lore "&8ᴅᴀɪʟʏ ᴄʜᴀʟʟᴇɴɢᴇ", "", {@bar}, "", "&d&lREWARD: &f%runes({_reward})%", "", {@bar}, "", {_progress}, "" with all item flags
+
+				add 2 to {_slot}
+
+
+
+function completeChallenge(p: player, index: text):
+	set {_name} to {-challenges::%{_index}%::name}
+	set {_reward} to {-challenges::%{_index}%::reward}
+	set {_uncol-reward} to uncolored {_reward} in lowercase
+	set {_raw-reward} to {_uncol-reward}
+	replace all " attunement" in {_raw-reward} with ""
+	replace all " skill" in {_raw-reward} with ""
+
+	(indices of {-challenges::*}) contains {_index}
+
+	send "" to {_p}
+	send {@bar} to {_p}
+	send "" to {_p}
+	send "<##FFED16>&l CHALLENGE COMPLETED &8» &f%{_name}%" to {_p}
+	send "" to {_p}
+	send "&d    &8• &dReward: &f%{_reward}%" to {_p}
+	send "" to {_p}
+	if {_uncol-reward} contains "attunement":
+		(indices of {-attunements::*}) contains {_raw-reward}
+
+		send "" to {_p}
+		send "&7   Visit the &5&lATTUNEMENT MASTER &7to equip it!" to {_p}
+		send "" to {_p}
+		add {_raw-reward} to {data::%uuid of {_p}%::attunements::*}
+	else if {_uncol-reward} contains "skill":
+		(indices of {-skills::*}) contains {_raw-reward}
+
+		send "" to {_p}
+		send "&7   Visit the &c&lSKILLS &7shop to equip it!" to {_p}
+		send "" to {_p}
+		add {_raw-reward} to {data::%uuid of {_p}%::skills::*}
+	add {_index} to {data::%uuid of {_p}%::challenges::*}
+	send {@bar} to {_p}
+
+	
+	play sound "ui.toast.challenge_complete" at volume 10 at pitch 1.5 to {_p}
+	loop 5 times:
+		play sound "block.note_block.pling" at volume 10 at pitch 1+(loop-value/6) to {_p}
+		wait 2 tick
+
+
+
+
+function completeDailyChallenge(p: player, index: text):
+	set {_name} to {-daily::%{_index}%::name}
+	set {_reward} to {-daily::%{_index}%::reward}
+	(indices of {-daily::*}) contains {_index}
+
+	send "" to {_p}
+	send {@bar} to {_p}
+	send "" to {_p}
+	send "&a&l DAILY CHALLENGE COMPLETED &8»" to {_p}
+	send "" to {_p}
+	send "   &f%{_name}%" to {_p}
+	send "" to {_p}
+	send "&d    &8• &dReward: &f%runes({_reward})%" to {_p}
+	send "" to {_p}
+	send {@bar} to {_p}
+
+	add {_reward} to {data::%uuid of {_p}%::runes}
+	score({_p})
+	
+	play sound "ui.toast.challenge_complete" at volume 10 at pitch 1.5 to {_p}
+	loop 5 times:
+		play sound "block.note_block.pling" at volume 10 at pitch 1+(loop-value/6) to {_p}
+		wait 2 tick
+
+
+
+
+function progressChallenge(p: player, objective: text, stat: number):
+	("unsheathe", "thrust", "flame dance", "rippleblade", "shroud", "hook", "thunderbolt", "combo") contains {_objective}
+	# progressChallenge({_p}, "unsheathe", 1) -> adds 1 kill to unsheathe reqs
+	add {_stat} to {data::%uuid of {_p}%::challenge-progress::%{_objective}%}
+
+	loop indices of {-challenges::*}:
+		{data::%uuid of {_p}%::challenges::*} doesn't contain loop-value # hasn't already completed it
+
+		set {_spl::*} to {-challenges::%loop-value%::requires} split at "_"
+		{_spl::*} contains {_objective} # correct objective?
+
+		set {_req} to last element out of {_spl::*} parsed as number
+		if {data::%uuid of {_p}%::challenge-progress::%{_objective}%} >= {_req}:
+			completeChallenge({_p}, loop-value)
+			stop
+
+
+function progressDailyChallenge(p: player, objective: text):
+	loop indices of {-daily::*}:
+		loop-value contains {_objective}
+		set {_index} to loop-value
+	
+	{_index} is set
+	add 1 to {data::%uuid of {_p}%::daily::%{_index}%}
+	
+	set {_requires::*} to {-daily::%{_index}%::requires} split at "_"
+	set {_stat-req} to {_requires::2} parsed as number
+	
+	if {data::%uuid of {_p}%::daily::%{_index}%} = {_stat-req}:
+		completeDailyChallenge({_p}, {_index})

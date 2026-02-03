@@ -1,0 +1,105 @@
+
+
+
+function unsheatheAction(p: player, weapon: text, atk-scale: number):
+	set {_hit} to 1
+
+	set {_particle-scale::1} to 1.6
+	set {_particle-scale::2} to 1.8
+	set {_particle-scale::3} to 2
+
+	if {_weapon} = "gilded greatsword":
+		set {_windup-time} to 13 # ticks
+	else:
+		set {_windup-time} to 10
+
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}, "unsheathe") * {_atk-scale}
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+
+	play sound "entity.illusioner.prepare_mirror" at volume 3 at pitch 2 at {_p}
+	play sound "entity.evoker.cast_spell" at volume 3 at pitch 2 at {_p}
+	play sound "sword.sheen" at volume 3 at pitch 1.25+{_sound-scale} at {_p}
+
+	# windup
+	loop {_windup-time} times:
+		loop 90 times:
+			set {_v} to spherical vector from radius (loop-value-1 / 5), yaw (loop-value-2 * 4) and pitch 0
+			draw 1 {-colours::%{_palette}%::1::1} dust particles that transitions to {-colours::%{_palette}%::2::1} at location 0.05 above {_p} ~ {_v}
+		
+		if loop-value = {_windup-time} - 1:
+			set {_init} to location of {_p}
+		wait 1 tick
+
+	# momentum scaling
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+	set {_draw} to location 0.5 infront of {_p}'s head ~ {_v}
+
+	set {_dir} to -1
+	set {_arc} to 100
+	set {_angle} to 90 + random number between -5 and 5 - ({_p}'s pitch * 0.33)
+	set {_yaw} to {_p}'s yaw
+	set {_pitch} to {_p}'s pitch
+	set {_hitbox} to round({_arc}/3)
+
+	set {_arc::1::*} to baseArc({_yaw}, {_pitch}-5, 4.6, {_dir}, {_arc}, 1, {_angle})
+	set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 5, {_dir}, {_arc}, 1, {_angle})
+	set {_arc::3::*} to baseArc({_yaw}, {_pitch}-5, 5.4, {_dir}, {_arc}, 1, {_angle})
+
+	play sound "entity.player.attack.sweep" at volume 3 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "item.trident.throw" at volume 3 at pitch 0.65+{_sound-scale} at {_p}
+	play sound "entity.iron_golem.attack" at volume 2.6 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "entity.trident.return" at volume 0.5 at pitch 0.6+{_sound-scale} at {_p}
+	play sound "entity.iron_golem.damage" at volume 1.25 at pitch 0.5+{_sound-scale} at {_p}
+	play sound "sword.heavy_slash" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+	play sound "sword.whoosh" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+
+	set {-tempdata::%uuid of {_p}%::stunned} to true
+	make {_p} swing their main hand
+
+	loop {_arc} times:
+		set {_loop-scale} to max(1, (loop-value * -0.01666) + 1.65)
+		loop 3 times:
+			set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+			set {_col} to {-colours::%{_palette}%::1::%loop-value-2%} ? {-colours::%{_palette}%::1::1}
+			draw 1 {_col} dust particles of size {_particle-scale} at {_draw} ~ {_arc::%loop-value-2%::%loop-value-1%}
+		chance of 30%:
+			set {_v} to {_arc::2::%loop-value%}
+			add {_angle} to {_v}'s pitch
+			set {_rand} to random vector
+			set {_rand}'s vector length to 0.2
+			draw 0 crit particles with offset {_v} with extra value 0.2 at {_draw} ~ {_arc::2::%loop-value%} ~ {_rand}
+			
+
+		mod(loop-value, {_hitbox}) = 0:
+			loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+				isDamageableEntity(loop-entity, {_p}) = true
+				{_hit::*} doesn't contain loop-entity
+				set {_hit::%uuid of loop-entity%} to loop-entity
+
+				play sound "entity.player.attack.crit" at pitch 1.2 at {_p}
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "unsheathe")
+				make {_p} damage loop-entity by {_dmg}
+				push loop-entity (vector from {_p} to loop-entity) at speed 0.4 * {_atk-scale}
+				push loop-entity up at speed 0.25 * {_atk-scale}
+			
+			loop entities in radius 2.5 of (location 1.5 infront of {_p}'s head) where [input != {_p}]:
+				isDamageableEntity(loop-entity, {_p}) = true
+				{_hit::*} doesn't contain loop-entity
+				set {_hit::%uuid of loop-entity%} to loop-entity
+
+				play sound "entity.player.attack.crit" at pitch 1.2 at {_p}
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "unsheathe")
+				make {_p} damage loop-entity by {_dmg}
+				push loop-entity (vector from {_p} to loop-entity) at speed 0.4 * {_atk-scale}
+				push loop-entity up at speed 0.25 * {_atk-scale}
+
+
+		mod(loop-value, 20) = 0:
+			wait 1 tick
+	
+	clear {-tempdata::%uuid of {_p}%::stunned}

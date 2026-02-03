@@ -1,0 +1,441 @@
+
+on damage:
+	victim is not a player
+	if attacker is not a player:
+		byte tag "mob" of custom nbt of attacker = 1
+		byte tag "mob" of custom nbt of victim = 1
+		cancel event
+	if damage cause is fall:
+		cancel event
+
+
+
+
+command /sm <text> <text> <integer>:
+	permission: op
+	trigger:
+		if arg-2 = "self":
+			set {_loc} to location of player
+		else if arg-2 = "target":
+			set {_loc} to location above target block of player
+		
+		loop arg-3 times:
+			if arg-1 = "knight":
+				spawn_knight({_loc})
+			else if arg-1 = "fencer":
+				spawn_fencer({_loc})
+			else if arg-1 = "brute":
+				spawn_brute({_loc})
+			else if arg-1 = "mage":
+				spawn_mage({_loc})
+			else if arg-1 = "hound":
+				spawn_hound({_loc})
+			else if arg-1 = "spider":
+				spawn_spider({_loc})
+			else if arg-1 = "cavespider":
+				spawn_caveSpider({_loc})
+			else if arg-1 = "necromancer":
+				spawn_necromancer({_loc})
+		send "%prefix()% Spawned &f%arg-3% &7of &e%arg-1 in strict proper case%&7!" to player
+
+
+on tab complete of "/sm":
+	set tab completions of position 1 to "hound", "knight", "fencer", "brute", "necromancer", "mage", "spider", "cavespider"
+	set tab completions of position 2 to "self" and "target"
+	set tab completions of position 3 to 1, 2, 3, 4, 5
+
+
+
+
+
+# on kill
+on death:
+	victim is not a player
+	byte tag "mob" of custom nbt of victim = 1
+
+	set {_attacker} to attacker ? {-tempdata::%uuid of victim%::attacker}
+	{_attacker} is a player
+	
+
+	killEffect({_attacker}, victim)
+
+	set {_amnt} to 5
+	set {_extra} to ""
+	
+	if {-tempdata::%uuid of {_attacker}%::equipment::rusted ring} is set:
+		set {_mod} to 5 * {-tempdata::%uuid of {_attacker}%::equipment::rusted ring}
+		add {_mod} to {_amnt}
+
+	if {-tempdata::%uuid of attacker%::dungeon} is set:
+		add {_amnt} to {-tempdata::%uuid of {_attacker}%::shattered-runes}
+		send "<##D87A46> + %runes({_amnt}, true)% %{_extra}%" to {_attacker}
+	else:
+		add {_amnt} to {data::%uuid of {_attacker}%::runes}
+		send "&3 + %runes({_amnt})% %{_extra}%" to {_attacker}
+		add 1 to {-raid-kills} if {event} = "raid"
+
+	apply regeneration 3 to {_attacker} for 2.25 seconds
+	score({_attacker})
+
+	if {-tempdata::%uuid of {_attacker}%::equipment::witch's root} is set:
+		add 1 to {-tempdata::%uuid of {_attacker}%::root-stacks}
+		updateSkill({_attacker})
+
+		wait 5 seconds
+
+		remove 1 from {-tempdata::%uuid of {_attacker}%::root-stacks}
+		updateSkill({_attacker})
+
+		if {-tempdata::%uuid of {_attacker}%::root-stacks} <= 0:
+			clear {-tempdata::%uuid of {_attacker}%::root-stacks}
+
+
+
+
+
+
+
+function spawn_knight(l: location, scaling: number=1):
+
+	spawn adult zombie at {_l}:
+		set {_ent} to zombie
+		set name of zombie to "&6Knight"
+
+		set helmet of zombie to unbreakable iron helmet with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set chestplate of zombie to unbreakable iron chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set leggings of zombie to unbreakable iron leggings with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set boots of zombie to unbreakable iron boots with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set tool of zombie to unbreakable iron sword
+		set zombie's tool's item model to "rubishine"
+
+		apply infinite weakness 255 to zombie:
+			hide particles
+		apply infinite speed 2 to zombie:
+			hide particles
+		set byte tag "mob" of custom nbt of zombie to 1
+		set zombie's maximum health to 7*{_scaling}
+		heal zombie
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} <= 4.25:
+				set {_hit} to mod({_hit}, 3)+1
+				make {_ent} swing their main hand
+				rubishineAction({_ent}, {_hit}, 1)
+
+				wait {-weapons::rubishine::cooldown::%{_hit}%}
+				wait "%random integer between 10 and 40% ticks" parsed as timespan
+			else:
+				wait 25 tick
+		else:
+			wait 20 tick
+
+	kill {_ent}
+
+
+
+
+
+function spawn_fencer(l: location, scaling: number=1):
+
+	spawn stray at {_l}:
+		set {_ent} to stray
+		set name of stray to "&bFencer"
+
+		set helmet of stray to unbreakable iron helmet with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set chestplate of stray to unbreakable iron chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set leggings of stray to unbreakable iron leggings with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set boots of stray to unbreakable iron boots with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set tool of stray to unbreakable diamond sword
+		set stray's tool's item model to "shimmerfang"
+
+		apply infinite weakness 255 to stray:
+			hide particles
+		apply infinite speed 1 to stray:
+			hide particles
+		set byte tag "mob" of custom nbt of stray to 1
+		set stray's maximum health to 6*{_scaling}
+		heal stray
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} <= 5:
+				set {_hit} to mod({_hit}, 2)+1
+				make {_ent} swing their main hand
+				shimmerfangAction({_ent}, {_hit}, 1)
+
+				wait {-weapons::shimmerfang::cooldown::%{_hit}%}
+				wait "%random integer between 10 and 40% ticks" parsed as timespan
+			else:
+				wait 25 tick
+		else:
+			wait 20 tick
+
+	kill {_ent}
+
+
+
+
+
+
+
+
+function spawn_brute(l: location, scaling: number=1):
+
+	spawn adult husk at {_l}:
+		set {_ent} to husk
+		set name of husk to "&cBrute"
+
+		set helmet of husk to unbreakable iron helmet with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set chestplate of husk to unbreakable iron chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set leggings of husk to unbreakable iron leggings with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set boots of husk to unbreakable iron boots with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set tool of husk to unbreakable iron axe
+		set husk's tool's item model to "earthshaker"
+
+		apply infinite weakness 255 to husk:
+			hide particles
+		apply infinite speed 2 to husk:
+			hide particles
+		set byte tag "mob" of custom nbt of husk to 1
+		set husk's maximum health to 9*{_scaling}
+		heal husk
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} <= 4.75:
+				set {_hit} to mod({_hit}, 4)+1
+				make {_ent} swing their main hand
+				earthshakerAction({_ent}, {_hit}, 1)
+
+				wait {-weapons::earthshaker::cooldown::%{_hit}%}
+				wait "%random integer between 10 and 40% ticks" parsed as timespan
+			else:
+				wait 25 tick
+		else:
+			wait 20 tick
+
+	kill {_ent}
+
+
+
+
+
+
+function spawn_mage(l: location, scaling: number=1):
+
+	spawn adult zombie at {_l}:
+		set {_ent} to zombie
+		set name of zombie to "&dMage"
+
+		set chestplate of zombie to unbreakable leather chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set leggings of zombie to unbreakable leather leggings with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		set boots of zombie to unbreakable leather boots with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+		
+		set int tag "minecraft:dyed_color" of nbt of (chestplate of zombie) to 8991080
+		set int tag "minecraft:dyed_color" of nbt of (leggings of zombie) to 4856130
+		set int tag "minecraft:dyed_color" of nbt of (boots of zombie) to 3021867
+		
+		set tool of zombie to unbreakable stick
+		set zombie's tool's item model to "arcanum"
+
+		apply infinite weakness 255 to zombie:
+			hide particles
+		set byte tag "mob" of custom nbt of zombie to 1
+		set zombie's maximum health to 6*{_scaling}
+		heal zombie
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} <= 5.25:
+				set {_hit} to mod({_hit}, 2)+1
+				make {_ent} swing their main hand
+				arcanumAction({_ent}, {_hit}, 1)
+
+				wait {-weapons::arcanum::cooldown::%{_hit}%}
+				wait "%random integer between 10 and 40% ticks" parsed as timespan
+			else:
+				wait 25 tick
+		else:
+			wait 20 tick
+
+	kill {_ent}
+
+
+
+
+
+
+
+
+function spawn_hound(l: location, scaling: number=1):
+
+	spawn wolf at {_l}:
+		set {_ent} to wolf
+		set name of wolf to "&7Hound"
+
+		apply infinite speed 1 to wolf:
+			hide particles
+		set byte tag "mob" of custom nbt of wolf to 1
+		set wolf's maximum health to 5*{_scaling}
+		set wolf's follow range attribute to 64
+		heal wolf
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} >= 10:
+				chance of 25%:
+					push {_ent} (vector from {_ent} to location 2 above target entity of {_ent}) at speed 1.5
+				else:
+					wait 40 tick
+			else:
+				wait 40 tick
+		else:
+			set {_nearest} to nearest player in radius 32 of {_ent} excluding (all players where [input's gamemode = spectator])
+			set {_ent}'s target entity to {_nearest}
+			wait 40 tick
+
+	kill {_ent}
+
+
+
+function spawn_spider(l: location, scaling: number=1):
+
+	spawn spider at {_l}:
+		set {_ent} to spider
+		set name of spider to "&fSpider"
+
+		apply infinite speed 1 to spider:
+			hide particles
+		set byte tag "mob" of custom nbt of spider to 1
+		set spider's maximum health to 6*{_scaling}
+		set spider's follow range attribute to 32
+		heal spider
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} >= 10:
+				chance of 25%:
+					push {_ent} (vector from {_ent} to location 2 above target entity of {_ent}) at speed 0.75
+				else:
+					wait 40 tick
+			else:
+				wait 40 tick
+		else:
+			set {_nearest} to nearest player in radius 32 of {_ent} excluding (all players where [input's gamemode = spectator])
+			set {_ent}'s target entity to {_nearest}
+			wait 40 tick
+
+	kill {_ent}
+
+
+
+
+
+function spawn_caveSpider(l: location, scaling: number=1):
+
+	spawn cave spider at {_l}:
+		set {_ent} to cave spider
+		set name of spider to "&fCave Spider"
+
+		apply infinite speed 1 to cave spider:
+			hide particles
+		set byte tag "mob" of custom nbt of cave spider to 1
+		set cave spider's maximum health to 6*{_scaling}
+		set cave spider's follow range attribute to 32
+		heal cave spider
+
+	
+	set {_hit} to 0
+	while {_ent} exists:
+		if any:
+			distance between {_ent} and (nearest player at {_ent}) > 250
+			loop-counter >= 300 # bare minimum over 10m
+			{_ent} is not alive
+		then:
+			exit loop
+
+
+		target entity of {_ent} is set:
+			set {_dist} to (distance between {_ent} and (target entity of {_ent})) ? 1
+			if {_dist} >= 10:
+				chance of 25%:
+					push {_ent} (vector from {_ent} to location 2 above target entity of {_ent}) at speed 0.5
+				else:
+					wait 40 tick
+			else:
+				wait 40 tick
+		else:
+			set {_nearest} to nearest player in radius 32 of {_ent} excluding (all players where [input's gamemode = spectator])
+			set {_ent}'s target entity to {_nearest}
+			wait 40 tick
+
+	kill {_ent}
+
+

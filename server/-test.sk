@@ -1,0 +1,138 @@
+
+
+import:
+	net.citizensnpcs.trait.SkinTrait
+	net.citizensnpcs.api.CitizensAPI
+	net.citizensnpcs.api.ai.goals.MoveToGoal
+	net.citizensnpcs.npc.ai.CitizensNavigator
+
+
+
+
+on rightclick with gold pickaxe:
+	set {_ent} to target entity
+	set {_npc} to {_ent}.getNPC()
+	set {_nav} to {_npc}.getNavigator()
+	broadcast "Nav: %{_nav}%"
+
+	send "%{_nav}.isNavigating()%" to player
+	if player is sneaking:
+		{_nav}.setStraightLineTarget(location of player)
+	else:
+		{_nav}.setTarget(player, true)
+
+
+# https://jd.citizensnpcs.co/net/citizensnpcs/api/ai/NavigatorParameters.html
+
+
+
+
+
+
+
+on leftclick with iron sword:
+	name of event-item = "&7&lUchigatana"
+
+	loop 1 times:
+		swingSword(player, 1)
+		wait 2 tick
+
+
+
+function swingSword(p: player, swing: integer=1):
+
+	# baseArc
+	set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch	
+	set {_ref} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch+90
+	rotate {_v} around {_ref} by 0
+
+	set {_dir} to -1
+	set {_arc} to 135 # arc length
+	set {_angle} to 0
+	set {_yaw} to {_v}'s yaw
+	set {_pitch} to {_p}'s pitch
+
+	set {_step} to 15
+
+	set {_arc::*} to baseArc({_yaw}, {_pitch}, 2.2, {_dir}, {_arc}, 1, {_angle})
+
+	# spawn ent
+	set {_init} to location 1 infront of {_p} ~ vector(0, 0.85, 0) ~ {_arc::%{_arc} / 2%}
+
+	spawn item display at {_init}:
+		set {_ent} to item display
+		set display item of item display to iron sword
+		set display scale of item display to vector(1.25, 1.25, 1.25)
+
+		# make entity face directly opposite of where its teleported to
+		set display right rotation of {_ent} to axisAngle(-45 * (3.14 / 180), 0, 0, 1)
+		set display left rotation of {_ent} to axisAngle(270 * (3.14 / 180), 1, 0, 0)
+
+		set teleport duration of {_ent} to 1
+
+
+	play sound "entity.player.attack.sweep" at volume 3 at pitch 0.9 at {_p}
+	play sound "item.trident.throw" at volume 3 at pitch 1.1 at {_p}
+	play sound "sword.slash" at volume 3 at pitch 1.1 at {_p}
+
+	set {_dmg} to getDamage({_p}, "rubishine", 1)
+
+	# prev & curr/draw are used to grab the middle point, so that the rotations are aware of other points around them
+	#	instead of being isolated and inaccurately rotating
+	set {_prev} to {_init} ~ {_arc::1}
+	set {_prev}'s yaw to {_arc::1}'s yaw
+	set {_prev}'s pitch to {_arc::1}'s pitch
+
+	set {_pitch} to {_p}'s pitch * -1
+
+	loop {_arc} / {_step} times:
+		
+		# step is used to avoid 90 smthn teleports and have it be clunky; 9 teleports with duration 1 >>> 90 teleports with duration 1 (given a 1 tick wait per 10 steps)
+		set {_ind} to loop-value * {_step}
+
+		set {_draw} to {_init} ~ {_arc::%{_ind}%}
+		set {_draw}'s yaw to {_arc::%{_ind}%}'s yaw
+		set {_draw}'s pitch to {_arc::%{_ind}%}'s pitch
+
+		# gauge the mid point
+		set {_dir} to vector from {_prev} to {_draw}
+		set {_ref} to {_dir}
+		add 90 to {_ref}'s pitch
+		
+		# halve its vect length (normal vect length would make prev ~ vec == curr/draw)
+		set {_dir}'s vector length to ({_dir}'s vector length) / 2
+		set {_temp} to {_prev} ~ {_dir}
+		# make it point straight forwards/backwards/idk you could prob invert this and then remove 180 from the display ent rotation and it'd work fine
+		rotate {_dir} around {_ref} by 90
+		
+		# prepare the teleport loc
+		set {_temp}'s yaw to {_dir}'s yaw
+		set {_temp}'s pitch to {_pitch}
+		teleport {_ent} to {_temp}
+
+		loop entities in radius 2.75 of ({_temp}) where [input != {_ent}]:
+			loop-entity != {_p}
+			isDamageableEntity(loop-entity, {_p}) = true
+			{_hit::*} doesn't contain loop-entity
+
+			hitCombo({_p}, {_hit}, 1, "rubishine")
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed 0.5
+			push loop-entity up at speed 0.35
+			draw 3 of crit at loop-entity ~ vector(0,1,0) with extra 0.3
+			add loop-entity to {_hit::*}
+
+		wait 1 tick
+
+		# overwrite the old prev so it actually knows what's going on
+		set {_prev} to {_draw}
+	
+
+	wait 4 tick
+	kill {_ent}
+
+
+
+
+
+

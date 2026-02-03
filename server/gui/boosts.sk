@@ -1,0 +1,66 @@
+
+on skript start:
+	clear {boost}
+
+on skript stop:
+	clear {boost}
+
+
+
+command /boost:
+	trigger:
+		openBoosts(player)
+
+function openBoosts(p: player):
+
+	create gui with virtual chest inventory with 5 rows named "&b&lBOOSTS" and shape "bbbbsbbbb", "---------", "----1----", "---------", "xxxxxxxxx":
+		open gui to {_p}
+
+		format gui slot "b" with light blue stained glass pane named "&0"
+		format gui slot "x" with black stained glass pane named "&0"
+		format gui slot "s" with spruce sign named "&b&lBOOSTS" with lore "", formatParagraph("Activate temporary server-wide boosts to increase rune gains!") and ""
+
+
+		set {_owned} to {data::%uuid of {_p}%::boosts} ? 0
+		if {_owned} > 0:
+			set {_disp} to "&a%{_owned}%"
+			set {_lore::*} to "&e&lCLICK TO ACTIVATE"
+		else:
+			set {_disp} to "&c%{_owned}%"
+			set {_lore::*} to formatParagraph("Consider buying a boost from the &estore and supporting the server! &8(&e/buy&8)")
+		format gui slot "1" with flower banner pattern named "&eScroll of Rune Boosting" with lore "&8ʙᴏᴏsᴛ", "", formatParagraph("Increase the server's <##2eadd7>₪ &fRune &7drop rate by &f2x &7for &e1 &eHour&7.", 50), "", "&7Owned: %{_disp}%", "", {_lore::*}, "" with all item flags:
+			useBoost({_p})
+
+
+
+
+
+function useBoost(p: player):
+	if ({data::%uuid of {_p}%::boosts} ? 0) <= 0:
+		send "%prefix()% &7You don't own any boosts to use!" to {_p}
+		play sound "block.note_block.pling" at pitch 0.5 to {_p}
+	else if {boost} is set:
+		send "%prefix()% &7A boost is already active! &8(&e%formatTime(difference between (1 hour from {boost}) and now)% left&8)" to {_p}
+		play sound "block.note_block.pling" at pitch 0.5 to {_p}
+	
+	else:
+		remove 1 from {data::%uuid of {_p}%::boosts}
+		set {boost} to now
+		
+		play sound "ui.toast.challenge_complete" at volume 100 at pitch 1.5 to all players
+		broadcast "&8&m                                                             "
+		broadcast ""
+		broadcast "&f   %{_p}% &7used a &eScroll of Rune Boosting&7!"
+		broadcast "&8   (&e2x <##2eadd7>₪ &fRune Gains &7for &e1 Hour&8)"
+		broadcast ""
+		broadcast "&8&m                                                             "
+
+		wait 1 hour
+
+		play sound "entity.firework_rocket.twinkle_far" at volume 100 at pitch 0.75 to all players
+		broadcast "&8&m                                                             "
+		broadcast ""
+		broadcast "&f   %{_p}%&7's &eScroll of Rune Boosting &7has expired!"
+		broadcast ""
+		broadcast "&8&m                                                             "
+		clear {boost}

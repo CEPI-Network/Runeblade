@@ -1,0 +1,207 @@
+
+
+options:
+	exclude: creeper, wolf
+
+
+
+
+
+
+
+function spawnDungeonSpawners():
+	
+	set {_particle::default} to "2 witch particles" parsed as directional particle
+	set {_particle::den} to "2 firework particles" parsed as directional particle
+	set {_particle::nest} to "2 cloud particles" parsed as directional particle
+
+	set {_range::default} to 10
+	set {_range::den} to 64
+	set {_range::nest} to 32
+
+	set {_delay::default} to 9 seconds
+	set {_delay::den} to 20 seconds
+	set {_delay::nest} to 14 seconds
+
+
+	loop 3 times: # depth
+	
+		set {_scaling} to 1 + 0.25*(loop-value - 1)
+
+		loop "default", "den", "nest":
+			loop {-dungeon::spawners::%loop-value-1%::%loop-value-2%::*}:
+
+				spawn creeper at location 0.75 below loop-value-3:
+					set {_uuid} to uuid of creeper
+					set {_hitbox::%{_uuid}%} to creeper
+					add creeper to {displays::dungeon::*}
+					set name of creeper to "&dSpawner"
+					add nbt compound from "{NoAI:1b,Silent:1b}" to nbt of creeper
+					set byte tag "display" of custom nbt of creeper to 1
+					apply infinite invisibility to creeper:
+						hide particles
+					set creeper's maximum health to 8*{_scaling}
+					heal creeper
+
+				spawn item display at loop-value-3:
+					set {_display::%{_uuid}%} to item display
+					add item display to {displays::dungeon::*}
+					set item of item display to spawner
+					set interpolation delay of item display to 0 ticks
+					set interpolation duration of item display to 20 ticks
+					set byte tag "display" of custom nbt of item display to 1
+
+				set {_type::%{_uuid}%} to loop-value-2
+				set {_last-spawn::%{_uuid}%} to now
+				set {_scaling::%{_uuid}%} to {_scaling}
+
+
+	while size of {_display::*} > 0:
+
+		loop indices of {_display::*}:
+
+			set {_uuid} to loop-value
+			set {_type} to {_type::%{_uuid}%}
+
+			# DEATH
+			if any:
+				{_hitbox::%{_uuid}%} is not alive
+				{_display::%{_uuid}%} is not alive
+			then:
+
+				draw 15 spawner block particles with extra value 0.35 at {_display::%{_uuid}%}
+				draw 10 soul fire flame particles with extra value 0.2 at {_display::%{_uuid}%}
+				draw 5 poof particles with extra value 0.15 at {_display::%{_uuid}%}
+
+				play sound "entity.blaze.death" at volume 1.5 at location of {_display::%{_uuid}%}
+				play sound "block.fire.extinguish" at volume 1.5 at location of {_display::%{_uuid}%}
+
+				# don't drop if nobody killed it (ex. on dungeon regen)
+				if size of (all players in radius 32 of {_display::%{_uuid}%}) > 0:
+
+					set {_index} to weighted_choice(("10₪ shattered runes", "25₪ shattered runes" and "50₪ shattered runes"), (2, 2, 1))
+					set {_i} to {-dungeon::loot::%{_index}%::item} named {-dungeon::loot::%{_index}%::name} with lore {-dungeon::loot::%{_index}%::desc::*} with all item flags
+					if {_index} contains "runes":
+						set {_cut} to uncolored {_name} in lowercase
+						replace all "₪ shattered runes" in {_cut} with ""
+						set {_cut} to {_cut} parsed as integer
+						set int tag "runes" of custom nbt of {_i} to {_cut}
+					
+					drop {_i} at {_display::%{_uuid}%}
+
+				kill {_hitbox::%{_uuid}%} and {_display::%{_uuid}%}
+				clear {_hitbox::%{_uuid}%} and {_display::%{_uuid}%}
+				continue
+			
+		
+			draw 10 smoke particles with offset vector(1, 1, 1) with extra value 0.025 at {_display::%{_uuid}%}
+			draw {_particle::%{_type}%} with offset vector(0.75, 0.75, 0.75) with extra value 0.025 at {_display::%{_uuid}%}
+
+
+			if ((all players in radius {_range::%{_type}%} of {_display::%{_uuid}%}) where [input's gamemode != spectator]) is set:
+				
+				set {_size} to size of ((all mobs in radius {_range::%{_type}%} of {_display::%{_uuid}%}) where [input is not {@exclude}])
+				set {_diff} to difference between {_last-spawn::%{_uuid}%} and now
+
+				if all:
+					{_size} < 5
+					{_diff} >= {_delay::%{_type}%}
+				then:
+					set {_last-spawn::%{_uuid}%} to now
+
+					draw 30 flame particles with offset vector(1.5, 1.5, 1.5) with extra value 0.1 at {_display::%{_uuid}%}
+					draw 15 smoke particles with offset vector(1.5, 1.5, 1.5) with extra value 0.05 at {_display::%{_uuid}%}
+
+					play sound "entity.blaze.shoot" at volume 1.5 at location of {_display::%{_uuid}%}
+
+					loop (random integer between 2 and 3) times:
+						set {_rand} to random vector
+						set {_rand}'s y component to 0.2
+						set {_rand}'s vector length to random number between 2 and 4
+						set {_loc} to location 1.5 below {_display::%{_uuid}%} ~ {_rand}
+
+
+						if {_type} = "default":
+							if {_scaling::%{_uuid}%} = 1:
+								set {_choice} to weighted_choice(("knight", "fencer"), (6, 2))
+							else if {_scaling::%{_uuid}%} = 1.25:
+								set {_choice} to weighted_choice(("knight", "fencer", "brute"), (6, 3, 1))
+							else:
+								set {_choice} to weighted_choice(("knight", "fencer", "brute"), (5, 3, 2))
+
+							if {_choice} = "knight":
+								spawn_knight({_loc}, {_scaling::%{_uuid}%})
+							else if {_choice} = "fencer":
+								spawn_fencer({_loc}, {_scaling::%{_uuid}%})
+							else if {_choice} = "brute":
+								spawn_brute({_loc}, {_scaling::%{_uuid}%})
+						
+						else if {_type} = "den":
+							spawn_hound({_loc}, {_scaling::%{_uuid}%})
+						
+						else if {_type} = "nest":
+							chance of 60%:
+								spawn_spider({_loc}, {_scaling::%{_uuid}%})
+							else:
+								spawn_caveSpider({_loc}, {_scaling::%{_uuid}%})
+
+		
+		set interpolation delay of {_display::*} to 0 ticks
+		set {_rot} to left rotation of first element out of {_display::*} rotated around vector(25,25,0)
+		set left rotation of {_display::*} to {_rot}
+
+		wait 20 ticks
+
+
+
+
+	loop all players where [{-tempdata::%uuid of input%::dungeon} is set]:
+		set {_time} to (difference between now and {-tempdata::%uuid of loop-player%::dungeon})
+		set {_time} to 15 minutes if {_time} isn't set
+		clear {-tempdata::%uuid of loop-player%::dungeon}
+
+		wait 1 tick
+		teleport loop-player to spawn() retaining passengers
+		play sound "ui.toast.challenge_complete" to loop-player
+
+		set {_amnt} to {-tempdata::%uuid of loop-player%::shattered-runes} / 2
+
+		set {_init} to {_amnt}
+		set {_extra} to ""
+		if {boost} is set:
+			set {_amnt} to {_amnt} * 2
+			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+
+		send "" to loop-player
+		send "&5&l DUNGEON CLEARED" to loop-player
+		send "" to loop-player
+		send "&8 - &f%formatTime({_time})%&e⌚" to loop-player
+		send "&8 - &3 +%runes({_amnt}, false)%%{_extra}%" to loop-player
+		send "" to loop-player
+
+		add {_amnt} to {data::%uuid of loop-player%::runes}
+		if ({data::%uuid of loop-player%::dungeon::time} ? 99 days) > {_time}:
+			set {data::%uuid of loop-player%::dungeon::time} to {_time}
+		if ({data::%uuid of loop-player%::dungeon::runes} ? 0) < {_init}:
+			set {data::%uuid of loop-player%::dungeon::runes} to {_init}
+
+		score(loop-player)
+		leaveDungeonQueue(loop-player, "escape")
+		
+	set {_spectating::*} to (all players in radius 250 of location(1000, 150, 1000, world "runeblade")) where [input's gamemode = spectator]
+	if size of {_spectating::*} > 0:
+		size of (all players in radius 250 of location(1000, 150, 1000, world "runeblade")) where [input's gamemode = adventure] = 0
+		
+		loop {_spectating::*}:
+			set loop-value's gamemode to adventure
+			teleport loop-value to spawn() retain passengers
+			leaveDungeonQueue(loop-value, "failure")
+
+	wait 3 seconds
+	set {_size} to size of (all players in radius 250 of location(1000, 150, 1000, world "runeblade"))
+	if {_size} = 0:
+		clearDungeon()
+
+
+
+

@@ -1,0 +1,346 @@
+
+on load:
+	clear {-dungeon::queue::*}
+
+
+
+command /leavedungeon:
+	trigger:
+		leaveDungeonQueue(player) = true
+		teleport player to spawn()
+
+
+
+
+function loadDungeon():
+	# load chunks [ 2 chunk radius around self is loaded ]
+	# starter room
+	load chunk at location(1034, 80, 981, world "runeblade") with ticket
+
+	# 4 grid
+	load chunk at location(1048, 98, 1015, world "runeblade") with ticket
+	load chunk at location(1015, 98, 1016, world "runeblade") with ticket
+	load chunk at location(1015, 98, 1050, world "runeblade") with ticket
+	load chunk at location(1048, 98, 1048, world "runeblade") with ticket
+
+	# edge case
+	load chunk at location(1076, 98, 1063, world "runeblade") with ticket
+	load chunk at location(1076, 98, 1015, world "runeblade") with ticket
+	load chunk at location(1016, 98, 1076, world "runeblade") with ticket
+	load chunk at location(1064, 98, 1076, world "runeblade") with ticket
+
+
+function unloadDungeon():
+	unload chunk at location(1034, 80, 981, world "runeblade")
+
+	# 4 grid
+	unload chunk at location(1048, 98, 1015, world "runeblade")
+	unload chunk at location(1015, 98, 1016, world "runeblade")
+	unload chunk at location(1015, 98, 1050, world "runeblade")
+	unload chunk at location(1048, 98, 1048, world "runeblade")
+
+	# edge case
+	unload chunk at location(1076, 98, 1063, world "runeblade")
+	unload chunk at location(1076, 98, 1015, world "runeblade")
+	unload chunk at location(1016, 98, 1076, world "runeblade")
+	unload chunk at location(1064, 98, 1076, world "runeblade")
+
+
+
+
+
+
+function openDungeon(p: player):
+
+	create gui with virtual chest inventory with 5 rows named "<##5D5DC7>&l          DUNGEONS":
+		open gui to {_p}
+		format gui slot (integers between 0 and 8) with blue stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "<##5D5DC7>&lDUNGEONS" with lore "", formatParagraph("Enter the dungeon and fight your way back to the surface with riches in tow!"), "", formatParagraph("Successful attempts reward you with Runes and other unique rewards.") and "" with all item flags
+
+		format gui slot 21 with bell named "&e&lLEADERBOARDS" with lore "", formatParagraph("View the Dungeon leaderboards!") and "" with all item flags:
+			play sound "ui.button.click" to {_p}
+			openDungeonLeaderboards({_p})
+		
+		if {_ongoing} != true:
+			format gui slot 23 with iron sword named "&c&lENTER THE DUNGEON" with lore "", formatParagraph("Enter the Dungeon alone or with some friends!") and "", "", "&fIn Queue: &e%size of {-dungeon::queue::*}%&8/&e4", "" with all item flags:
+				set {_attempt} to enterDungeonQueue({_p})
+				if {_attempt} = false:
+					play sound "block.note_block.pling" at pitch 0.5 to {_p}
+					send "%prefix()% The dungeon queue is full!"
+				else if {_attempt} = true:
+					play sound "block.note_block.pling" to {_p}
+					openDungeonQueue({_p})
+				else:
+					play sound "ui.button.click" to {_p}
+					openDungeonQueue({_p})
+					
+		
+		else:
+			format gui slot 23 with clock named "&6&lDUNGEON IS FULL" with lore "", formatParagraph("Players are already fighting in the dungeon!"), "", "&e&lCLICK TO SPECTATE", "" with all item flags:
+				spectateDungeon({_p})
+
+
+function enterDungeonQueue(p: player) :: boolean:
+	{-dungeon::queue::*} doesn't contain {_p}
+	if size of {-dungeon::queue::*} < 4:
+		loop {-dungeon::queue::*}:
+			send "%prefix()% &e%{_p}% &7joined the Dungeon queue!" to loop-value
+			play sound "block.note_block.pling" to loop-value
+		add {_p} to {-dungeon::queue::*}
+		return true
+	else:
+		return false
+
+function leaveDungeonQueue(p: player, reason: string="none") :: boolean:
+
+	if {_reason} = "escape":
+		set {_msg} to "escaped the Dungeon!"
+	else if {_reason} = "failure":
+		set {_msg} to "failed to escape the Dungeon."
+
+		set {_time} to (difference between now and {-tempdata::%uuid of {_p}%::dungeon})
+		set {_time} to 15 minutes if {_time} isn't set
+		set {_amnt} to {-tempdata::%uuid of {_p}%::shattered-runes} * (random number between 0.1 and 0.3)
+
+		send "" to {_p}
+		send "&5&l DUNGEON FAILED" to {_p}
+		send "" to {_p}
+		send "&8 - &f%formatTime({_time})%&e⌚" to {_p}
+		send "&8 - &3 +%runes({_amnt}, false)%" to {_p}
+		send "" to {_p}
+		add {_amnt} to {data::%uuid of {_p}%::runes}
+
+	else:
+		set {_msg} to "left the dungeon queue!"
+
+	if any:
+		{-dungeon::queue::*} contains {_p}
+		{-tempdata::%uuid of {_p}%::dungeon} is set
+	then:
+		remove {_p} from {-dungeon::queue::*}
+		clear {-tempdata::%uuid of {_p}%::dungeon}
+		clear {-tempdata::%uuid of {_p}%::shattered-runes}
+		clear {-tempdata::%uuid of {_p}%::boon}
+		clear {-tempdata::%uuid of {_p}%::dungeon::*}
+		clear {-tempdata::%uuid of {_p}%::equipment::*}
+		if {_p} is connected: # func might be called from on leave
+			updateSkill({_p})
+			score({_p})
+
+
+		loop {-dungeon::queue::*}:
+			send "%prefix()% &e%{_p}% &7%{_msg}%" to loop-value
+			play sound "block.note_block.pling" at pitch 0.5 to loop-value
+		send "%prefix()% Left the dungeon." to {_p}
+		play sound "block.note_block.pling" to {_p}
+		clear {_p}'s inventory
+		equipArmour({_p})
+
+		if size of all players where [{-tempdata::%uuid of input%::dungeon} is set] = 0:
+			clear {-dungeon::start}
+		
+		return true
+	return false
+
+
+function openDungeonQueue(p: player):
+	
+	create gui with virtual chest inventory with 6 rows named "<##5D5DC7>&l          DUNGEONS":
+		open gui to {_p}
+		format gui slot (integers between 0 and 8) with blue stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "<##5D5DC7>&lDUNGEONS" with lore "" with all item flags
+		format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu!", "" with all item flags:
+			play sound "ui.button.click" to {_p}
+			openDungeon({_p})
+
+		set {_slot} to 10
+		loop 4 times:
+			set {_val} to loop-valueth element out of {-dungeon::queue::*}
+			
+			# player is in queue
+			if {_val} is set:
+				# error correction
+				{_val} isn't connected:
+					leaveDungeonQueue({_val})
+					openDungeonQueue({_p})
+					stop
+
+				format gui slot {_slot} with skull of {_val} named "%{_val}'s prefix ? ""%%{_val}'s name%" with lore "&8ᴘʟᴀʏᴇʀ", "" with all item flags
+
+			# empty slot
+			else:
+				format gui slot {_slot} with gray dye named "&8&oEmpty Slot" with lore "" with all item flags
+
+			add 9 to {_slot}
+		
+		{-dungeon::queue::*} contains {_p}
+		format gui slot 24 with netherite sword named "&c&lSTART DUNGEON RAID" with lore "", formatParagraph("Enter the Dungeon with your crew!"), "" with all item flags:
+			if {-dungeon::start} = true:
+				play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+				send "%prefix()% The dungeon is already started! If this is an error, report it to a staff member." to {_p}
+			else:
+
+				loop all players where [name of input's top inventory = "<##5D5DC7>&l          DUNGEONS"]:
+					close loop-player's inventory
+				startDungeon()
+				set {-dungeon::start} to true
+
+		format gui slot 34 with barrier named "&c&lLEAVE QUEUE" with lore "", formatParagraph("Leave the Dungeon queue."), "" with all item flags:
+			leaveDungeonQueue({_p})
+			play sound "ui.button.click" to {_p}
+			openDungeon({_p})
+
+
+
+
+function startDungeon():
+	{-dungeon::start} != true
+	set {-dungeon::start} to true
+
+	# check if is in combat
+	loop {-dungeon::queue::*}:
+		if {-tempdata::%uuid of loop-value%::combat-log} is set:
+			set {_in-combat} to loop-value
+	
+	{_in-combat} is set:
+		send "%prefix()% &f%{_in-combat}% &7is still in combat!" to {-dungeon::queue::*}
+		play sound "block.note_block.pling" at volume 10 at pitch 0.5 to {-dungeon::queue::*}
+		stop
+
+
+	# START
+
+	send title "&eGenerating Dungeon..." to {-dungeon::queue::*}
+	play sound "block.note_block.bit" at volume 10 at pitch 2 to {-dungeon::queue::*}
+
+	clearDungeon()
+
+	loop {-dungeon::queue::*}:
+		send "%prefix()% &fClearing previous dungeon... &8(&e15s&8)" to loop-value
+		play sound "block.note_block.pling" at pitch 2 to loop-value
+
+	wait 15 seconds
+
+	wilson()
+
+	loop {-dungeon::queue::*}:
+		send "%prefix()% Generating dungeon..." to loop-value
+	
+	set {_col} to minimessage from "<gradient:##FF5555:##FFDF55>---------------</gradient>"
+	set {_col::*} to raw (elements from 1 to 15 out of ({_col} split at "-"))
+
+	remove blindness from {-dungeon::queue::*}
+	apply blindness 1 to {-dungeon::queue::*} for 16 seconds:
+		hide particles
+	loop reversed 15 times:
+		set {_num} to formatted "%{_col::%loop-value%}%%loop-value%"
+		send title "&eGenerating..." with subtitle "%{_num}%" to {-dungeon::queue::*}
+		play sound "block.note_block.bit" at volume 10 at pitch 2 to {-dungeon::queue::*}
+		wait 1 second
+
+	loop {-dungeon::queue::*}:
+		clear {-tempdata::%uuid of loop-value%::boon}
+		clear {-tempdata::%uuid of loop-value%::shattered-runes}
+		clear {-tempdata::%uuid of loop-value%::dungeon::*}
+		clear {-tempdata::%uuid of loop-value%::equipment::*}
+		set {-tempdata::%uuid of loop-value%::dungeon} to now
+		score(loop-value)
+
+		teleport loop-value to location(1017.5, 161, 969.5, world "runeblade", 0, 0)
+		clear loop-value's inventory
+		equipArmour(loop-value)
+		set slot 8 of loop-value's inventory to {-dungeon::bag}
+		play sound "entity.enderman.teleport" to loop-value
+
+
+
+
+
+
+
+function clearDungeon():
+	clear {-dungeon::start}
+
+	loadDungeon()
+
+	loop all players in radius 250 of location(1000, 80, 1000, world "runeblade") where [input's gamemode != creative]:
+		teleport loop-value to spawn()
+		send "%prefix()% The dungeon was forcibly closed." to loop-value
+		play sound "block.note_block.didgeridoo" at volume 10 at pitch 0.5 to loop-value
+
+	loop 4 times:
+		clearCells(loop-value)
+		wait 4 seconds
+
+
+	loop all players:
+		clear {-tempdata::%uuid of loop-value%::boon}
+		clear {-tempdata::%uuid of loop-value%::shattered-runes}
+		clear {-tempdata::%uuid of loop-value%::dungeon::*}
+		clear {-tempdata::%uuid of loop-value%::dungeon}
+		clear {-tempdata::%uuid of loop-value%::equipment::*}
+		score(loop-value)
+
+
+
+
+function spectateDungeon(p: player):
+	stop
+
+
+
+
+
+function openDungeonLeaderboards(p: player):
+	
+	create gui with virtual chest inventory with 5 rows named "<##5D5DC7>&l          DUNGEONS":
+		open gui to {_p}
+		format gui slot (integers between 0 and 8) with yellow stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with bell named "&e&lLEADERBOARDS" with lore "", formatParagraph("View the best dungeon records!"), "" with all item flags
+
+		format gui slot 40 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu!", "" with all item flags:
+			play sound "ui.button.click" to {_p}
+			openDungeon({_p})
+
+		set {_ind::time::*} to (indices of {data::*}) where [{data::%input%::dungeon::time} is set]
+		set {_ind::runes::*} to (indices of {data::*}) where [{data::%input%::dungeon::runes} is set]
+
+		set {_grad} to minimessage from "<gradient:##FF4848:##FFD855>----------"
+		set {_spl::*} to raw {_grad} split at "-"
+
+
+		loop "time" and "runes":
+			loop {_ind::%loop-value%::*}:
+				set {_raw::%loop-value-1%::%loop-value-2%} to {data::%loop-value-2%::dungeon::%loop-value-1%}
+				# {_raw::time::%uuid%} = 15 minutes
+		
+			if loop-value = "time":
+				set {_sort::%loop-value%::*} to sorted indices of {_raw::%loop-value%::*} in ascending order
+			else:
+				set {_sort::%loop-value%::*} to sorted indices of {_raw::%loop-value%::*} in descending order
+
+			loop 10 times:
+				clear {_ind}
+				clear {_data}
+
+				if {_sort::%loop-value-1%::%loop-value-2%} is set:
+					set {_ind} to {_sort::%loop-value-1%::%loop-value-2%}
+					set {_data} to {data::%{_ind}%::dungeon::%loop-value-1%}
+					if loop-value-1 = "time":
+						set {_val} to formatTime({_data})
+					else:
+						set {_val} to runes({_data}, false)
+
+					set {_desc::%loop-value-1%::%loop-value-2%} to formatted "%{_spl::%loop-value-2%}%&l%loop-value-2% &8» <##FFD855>%offlineplayer({_ind}, false) ? "err."%  &f%{_val}%"
+
+				else:
+					set {_desc::%loop-value-1%::%loop-value-2%} to formatted "%{_spl::%loop-value-2%}%&l%loop-value-2% &8» <##FFD855>N/A"
+
+				
+
+
+		format gui slot 21 with clock named "&e&lTIME" with lore "", {_desc::time::*}, "" with all item flags
+		format gui slot 23 with silence armor trim smithing template named "<##2eadd7>&lRUNES" with lore "", {_desc::runes::*}, "" with all item flags

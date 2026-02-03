@@ -1,0 +1,18 @@
+
+
+
+function combatlog(p: player):
+	set {-tempdata::%uuid of {_p}%::combatlog} to now
+	while (difference between now and {-tempdata::%uuid of {_p}%::combatlog}) is less than 15 seconds:
+		if {-tempdata::%uuid of {_p}%::combatlog} is not set:
+			stop
+		wait 1 second
+	clearCombat({_p})
+
+function clearCombat(p: player):
+	delete {-tempdata::%uuid of {_p}%::combatlog}       
+	delete {-tempdata::%uuid of {_p}%::attacker}
+	delete {-tempdata::%uuid of {_p}%::assist::*}
+	prioritybar({_p}, "&aNo longer in combat.", 1.5 seconds)
+
+

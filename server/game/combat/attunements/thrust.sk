@@ -1,0 +1,129 @@
+
+
+function thrustAction(p: player, weapon: text, atk-scale: number):
+	set {_hit} to 1
+
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}, "thrust") * {_atk-scale}
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+
+	if {_weapon} = "gilded greatsword":
+		set {_windup-time} to 13 # ticks
+	else:
+		set {_windup-time} to 10
+	set {_div} to {_windup-time} / 2
+
+	apply potion effect of slowness of tier 2 to {_p} for 12 ticks:
+		hide the particles
+		hide the icon
+	set {-tempdata::%uuid of {_p}%::stunned} to true
+
+	play sound "block.end_portal_frame.fill" at volume 3 at pitch 2 at {_p}
+	play sound "block.enchantment_table.use" at volume 3 at pitch 2 at {_p}
+	play sound "entity.vex.hurt" at volume 3 at pitch 2 at {_p}
+	play sound "entity.skeleton.converted_to_stray" at volume 3 at pitch 1.6+{_sound-scale} at {_p}
+	play sound "sword.sheen" at volume 3 at pitch 2 at {_p}
+
+	# windup
+	loop {_windup-time} times:
+		loop 90 times:
+			set {_rad} to 2.2 - (loop-value-1 / {_div})
+			set {_v} to spherical vector from radius {_rad}, yaw (loop-value-2 * 4) and pitch 0
+			draw 1 {-colours::%{_palette}%::1::2} dust particles that transitions to {-colours::%{_palette}%::2::1} at location 0.05 above {_p} ~ {_v}
+
+		wait 1 tick
+	
+
+	loop 5 times:
+		set {_n} to (1.75+(loop-value/20))
+		play sound "entity.iron_golem.step" at volume 3 at pitch {_n} at {_p}
+	play sound "entity.phantom.flap" at volume 3 at pitch 2 at {_p}
+	play sound "entity.phantom.bite" at volume 2.5 at pitch 2 at {_p}
+	play sound "sword.thrust" at volume 3 at pitch 0.75+{_sound-scale} at {_p}
+	play sound "sword.whoosh" at volume 2.5 at pitch 1.5+{_sound-scale} at {_p}
+
+	draw 10 cloud particles with extra value 0.15 at {_p}
+
+	set {_v} to vector from yaw {_p}'s yaw and pitch first element out of clamp({_p}'s pitch, -30, 30)
+	set vector length of {_v} to 1.5
+	set {_p}'s velocity to {_v}
+	
+	make {_p} swing their main hand
+	
+
+	set {_yaw} to {_p}'s yaw
+	set {_pitch} to {_p}'s pitch
+	set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+	set {_v}'s vector length to 0.25
+
+	set {_line-draw} to location 1.3 above and 2 infront of {_p}
+	set {_draw} to location 1.3 above and 4.5 infront of {_p}
+
+	loop 16 times:
+		set {_line-draw} to {_line-draw} ~ {_v}
+		set {_draw} to {_draw} ~ {_v}
+		set {_rad} to 0.51 - (loop-value / 32)
+
+		# thrust cone
+		set {_circ::%loop-value%::*} to baseCircle({_yaw}, {_pitch}, {_rad}, 5)
+		loop {_circ::%loop-value%::*}:
+			loop-value-1 <= 10:
+				set {_col::1} to {-colours::%{_palette}%::1::2}
+				set {_col::2} to {-colours::%{_palette}%::1::3} ? {-colours::%{_palette}%::2::2}
+				draw 1 {_col::1} dust particles of size 0.75 that transitions to {_col::2} at {_draw} ~ loop-value-2
+			else:
+				set {_col::1} to {-colours::%{_palette}%::1::3} ? {-colours::%{_palette}%::1::2}
+				draw 1 {_col::1} dust particles of size 0.75 at {_draw} ~ loop-value-2
+		
+		# line
+		loop-value <= 10:
+			set {_col} to {-colours::%{_palette}%::1::1}
+			draw 1 {_col} dust particles of size 1.5 at {_line-draw}
+		else:
+			draw 1 {-colours::%{_palette}%::1::2} dust particles of size 1.5 at {_line-draw}
+
+		# mot
+		chance of 50%:
+			set {_offset} to random vector
+			set {_offset}'s vector length to random number between 0 and 0.75
+			set {_temp} to {_v}
+			set {_temp}'s vector length to 1
+			set {_rand} to random vector
+			set {_rand}'s vector length to 0.25
+			draw 0 crit particles with offset ({_temp}+{_rand}) with extra value 2 at {_line-draw} ~ {_offset}
+		
+
+		# hitbox
+		mod(loop-value, 4) = 0:
+			loop entities in radius 2 of ({_draw}) where [input != {_p}]:
+				isDamageableEntity(loop-entity, {_p}) = true
+				{_hit::*} doesn't contain loop-entity
+				set {_hit::%uuid of loop-entity%} to loop-entity
+
+				play sound "entity.player.attack.knockback" at pitch 1.3 at {_p}
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "thrust")
+				make {_p} damage loop-entity by {_dmg}
+				push loop-entity (vector from {_p} to loop-entity) at speed 0.7 * {_atk-scale}
+				push loop-entity up at speed 0.25 * {_atk-scale}
+				
+			
+			loop entities in radius 1.5 of ({_line-draw}) where [input != {_p}]:
+				isDamageableEntity(loop-entity, {_p}) = true
+				{_hit::*} doesn't contain loop-entity
+				set {_hit::%uuid of loop-entity%} to loop-entity
+
+				play sound "entity.player.attack.knockback" at pitch 1.3 at {_p}
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "thrust")
+				make {_p} damage loop-entity by {_dmg}
+				push loop-entity (vector from {_p} to loop-entity) at speed 0.7 * {_atk-scale}
+				push loop-entity up at speed 0.25 * {_atk-scale}
+				
+	
+	loop 3 times:
+		set {_v}'s vector length to 1.5
+		set {_p}'s velocity to {_v}
+		wait 1 tick
+
+	clear {-tempdata::%uuid of {_p}%::stunned}

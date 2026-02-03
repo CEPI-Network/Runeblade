@@ -1,0 +1,42 @@
+
+on load:
+	set {-heads::haybale} to player head with nbt from "{""minecraft:profile"":{name:""Haybale"",properties:[{name:""textures"",value:""eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzY4ZmZkNGMzZDczZjMyZDM5ZWFkZTMxMDU1NjE1MGJhNDkwZTBkOTM0ZWM0YTY5MjNjOWViYmFiYmI5YzI0NiJ9fX0""}]}}"
+
+on load:
+	spawnDummies()
+
+
+
+function spawnDummies():
+	kill husks in radius 8 of location(-25.5, 75.5, 3.5, world "runeblade", -90, 0)
+	wait 1 tick
+
+	spawn adult husk at location(-25.5, 75.5, 3.5, world "runeblade", -90, 0)
+	set {dummy::1} to last spawned husk
+	spawn adult husk at location(-23.5, 75.5, 0.5, world "runeblade", -60, 0)
+	set {dummy::2} to last spawned husk
+	spawn adult husk at location(-23.5, 75.5, 6.5, world "runeblade", -120, 0)
+	set {dummy::3} to last spawned husk
+
+	set ai of {dummy::*} to false
+	silence {_dummy::*}
+
+	set helmet of {dummy::*} to {-heads::haybale}
+	set chestplate of {dummy::*} to unbreakable leather chestplate with nbt from "{""minecraft:attribute_modifiers"":[{amount:0.0d,display:{type:""hidden""},id:""minecraft:armor"",operation:""add_value"",type:""minecraft:armor""}]}"
+	set leggings of {dummy::*} to air
+	set boots of {dummy::*} to air
+	set tool of {dummy::*} to air
+	set name of {dummy::*} to "&6Training Dummy"
+
+	set {dummy::*}'s armor attribute to 0
+
+
+on death:
+	name of victim = "&6Training Dummy"
+	cancel event
+	killEffect(attacker, victim)
+	draw 8 large smoke particles with offset vector(0.7, 0.7, 0.7) with extra value 0.075 at location 1 above victim
+	draw 15 smoke particles with offset vector(0.7, 0.7, 0.7) with extra value 0.1 at location 1 above victim
+	draw 5 flame particles with offset vector(0.5, 0.5, 0.5) with extra value 0.01 at location 1 above victim
+	play sound "block.fire.extinguish" at victim
+	heal victim

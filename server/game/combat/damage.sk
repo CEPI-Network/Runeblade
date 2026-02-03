@@ -1,0 +1,67 @@
+
+
+function getDamage(p: entity, weapon: text, hit: integer=1, attunement: text="") returns number:
+	if {_attunement} != "":
+		set {_dmg} to ({-attunements::%{_attunement}%::damage::%{_weapon}%} ? {-attunements::%{_attunement}%::damage::1})
+		set {_dmg} to {_dmg} * 1.2 if {-tempdata::%uuid of {_p}%::boon} = "boon of the mystics"
+	else:
+		set {_dmg} to ({-weapons::%{_weapon}%::damage::%{_hit}%} ? {-weapons::%{_weapon}%::damage::1})
+	
+	set {_dmg} to {_dmg} * 1.1 if {-tempdata::%uuid of {_p}%::blitz} = true
+	return {_dmg}*2
+
+
+
+
+function isDamageableEntity(e: entity, attacker: entity = {_}) returns boolean:
+
+	if any:
+		{_e} is a mannequin
+		{_e} is an armor stand
+		{_e} is a block display
+		{_e} is an item display
+		{_e} is a text display
+		{_e} is a falling block
+		{_e} is a dropped item
+		{_e} is a lightning bolt
+		"%{_e}%" = "arrow"
+		"%{_e}%" = "snowball"
+		{_e} is a villager
+		{_e} is invulnerable
+	then:
+		return false
+
+	# player-on-player
+	else if {_e} is a player:
+		if any:
+			"%all players%" doesn't contain "%{_e}%"
+			{_e}'s gamemode != adventure or survival
+			regions at {_e} contains region "spawn" in world "runeblade"
+			{-tempdata::%uuid of {_attacker}%::duel::teammates::*} contains {_e}
+		then:
+			byte tag "mob" of custom nbt of {_e} != 1
+			return false
+		if {_attacker} is a player:
+			# wrong gamemode
+			return false if {_attacker}'s gamemode != adventure or survival
+		
+			# dungeon
+			if all:
+				{-tempdata::%uuid of {_e}%::dungeon} is set
+				{-tempdata::%uuid of {_attacker}%::dungeon} is set
+			then:
+				return false
+
+			{_e} is a player
+			if getScope({_attacker}) doesn't contain {_e}:
+				return false
+	
+	else if string tag "owner" of custom nbt of {_e} is set:
+		set {_player} to player(string tag "owner" of custom nbt of {_e})
+		if getScope({_player}) doesn't contain {_attacker}:
+			return false
+
+	
+		
+    
+	return true

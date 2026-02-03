@@ -1,0 +1,64 @@
+
+options:
+	unsheatheDescription: "Sheathe your blade temporarily, then quickly draw it for heavy damage."
+	thrustDescription: "Draw back your blade, then drive it forwards with a quick dash."
+	flamedanceDescription: "Slash your blade horizontally infront of you, leaving flames in its wake."
+	parryDescription: "Counter an enemy's blade with your own, reflecting the attack."
+	quickstepDescription: "Quickly dash forwards, temporarily avoiding damage."
+	hookDescription: "Throw a small hook, pulling a target back towards you."
+	escapeDescription: "Quickly launch yourself backwards at a moment's notice."
+	shroudDescription: "Coat your body in a thin veil of shadow, granting brief invisibility and empowering your next hit."
+	reinforceDescription: "Enchant your armour temporarily, reducing damage taken."
+	blitzDescription: "Gain a boost to attack damage and speed, in exchange for lowered defense."
+	ripplebladeDescription: "Slash forth with rapid, unrelenting strikes of water."
+	eruptionDescription: "Create numerous flaming vortexes around you, burning nearby foes."
+	thunderboltDescription: "Raise your weapon into the sky, calling down a bolt of lightning. Leap towards smited targets."
+	vortexDescription: "Rapidly spin your weapon above you, slamming it down with great force."
+
+	transientmoonlightDescription: "Sheathe your blade temporarily, then quickly draw it for heavy damage. Fires off a wave of light."
+
+on load:
+
+	clear {-attunements::*}
+
+	registerAttunement("Unsheathe", {@unsheatheDescription}, "none", ("rubishine", "gilded greatsword", "shimmerfang", "onimaru", "chainblade"), (1.5, 1.75, 1.5, 1.5, 1.5), (25 ticks), (6))
+	registerAttunement("Thrust", {@thrustDescription}, "none", ("rubishine", "gilded greatsword", "shimmerfang", "crossblade", "dragonbolt", "onimaru"), (1.5, 1.75, 1.5, 1.5, 1.5, 1.5), (30 ticks), (6))
+	registerAttunement("Flame Dance", {@flamedanceDescription}, "none", ("gilded greatsword", "earthshaker", "hellbent dagger", "chainblade"), (2, 2, 2.5, 2), (27 ticks), (6))
+	registerAttunement("Rippleblade", {@ripplebladeDescription}, "none", ("rubishine", "shimmerfang", "bladerender", "crossblade", "onimaru", "chainblade"), (1.3, 1.25, 1.3, 1.3, 1.3, 1.3), (60 ticks), (7))
+	registerAttunement("Eruption", {@eruptionDescription}, "none", ("gilded greatsword", "earthshaker", "hellbent dagger", "crossblade"), (1.5, 1.5, 1.75, 1.5), (36 ticks), (7))
+
+	registerAttunement("Quickstep", {@quickstepDescription}, "none", ("1"), (0), (8 ticks), (6))
+	registerAttunement("Escape", {@escapeDescription}, "none", ("1"), (0), (16 ticks), (6))
+
+	registerAttunement("Parry", {@parryDescription}, "none", ("1"), (0), (15 ticks), (6))
+	registerAttunement("Hook", {@hookDescription}, "none", ("1"), (0.5), (10 ticks), (4))
+	registerAttunement("Thunderbolt", {@thunderboltDescription}, "none", ("shimmerfang", "crossblade", "dragonbolt", "onimaru"), (1.5, 1.5, 1.5, 1.5), (25 ticks), (7))
+	registerAttunement("Vortex", {@vortexDescription}, "none", ("gilded greatsword", "bladerender", "earthshaker", "crossblade"), (1.75, 1.75, 1.75, 1.75), (28 ticks), (6))
+
+	registerAttunement("Shroud", {@shroudDescription}, "none", ("1"), (0), (15 ticks), (6))
+	registerAttunement("Reinforce", {@reinforceDescription}, "none", ("1"), (0), (15 ticks), (8))
+	registerAttunement("Blitz", {@blitzDescription}, "none", ("1"), (0), (15 ticks), (7))
+
+
+
+	registerAttunement("Transient Moonlight", {@transientmoonlightDescription}, "none", ("moonveil"), (1.5), (22 ticks), (8))
+
+
+# requires func arg is only really used for niche stuff i guess
+#	already auto-finds challenges needed to unlock them
+
+function registerAttunement(name: text, desc: text, requires: string, indices: strings, damage: numbers, cooldown: timespans, mana: numbers):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-attunements::%{_index}%::name} to {_name}
+	set {-attunements::%{_index}%::desc} to {_desc}
+
+	set {_ind::*} to (indices of {-challenges::*}) where [uncolored {-challenges::%input%::reward} in lowercase = "%{_index}% attunement"]
+	set {_challenge} to {-challenges::%first element out of {_ind::*}%::name}
+	set {-attunements::%{_index}%::requires} to {_challenge} ? {_requires}
+
+	loop {_indices::*}:
+		set {-attunements::%{_index}%::damage::%loop-value%} to {_damage::%loop-counter%} ? {_damage::1}
+		set {-attunements::%{_index}%::cooldown::%loop-value%} to {_cooldown::%loop-counter%} ? {_cooldown::1}
+		set {-attunements::%{_index}%::mana::%loop-value%} to {_mana::%loop-counter%} ? {_mana::1}
+

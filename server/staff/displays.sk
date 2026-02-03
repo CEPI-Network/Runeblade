@@ -1,0 +1,209 @@
+
+
+
+function loadDisplays():
+
+	# Welcome to RUNEBLADE!
+	spawn text display at location(-0.5, 79, -50, world "runeblade"):
+		set {displays::spawn::1} to text display
+		set text of {displays::spawn::1} to "<#F0F0F0>Welcome to <##ff9b24>&lRUNE<##2eadd7>&lBLADE<#F0F0F0>!"
+		set transformation scale of {displays::spawn::1} to vector(1.75, 1.75, 1.75)
+	spawn text display at location(-0.5, 77.3, -50, world "runeblade"):
+		set {displays::spawn::2} to text display
+		set text of {displays::spawn::2} to formatParagraph("&7Grab a &c&nsword&7 and &a&nsecondary&7 from the &c&lSWORDSMITH"), "", formatParagraph("then put some &5&nattunements&7 on them at the &5&lATTUNEMENT &5&lMASTER&7!")
+
+	# Drop down and enter the ARENA!
+	spawn text display at location(-0.5, 77.5, -31.5, world "runeblade"):
+		set {displays::spawn::3} to text display
+		set text of {displays::spawn::4} to "&f&nDrop down&7 and enter the &d&lARENA&7!", "&7Get ready to &cfight&7!"
+		set transformation scale of {displays::spawn::3} to vector(1.5, 1.5, 1.5)
+
+	# COSMETICS
+	spawn text display at location(-22, 78.25, -33, world "runeblade"):
+		set {displays::shops::1} to text display
+		set text of {displays::shops::1} to "&d&lCOSMETICS"
+		set transformation scale of {displays::shops::1} to vector(1.5, 1.5, 1.5)
+	spawn text display at location(-22, 77.75, -33, world "runeblade"):
+		set {displays::shops::2} to text display
+		set text of {displays::shops::2} to "&7Fight with style!"
+		set transformation scale of {displays::shops::2} to vector(1.25, 1.25, 1.25)
+
+	# SKILLS
+	spawn text display at location(22, 78.25, -33, world "runeblade"):
+		set {displays::shops::3} to text display
+		set text of {displays::shops::3} to "&c&lSKILLS"
+		set transformation scale of {displays::shops::3} to vector(1.5, 1.5, 1.5)
+	spawn text display at location(22, 77.75, -33, world "runeblade"):
+		set {displays::shops::4} to text display
+		set text of {displays::shops::4} to "&7Use some perks to up your game!"
+		set transformation scale of {displays::shops::4} to vector(1.25, 1.25, 1.25)
+
+
+
+	set billboard of {displays::spawn::*} to center
+	set billboard of {displays::shops::*} to center
+
+
+
+
+
+
+
+
+	# LOADOUTS
+	spawn interaction at location(-33.5, 76, -28, world "runeblade"):
+		set {displays::loadouts::1} to interaction
+		set is responsive of {displays::loadouts::1} to false
+		set interaction width of {displays::loadouts::1} to 3
+		set interaction height of {displays::loadouts::1} to 2.5
+	spawn text display at  location(-33.5, 78.3, -28, world "runeblade"):
+		set {displays::loadouts::2} to text display
+		set text of {displays::loadouts::2} to "&3&lLOADOUTS"
+		set transformation scale of {displays::loadouts::2} to vector(1.25, 1.25, 1.25)
+		set billboard of {displays::loadouts::*} to center
+
+
+	kill all armor stands in radius 2.75 of location(33, 75, -34, world "runeblade", 0, 0)
+	# katana display in shrine
+	spawn armor stand at location(33.7, 74.95, -34.6, world "runeblade", 0, 0)
+	set {displays::shrine::1} to last spawned armor stand
+	modify nbt of {displays::shrine::1}:
+		set byte tag "NoBasePlate" of nbt to 1
+		set byte tag "Invincible" of nbt to 1
+		set byte tag "NoGravity" of nbt to 1
+
+	spawn armor stand at location(33.7, 74.95, -31.6, world "runeblade", 0, 0)
+	set {displays::shrine::2} to last spawned armor stand
+	modify nbt of {displays::shrine::2}:
+		set byte tag "NoBasePlate" of nbt to 1
+		set byte tag "Invincible" of nbt to 1
+		set byte tag "NoGravity" of nbt to 1
+
+
+
+	# OPTIONS
+	spawn text display at location(19.5, 76.5, -14.5, world "runeblade"):
+		set {displays::options::1} to text display
+		set text of {displays::options::1} to "&9&lOPTIONS"
+		set transformation scale of {displays::options::1} to vector(1.2, 1.2, 1.2)
+	set billboard of {displays::options::*} to center
+
+
+	# DUELS
+	spawn item display at location(-9.5, 76.25, -18.5, world "runeblade", -135, 0):
+		set {displays::duels::1} to item display
+		set item of {displays::duels::1} to iron sword
+		set left rotation of {displays::duels::1} to axisAngle(135, vector(0, 0, 1))
+		set transformation scale of {displays::duels::1} to vector(2, 2, 3)
+		set display brightness of {displays::duels::1} to displayBrightness(10, 10)
+
+	spawn text display at location(-9.5, 77.85, -18.5, world "runeblade", -135, 0):
+		set {displays::duels::2} to text display
+		set text of {displays::duels::2} to "&c&lDUELS"
+		set transformation scale of {displays::duels::2} to vector(2, 2, 2)
+		set billboard of {displays::duels::2} to center
+
+	spawn interaction at location(-9.5, 75, -18.5, world "runeblade", -135, 0):
+		set {displays::duels::3} to interaction
+		set is responsive of {displays::duels::3} to true
+		set interaction width of {displays::duels::3} to 2
+		set interaction height of {displays::duels::3} to 3
+
+
+
+	
+	# afk
+	#kill all text displays in radius 2 of location(10.5, 78, -15.5, world "runeblade")
+
+	#spawn text display at location(10.5, 78, -15.5, world "runeblade"):
+	#	set {displays::afk::1} to text display
+	#	set text of text display to "<#FF8ECF>&lAFK POND"
+	#	set transformation scale of text display to vector(1.6, 1.6, 1.6)
+	#	set display billboard of text display to center
+	#spawn text display at location(10.5, 77.5, -15.5, world "runeblade"):
+	#	set {displays::afk::2} to text display
+	#	set text of text display to "&7Gain %runes(50)% &7every &f5 minutes&7!"
+	#	set transformation scale of text display to vector(1, 1, 1)
+	#	set display billboard of text display to center
+
+
+
+	spawn text display at location(-35.5, 78, -58, world "runeblade"):
+		set {displays::stats::1} to text display
+		set text of text display to "<#f42e82>&lWEAPON STATS"
+		set transformation scale of text display to vector(1.6, 1.6, 1.6)
+		set display billboard of text display to center
+
+	spawn text display at location(-35.5, 77.5, -58, world "runeblade"):
+		set {displays::stats::2} to text display
+		set text of text display to "&7CLICK TO VIEW"
+		set transformation scale of text display to vector(1, 1, 1)
+		set display billboard of text display to center
+
+	spawn interaction at location(-35.5, 76, -59.5, world "runeblade"):
+		set {displays::stats::3} to interaction
+		set is responsive of interaction to false
+		set interaction width of interaction to 3
+		set interaction height of interaction to 3
+
+
+	
+
+
+	spawn text display at location(-12.5, 76.5, -43.5, world "runeblade"):
+		set {displays::update::2} to text display
+		set {_line::1} to ""
+		set {_line::2} to "&d&l&nNEW UPDATE"
+		set {_line::3} to "&e2/1/26"
+		set {_line::4} to "&8<strikethrough>                                       "
+		set {_line::5} to ""
+		set {_line::6} to "<#AFAFAF>» &7Updated server to &6[1.21.10]"
+		set {_line::7} to ""
+		set {_line::8} to "<#AFAFAF>» &eSideways Double Jumps"
+		set {_line::9} to ""
+		set {_line::10} to "<#AFAFAF>» &7Removed AFK Pool"
+		set {_line::11} to ""
+		set {_line::12} to "&8&m                                       "
+		set text of text display to {_line::*}
+		set transformation scale of text display to vector(1.1, 1.1, 1.1)
+		set billboard of text display to center
+		add drop shadow to entity
+		set color of entity to rgb(0, 0, 0, 0)
+
+
+
+	loop indices of {displays::*}:
+		loop {displays::%loop-value%::*}:
+			set {_ent} to loop-value-2
+
+			add drop shadow to {_ent}
+			set color of {_ent} to rgb(0, 0, 0, 0)
+
+
+
+
+
+
+function spawnInfoHeads():
+	set {_l::1} to location(-12.5, 77.5, -43.5, world "runeblade")
+	
+	kill all item displays in radius 2 of {_l::1}
+	kill all text displays in radius 2 of {_l::1}
+
+	
+	set {_head} to player head with nbt from "{""minecraft:profile"":{name:""Head"",properties:[{name:""textures"",value:""eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzM5ZWU3MTU0OTc5YjNmODc3MzVhMWM4YWMwODc4MTRiNzkyOGQwNTc2YTI2OTViYTAxZWQ2MTYzMTk0MjA0NSJ9fX0""}]}}"
+	spawn item display at {_l::1}:
+		set {displays::heads::discord} to item display
+		set item of item display to {_head}
+		set interpolation duration of item display to 3 ticks
+
+	set interpolation delay of {displays::heads::discord} to 0 ticks
+	set {_q} to right rotation of {displays::heads::discord} rotated around vector(0,15,0)
+	set right rotation of {displays::heads::discord} to {_q}
+
+
+	
+
+
+
+

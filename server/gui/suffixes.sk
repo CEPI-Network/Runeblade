@@ -1,0 +1,100 @@
+
+on load:
+	clear {-suffixes::*}
+
+	registerSuffix("<##2eadd7>★", nether star, 500, "none")
+	registerSuffix("&6Knight", iron sword, 500, "none")
+
+	registerSuffix("&cMercenary", skeleton skull, 1000, "none")
+	registerSuffix("&e⚡", lightning rod, 1000, "none")
+	registerSuffix("&f☄", dragon egg, 1000, "none")
+
+	registerSuffix("&4Slayer", redstone, 1500, "none")
+	registerSuffix("&dDivine", quartz, 2000, "none")
+
+	registerSuffix("&eKing", golden helmet, 2000, "grand")
+
+	registerSuffix("&aGem", emerald, 2000, "emerald")
+	registerSuffix("<#5976FF>Astral", purple dye, 2000, "emerald")
+    
+	registerSuffix("<#F32240>Modeler", command block, -1, "none", true)
+	registerSuffix("<#0091ff>CEPI", command block, -1, "none", true)
+
+	clear {-sorted-suffixes::*}
+	loop indices of {-suffixes::*}:
+		set {-sorted-suffixes::%loop-value%} to {-suffixes::%loop-value%::order}
+
+function registerSuffix(name: text, item: item, cost: integer, requires: string, hidden: boolean=false):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-suffixes::%{_index}%::name} to {_name}
+	set {-suffixes::%{_index}%::item} to {_item}
+	set {-suffixes::%{_index}%::cost} to {_cost}
+	set {-suffixes::%{_index}%::requires} to {_requires}
+	set {-suffixes::%{_index}%::hidden} to {_hidden}
+
+	loop indices of {-suffixes::*}:
+		set {_entry::%loop-counter%} to {-suffixes::%loop-value%::order} ? 0
+	set {-suffixes::%{_index}%::order} to max({_entry::*}) + 1
+
+
+
+function openSuffixes(p: player):
+
+	create gui with virtual chest inventory with 6 rows named "&e&l           SUFFIXES":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with yellow stained glass pane named "&0"
+		format gui slot (integers between 45 and 54) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&e&lSUFFIXES" with lore "", formatParagraph("Drip out your nametag with some cool suffixes!") and "" with all item flags
+		format gui slot 49 with arrow named "&a&lBACK" with lore "", "&7Return to the previous menu." and "" with all item flags:
+			openCosmetics({_p})
+
+		loop sorted indices of {-sorted-suffixes::*} in ascending order:
+			if any:
+				{data::%uuid of {_p}%::suffixes::*} contains loop-value
+				{-suffixes::%loop-value%::hidden} != true
+			then:
+				add loop-value to {_sort::*}
+
+
+		set {_slot} to 20
+		loop {_sort::*}:
+			set {_name} to {-suffixes::%loop-value%::name}
+			set {_item} to {-suffixes::%loop-value%::item}
+			set {_cost} to {-suffixes::%loop-value%::cost}
+			set {_requires} to {-suffixes::%loop-value%::requires}
+
+			set {_display} to "%{_p}'s prefix%%{data::%uuid of {_p}%::nickname} ? {_p}% &8(%{_name}%&8) &8» %{data::%uuid of {_p}%::chatcolor} ? "&7"%%random element out of ("True!", "So toxic..." and "Lorem ipsum dolor sit amet." and "Well, isn't this fancy!")%"
+
+			if {data::%uuid of {_p}%::suffixes::*} contains loop-value:
+				# owns suffix
+				if {data::%uuid of {_p}%::equipped::suffixes} = loop-value:
+					set {_lore::*} to "&e&lCLICK TO UNEQUIP", ""
+				else:
+					set {_lore::*} to "&a&lCLICK TO EQUIP", ""
+				set {_target} to loop-value
+				format gui slot {_slot} with {_item} named "%{_name}% &7Suffix" with lore {-weapontypes::suffix}, "", {_display}, "", "", {_lore::*} with all item flags:
+					toggleCosmetic({_p}, "suffixes", {_target})
+					openSuffixes({_p})
+			
+			else:
+				if ({data::%uuid of {_p}%::runes} ? 0) > {_cost}:
+					set {_lore::*} to "&e&lCLICK TO PURCHASE", "", "&7Costs: %runes({_cost})%"
+				else:
+					set {_lore::*} to "&c&lLOCKED", "", "&7Costs: %runes({_cost})%"
+				if {_requires} != "none":
+					add "&7Requires: &e%{_requires} in strict proper case%" to {_lore::*}
+
+				format gui slot {_slot} with {_item} named "%{_name}% &7Suffix" with lore {-weapontypes::suffix}, "", {_display}, "", "", {_lore::*} and "" with all item flags:
+					if {_p} doesn't have permission "group.%{_requires}%":
+						send "%prefix()% You don't meet the requirements to buy this!" to {_p}
+						play sound "block.note_block.harp" at pitch 0.5 to {_p}
+					else:
+						buy({_p}, {_item} named {_name}, "suffixes")
+						
+			
+			add 1 to {_slot}
+			add 4 to {_slot} if {_slot} = 25
+
+

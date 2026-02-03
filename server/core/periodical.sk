@@ -1,0 +1,61 @@
+
+every 5 minutes:
+	loop all players:
+		score(loop-player)
+	
+	set {_amnt} to 50
+	set {_extra} to ""
+	if {boost} is set:
+		set {_amnt} to {_amnt} * 2
+		set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+	
+	#loop all players where [region at input contains region "afk"]:
+	#	send "&3 + %runes({_amnt})% %{_extra}%" to loop-player
+	#	add {_amnt} to {data::%uuid of loop-player%::runes}
+	
+
+
+
+
+every 12 minutes:
+	postTip()
+
+
+
+function postTip():
+	set {_r} to random integer between 1 and 7
+	if {_r} = 1:
+		set {_discord::*} to "Have a suggestion? Join our discord!", "Don't forget to join our discord!"
+		broadcast "<url:https://discord.gg/9CZaRVMBVN>"
+		broadcast "<url:https://discord.gg/9CZaRVMBVN>%servername()% &8» &7%random element out of {_discord::*}% &8(<##7289da>/discord&8)"
+		broadcast "<url:https://discord.gg/9CZaRVMBVN>"
+
+	else if {_r} = 2:
+		broadcast ""
+		broadcast "%servername()% &8» &7Want some more attunements? Check out some <##FBE916>&lCHALLENGES &7in the back of spawn!"
+		broadcast ""
+	
+	else if {_r} = 3:
+		broadcast ""
+		broadcast "%servername()% &8» &7Report any cheaters you find! &8(&c/report&8)"
+		broadcast ""
+	
+	else if {_r} = 4:
+		broadcast ""
+		broadcast "%servername()% &8» &7Consider buying a rank and supporting the server! &8(&e/buy&8)"
+		broadcast ""
+	
+	else if {_r} = 5:
+		broadcast ""
+		broadcast "%servername()% &8» &7Don't spam click! It reduces your overall damage!"
+		broadcast ""
+
+	else if {_r} = 6:
+		broadcast ""
+		broadcast "%servername()% &8» &7Need more Runes? Try completing some &a&lDAILY CHALLENGES&7!"
+		broadcast ""
+	
+	else if {_r} = 7:
+		broadcast ""
+		broadcast "%servername()% &8» &7Have any spare boosts? Don't forget to use them for &e2x Rune Gains&7! &8(&e/buy&8)"
+		broadcast ""

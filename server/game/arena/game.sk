@@ -1,0 +1,348 @@
+
+on load:
+	set gamerule announceAdvancements of world "runeblade" to false
+
+
+on skript start:
+	loop indices of {-tempdata::*}:
+		clear {-tempdata::%loop-value%::*}
+	clear {-tempdata::*}
+
+
+on server list ping:
+	#set the motd to "&7🗡 <#ff9b24>&lRUNE<#2eadd7>&lBLADE &7🏹%nl%&7» &eCUSTOM SWORD PVP"
+	#set the motd to "\             §8§m       §r §x§0§0§8§6§a§5§lI§x§0§0§7§5§9§2§lR§x§0§0§6§4§8§0§lO§x§0§0§5§3§6§d§lN§x§0§9§b§a§b§d§lG§x§1§8§b§7§a§f§lR§x§2§6§b§5§a§1§lA§x§3§5§b§2§9§3§lV§x§4§3§a§f§8§5§lE §8§m        §r\n                §x§0§0§c§6§6§6  Dungeon Crawler"
+	
+	set {_line::1} to "&8•&m   &8• <#ff9b24>🗡 <#ff9b24>&lRUNE<#2eadd7>&lBLADE <#2eadd7>🏹 &8•&m   &8•"
+	set {_line::2} to "&8« <#ffcc33>Sword Ability PVP [1.21.10] &8»"
+	set the motd to centeredText({_line::1}, 127) + nl + centeredText({_line::2}, 120)
+	
+	#set {_x} to 
+	#loop uncolored {_x} split at "":
+	#	if loop-value = "•":
+	#		broadcast loop-counter
+	#		exit loop
+
+
+on heal:
+	{-tempdata::%uuid of player%::combatlog} is set
+	heal reason = satiated
+	
+
+	if {-tempdata::%uuid of player%::duel::in-duel} = true:
+		set {_mod} to 3
+	else:
+		set {_mod} to 2
+	
+	set {-tempdata::%uuid of player%::heal} to mod({-tempdata::%uuid of player%::heal}, {_mod})+1
+
+	if {-tempdata::%uuid of player%::heal} = 1:
+		cancel event
+
+
+
+
+
+on send command list:
+	set command list to command list where [input does not contain ":"]
+
+
+
+
+
+on damage:
+	attacker != victim
+
+	# IFRAMES ======================================================
+	if {-tempdata::%uuid of victim%::quickstep} = true:
+		cancel event
+	
+	else if {-tempdata::%uuid of victim%::parry} = true:
+		cancel event
+
+		distance between victim and attacker < 6.25:
+			{-tempdata::%uuid of attacker%::parry} != true
+			set {_weapon} to (string tag "name" of custom nbt of victim's tool) ? "rubishine"
+			hitCombo(victim, 1, {_weapon}, "parry")
+			make victim damage attacker by (damage * 1.25)
+			push attacker (vector from victim to attacker) at speed 0.7
+			push attacker up at speed 0.2
+
+		play sound "item.shield.block" at pitch 1.5 at victim
+		play sound "item.trident.return" at pitch 2 at victim
+		play sound "sword.parry" at victim
+
+		clear {-tempdata::%uuid of victim%::parry}
+
+
+
+	# BUFFS ======================================================
+	if {-tempdata::%uuid of attacker%::shroud} = true:
+		set {_spl::*} to (uncolored {-tempdata::%uuid of attacker%::last-used} in lowercase) split at " | "
+		{_spl::2} = "" # attunement is not being used
+		{-weapons::%uncolored {_spl::1} in lowercase%::type} = "primary" # only primary weapons get buffed
+
+		set damage to damage * 1.75
+		play sound "entity.player.attack.crit" at victim
+		draw 4 crit particles with offset vector(0.15, 0.15, 0.15) with extra value 0.15 at location 1 above victim
+		clear {-tempdata::%uuid of attacker%::shroud}
+		remove invisibility from attacker
+
+		if {-tempdata::%uuid of victim%::duel::rune gains} = true:
+			set {_changeStats} to true
+		else if {-tempdata::%uuid of victim%::duel::in-duel} is set:
+			set {_changeStats} to false
+		else:
+			set {_changeStats} to true
+		{_changeStats} = true
+		progressChallenge(attacker, "shroud", 1)
+
+
+	if {-tempdata::%uuid of victim%::shroud} = true:
+		set damage to damage * 1.25
+
+	if {-tempdata::%uuid of victim%::blitz} = true:
+		set damage to damage * 1.15
+	
+	if {-tempdata::%uuid of victim%::reinforce} = true:
+		set damage to damage * 0.8
+	
+
+	if {data::%uuid of attacker%::equipped::skills} = "airborne":
+		attacker is not on the ground
+		block at location of attacker = air
+		block at location of attacker ~ vector(0, -1, 0) = air
+		block at location of attacker ~ vector(0, -1.5, 0) = air
+
+		set damage to damage * 1.2
+
+		draw 7 cloud particles with offset vector(0.3, 0.3, 0.3) with extra value 0.2 at (victim ~ vector(0,1,0))
+		play sound "entity.breeze.wind_burst" at volume 1.5 at pitch 1.5 at victim
+
+
+	if {-tempdata::%uuid of attacker%::equipment::ritual sword} is set:
+		attacker's health = attacker's maximum health
+		
+		set {_mod} to {-tempdata::%uuid of attacker%::equipment::ritual sword} * 0.1
+		set damage to damage * (1 + {_mod})
+	
+	if {-tempdata::%uuid of victim%::boon} = "boon of the impervious":
+		(victim's health / victim's maximum health) >= 0.75
+		set damage to (damage * 0.5)
+
+	if {-tempdata::%uuid of attacker%::boon} = "boon of vengeance":
+		set {_mod} to {-tempdata::%uuid of attacker%::dungeon::vengeance}
+		set damage to damage * (1 + {_mod})
+	else if {-tempdata::%uuid of attacker%::boon} = "boon of frost":
+		set {_mod} to damage * 80
+		add ("%{_mod}% ticks" parsed as timespan) to victim's freeze time
+
+
+
+	# ENVIRO ======================================================
+	if damage cause is burning:
+		if all:
+			attacker isn't set
+			{-tempdata::%uuid of victim%::attacker} is set
+		then:
+			cancel event
+			make {-tempdata::%uuid of victim%::attacker} damage victim by 1
+
+
+	else if damage cause is suffocation:
+		cancel event
+
+	else if damage cause is void:
+		teleport victim to location(-0.5, 75, -54.5, world "runeblade", 0, 0)
+
+
+
+
+	if attacker is a player:
+		combatlog(attacker)
+		combatlog(victim)
+
+		add damage to {-tempdata::%uuid of victim%::assist::%uuid of attacker%}
+		set {-tempdata::%uuid of victim%::attacker} to attacker
+
+		if {-tempdata::%uuid of attacker%::boon} = "boon of the desperate":
+			heal attacker by (damage / 4)
+
+		if name of victim = "&dSpawner":
+
+			play sound "block.lodestone.break" at volume 1.5 at pitch 0.8 at victim
+			play sound "block.ancient_debris.break" at volume 1.5 at pitch 0.6 at victim
+
+			draw 2 large smoke particles with extra value 0.1 at victim
+			draw 2 enchanted hit particles with extra value 0.2 at victim
+
+
+		
+
+
+
+
+on death:
+	victim is a player
+    
+	if {-tempdata::%uuid of victim%::tutorial} = 3:
+		cancel event
+		heal victim
+		updateTutorial(victim, "respawn")
+		stop
+    
+    
+	{-tempdata::%uuid of victim%::dungeon} isn't set # for dungeon deaths, go to /dungeon/death
+	set {_attacker} to attacker ? {-tempdata::%uuid of victim%::attacker}
+	set {_attacker} to {-tempdata::%uuid of victim%::attacker} if attacker = victim
+	clear {-tempdata::%uuid of victim%::stunned}
+
+	if {-tempdata::%uuid of victim%::duel::rune gains} = true:
+		set {_changeStats} to true
+	else if {-tempdata::%uuid of victim%::duel::in-duel} is set:
+		set {_changeStats} to false
+	else:
+		set {_changeStats} to true
+	set {_changeStats} to false if attacker is not a player
+	
+	set {_deathMsg} to false if {-tempdata::%uuid of victim%::duel::in-duel} is set
+
+	# in normal combat?
+	if {_changeStats} = true:
+		add 1 to {data::%uuid of victim%::deaths}
+		if {_attacker} is alive:
+			set {_msg} to "&cSlain by &f%name of {_attacker}%"
+		send title "<##ff2458>☠" with subtitle ({_msg} ? "") to victim for 2.5 seconds
+		score(victim)
+	play sound "block.anvil.place" at pitch 0.5 at victim
+
+
+	
+	if all:
+		{_attacker} is set
+		{_changeStats} = true
+	then:
+		add 1 to {data::%uuid of {_attacker}%::kills}
+		send title "<##ff2458>🗡" with subtitle "&fKilled &e%victim%" to {_attacker} for 2.5 seconds
+
+		{_deathMsg} != false:
+			killMessage({_attacker}, victim)
+			killEffect({_attacker}, victim)
+
+		set {_amnt} to 100
+		set {_extra} to ""
+		if {boost} is set:
+			set {_amnt} to {_amnt} * 2
+			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+		send "&3 + %runes({_amnt})% %{_extra}%" to {_attacker}
+		add {_amnt} to {data::%uuid of {_attacker}%::runes}
+
+		# challenges & personal stats
+		set {_spl::*} to (uncolored {-tempdata::%uuid of {_attacker}%::last-used} in lowercase) split at " | "
+		{_spl::2} != "": # attunement is being used
+			# function checks for valid challenge objectives already
+			progressChallenge({_attacker}, {_spl::2}, 1)
+			progressDailyChallenge({_attacker}, {_spl::2})
+			add 1 to {stats::%last element out of {_spl::*}%::kills}
+			{_spl::2} is set
+			add 1 to {data::%uuid of {_attacker}%::kills::%{_spl::2}%}
+		else:
+			progressDailyChallenge({_attacker}, {_spl::1})
+			add 1 to {stats::%first element out of {_spl::*}%::kills}
+			add 1 to {data::%uuid of {_attacker}%::kills::%first element out of {_spl::*}%}
+		
+		loop (10, 30, 50, 100):
+			{data::%uuid of {_attacker}%::kills} = loop-value:
+				completeChallenge({_attacker}, "get %loop-value% kills")
+
+		
+		remove regeneration from {_attacker}
+		apply regeneration 3 to {_attacker} for 6 seconds
+		score({_attacker})
+
+	# in duel
+	if all:
+		{-tempdata::%uuid of {_attacker}%::duel::in-duel} is set
+		{-tempdata::%uuid of victim%::duel::in-duel} is set
+	then:
+		send title "<##ff2458>🗡" with subtitle "&fDefeated &e%victim%" to {_attacker} for 2.5 seconds
+		killEffect({_attacker}, victim)
+                
+		dieInDuel({_attacker}, victim) # -> calls endDuel if appropriate
+
+		cancel event
+		heal victim
+		clear victim's potion effects
+		set victim's gamemode to spectator
+		clearCombat(victim)
+		
+		wait 1 tick
+		set victim's spectator target to attacker ? {_attacker}
+		stop
+
+
+
+
+	# assist
+	set {_sort::*} to sorted indices of {-tempdata::%uuid of victim%::assist::*} in descending order
+	remove uuid of {_attacker} from {_sort::*}
+	loop {_sort::*}:
+		set {_assister} to offlineplayer(loop-value)
+
+		# assist count as kill
+		if {-tempdata::%uuid of victim%::assist::%loop-value%} > 8:
+			add 1 to {data::%uuid of {_assister}%::kills}
+			set {_amnt} to 100
+			send title "" with subtitle "&fAssist Count as Kill: &e%victim%" to {_assister} for 1.5 seconds
+			
+			remove regeneration from {_assister}
+			apply regeneration 3 to {_assister} for 6 seconds
+			
+			# challenges
+			set {_spl::*} to (uncolored {-tempdata::%uuid of {_assister}%::last-used} in lowercase) split at " | "
+			{_spl::2} != "": # attunement is being used
+				# function checks for valid challenge objectives already
+				progressChallenge({_assister}, {_spl::2}, 1)
+				add 1 to {stats::%last element out of {_spl::*}%::kills}
+			else:
+				add 1 to {stats::%first element out of {_spl::*}%::kills}
+			
+			loop (10, 30, 50, 100):
+				{data::%uuid of {_assister}%::kills} = loop-value-2:
+					completeChallenge({_assister}, "get %loop-value-2% kills")
+
+
+		# reg assist
+		else:
+			send title "" with subtitle "&fAssist: &e%victim%" to {_assister} for 1.5 seconds
+
+			apply regeneration 2 to {_assister} for 2 seconds
+			set {_amnt} to 25
+
+
+		set {_extra} to ""
+		if {boost} is set:
+			set {_amnt} to {_amnt} * 2
+			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+		send "&3 + %runes({_amnt})%" to {_assister}
+		add {_amnt} to {data::%uuid of {_assister}%::runes}
+		score({_assister})
+	
+	loop all players:
+		clear {-tempdata::%uuid of loop-value%::assist::%uuid of victim%}
+	
+
+	cancel event
+	heal victim
+	clear victim's potion effects
+	set victim's gamemode to spectator
+	clearCombat(victim)
+	
+	wait 1 tick
+	set victim's spectator target to attacker ? {_attacker}
+	wait 3 seconds
+	set victim's gamemode to adventure
+	teleport victim to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers # spawn
+	apply infinite weakness 255 to victim:
+		hide the particles
+		hide the icon

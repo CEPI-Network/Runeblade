@@ -1,0 +1,159 @@
+
+function shimmerfangAction(p: entity, hit: integer=1, atk-scale: number):
+	
+	set {_particle-scale::1} to 0.8
+	set {_particle-scale::2} to 1
+
+	set {_weapon} to "shimmerfang"
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_momentum} to vector from {_init} to {_future}
+	set {_momentum}'s vector length to ({_v}'s vector length*{momentum-offset})
+
+	if {_hit} = 1:
+
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+
+		set {_rand} to random vector
+		set {_rand}'s vector length to 0.25
+		set {_draw} to (location of {_p} offset by vector(0, 1, 1.5) using local axes) ~ {_rand} ~ {_momentum}
+		set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+
+		draw 1 sweep attack particles at {_draw}
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 1.7+{_sound-scale} at {_p}
+		play sound "sword.thrust" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+		set {_rand} to random integer between 3 and 5
+
+		loop entities in radius 1.5 of {_p} where [input != {_p}]:
+			isDamageableEntity(loop-entity, {_p}) = true
+			{_hit::*} doesn't contain loop-entity
+			set {_hit::%uuid of loop-entity%} to loop-entity
+
+			play sound "entity.player.attack.crit" at pitch 1.25 at {_p}
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed (0.375 * {_atk-scale})
+			push loop-entity up at speed (0.3 * {_atk-scale})
+
+		loop 10 times:
+			set {_v}'s vector length to 0.35
+			set {_draw} to {_draw} ~ {_v}
+			set {_rad} to 0.75 / loop-value
+			set {_step} to 3.75*loop-value
+			set {_circ::*} to baseCircle({_yaw}, {_pitch}, {_rad}, {_step})
+			set {_n} to ({_particle-scale::%{_hit}%} - (0.04 * loop-value))
+			set {_particle-scale} to max(0.5, {_n})
+
+			if loop-value is between 5 and 8:
+				set {_col} to {-colours::%{_palette}%::%{_hit}%::1}
+			else:
+				set {_col} to {-colours::%{_palette}%::%{_hit}%::2}
+
+			loop {_circ::*}:
+				draw 1 {_col} dust particles of size {_particle-scale} at ({_draw} ~ loop-value-2)
+			
+				loop-value-1 = {_rand}
+				set {_temp} to {_circ::%loop-counter-2%}
+				set {_temp}'s vector length to 1
+				draw 0 enchanted hit particles with offset {_temp} with extra value 0.75 at {_draw}
+			
+			chance of 20%:
+				draw 1 cloud particles with extra value 0.075 at {_draw}
+			
+			# hitbox
+			mod(loop-value, 2) = 0:
+				loop entities in radius 1.4 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.crit" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.375 * {_kb-scale})
+					push loop-entity up at speed (0.3 * {_kb-scale})
+			
+
+
+	else if {_hit} = 2:
+
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+
+		set {_rand} to random vector
+		set {_rand}'s vector length to 0.3
+		set {_draw} to (location of {_p} offset by vector(0, 1, 1.5) using local axes) ~ {_rand} ~ {_momentum}
+		set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+
+		draw 1 sweep attack particles at {_draw}
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1.35+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 1.8+{_sound-scale} at {_p}
+		play sound "sword.thrust" at volume 3 at pitch 1.25+{_sound-scale} at {_p}
+
+		set {_rand} to random integer between 3 and 5
+
+		loop entities in radius 1.5 of {_p} where [input != {_p}]:
+			isDamageableEntity(loop-entity, {_p}) = true
+			{_hit::*} doesn't contain loop-entity
+			set {_hit::%uuid of loop-entity%} to loop-entity
+
+			play sound "entity.player.attack.crit" at pitch 1.5 at {_p}
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed (0.45 * {_atk-scale})
+			push loop-entity up at speed (0.25 * {_atk-scale})
+
+		loop 12 times:
+			set {_v}'s vector length to 0.35
+			set {_draw} to {_draw} ~ {_v}
+			set {_rad} to 0.9 / loop-value
+			set {_step} to 3.75*loop-value
+			set {_circ::*} to baseCircle({_yaw}, {_pitch}, {_rad}, {_step})
+			set {_n} to ({_particle-scale::%{_hit}%} - (0.04 * loop-value))
+			set {_particle-scale} to max(0.5, {_n})
+
+			if loop-value is between 5 and 8:
+				set {_col} to {-colours::%{_palette}%::%{_hit}%::1}
+			else:
+				set {_col} to {-colours::%{_palette}%::%{_hit}%::2}
+
+			loop {_circ::*}:
+				draw 1 {_col} dust particles of size {_particle-scale} at ({_draw} ~ loop-value-2)
+			
+				loop-value-1 = {_rand}
+				set {_temp} to {_circ::%loop-counter-2%}
+				set {_temp}'s vector length to 1
+				draw 0 enchanted hit particles with offset {_temp} with extra value 0.75 at {_draw}
+			
+			chance of 20%:
+				draw 1 cloud particles with extra value 0.075 at {_draw}
+			
+			# hitbox
+			mod(loop-value, 2) = 0:
+				loop entities in radius 1.4 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.crit" at pitch 1.5 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.45 * {_kb-scale})
+					push loop-entity up at speed (0.25 * {_kb-scale})
+

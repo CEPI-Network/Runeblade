@@ -1,0 +1,170 @@
+
+
+
+define new bot named "Runeblade":
+	token: "none"
+	intents: default intents
+	
+	policy: all
+	auto reconnect: true
+	compression: none
+
+	on guild ready:
+		set {_command} to new slash command named "playerlist" with description "List all online players."
+		update {_command} globally in event-bot
+
+		#set {_stats} to new slash command named "stats" with description "View a player's stats."
+		#add new user option named "player" with description "The player in question." to options of {_stats}
+		#update {_stats} globally in event-bot
+
+		set the presence of the bot named "Runeblade" to playing "runeblade.minehut.gg"
+		broadcast "&a%event-bot%&2 has been loaded!"
+
+
+every minute:
+	reloadBotPresence()
+
+function reloadBotPresence():
+	set presence of bot "Runeblade" to watching "%amount of online players% players online."
+
+
+discord command playerlist:
+	prefixes: /
+	trigger:
+		reply with "```%all players ? "No players online."%```"
+
+
+function postEmbed(p: player, t: text, col: text, channel: text):
+	set {_uuid} to uuid of {_p}
+	replace all "-" in {_uuid} with ""
+	set {_icon} to raw "https://mc-heads.net/avatar/%{_uuid}%/128.png"
+	make embed:
+		set author of embed to {_t}
+		set embed color of embed to hex {_col}
+		set author icon of embed to {_icon}
+	post last embed to text channel with id {_channel}
+
+
+
+on skript start:
+	post "**SERVER ONLINE**" to channel with id "1140453816601427989"
+	post "**SERVER ONLINE**" to channel with id "1294824268722470973"
+
+
+on skript stop:
+	post "**SERVER OFFLINE**" to channel with id "1140453816601427989"
+	post "**SERVER OFFLINE**" to channel with id "1294824268722470973"
+
+
+
+on slash command:
+	set {_name} to event-string
+	if {_name} is "playerlist":
+		reply with "```%all players ? "No players online."%```"
+
+	else if {_name} = "stats":
+		create a new message and store it in {_msg}:
+
+			set {_target} to offlineplayer(argument "player" as string)
+			set {_uuid} to uuid of {_target}
+			replace all "-" in {_uuid} with ""
+			set {_icon} to raw "https://mc-heads.net/avatar/%{_uuid}%/128.png"
+
+			set {_kills} to {data::%uuid of {_target}%::kills} ? 0
+			set {_deaths} to {data::%uuid of {_target}%::deaths} ? 0
+			set {_kd} to min({data::%uuid of {_target}%::kills}, ({data::%uuid of {_target}%::kills} / {data::%uuid of {_target}%::deaths})) ? 0
+
+			set {_runes} to runes({data::%uuid of {_target}%::runes})
+			set {_completed-challenges} to ((size of {data::%uuid of {_target}%::challenges::*}) / (size of indices of {-challenges::*}))*100
+			set {_completed-challenges-str} to "%(size of {data::%uuid of {_target}%::challenges::*})%/%(size of indices of {-challenges::*})%"
+			set {_time} to formatTime(time played of {_target})
+
+			if {_target} is online:
+				loop items in {_target}'s inventory where [byte tag "custom;weapon" of nbt of input = 1]:
+					if byte tag "custom;primary" of nbt of loop-value = 1:
+						set {_primary} to loop-value
+						set {_primary-attunement} to (string tag "custom;attunement" of nbt of loop-value) in strict proper case
+						set {_p} to "%{_primary} ? "No Weapon Equipped"% | %{_primary-attunement} ? "No Attunement"%"
+					else if byte tag "custom;secondary" of nbt of loop-value = 1:
+						set {_secondary} to loop-value
+						set {_secondary-attunement} to (string tag "custom;attunement" of nbt of loop-value) in strict proper case
+						set {_s} to "%{_secondary} ? "No Weapon Equipped"% | %{_secondary-attunement} ? "No Attunement"%"
+				set {_build} to "PRIMARY: %{_p}%%nl%SECONDARY: %{_s}%"
+
+			set the content of the message to ""
+			make embed:
+				set author of embed to (argument "player" as string)
+				set author url of embed to {_icon}
+				set title of embed to "Stats 1"
+
+				add inline field named "K/D/R" with value "Kills: %{_kills}%%nl%Deaths: %{_deaths}%%nl%KDR: %{_kd}%" to fields of embed
+				add inline field named "Balance" with value "Runes: %{_runes}%" to fields of embed
+				add inline field named "Other" with value "Challenges: %{_completed-challenges-str}% (%{_completed-challenges}%%%)%nl%Time Played: %{_time}%" to fields of embed
+				add field named "Current Build" with value {_build} to fields of embed
+
+
+				set embed color of embed to orange
+				set footer of embed to "Stats 2"
+				set timestamp of embed to now
+			add last embed to the embeds of the message
+
+
+
+		reply with {_msg}
+
+
+on message receive:
+	event-user is not a discord bot
+	event-message doesn't contain "/playerlist"
+
+	set {_channel} to "%event-channel%"
+	if {_channel} contains "cross-chat" or "runeblade-chat":
+		set {_str} to ""
+		loop roles of event-member:
+			set {_role} to loop-value
+			set {_str} to "%{_role}% " in uppercase
+			set {_col} to role color of {_role}
+			exit loop if {_col} is set
+		if {_col} is set:
+			set {_col} to colorToHex({_col})
+		else:
+			set {_col} to "&7"
+
+		broadcast formatted "<##7289da>&lDISCORD&r &8|&r %{_col}%&l%{_str}%%{_col}%%effective name of event-member% &8» &f%uncolored event-message%"
+
+		set {_msg} to event-message
+		replace all "@" in {_msg} with "@#"
+		if {_channel} = "cross-chat": # RUNEBLADE DISC
+			post "**RUNEBLADE DISC** | **%{_str}%**%effective name of event-member% » %{_msg}%" in channel with id "1294824268722470973"
+		else if {_channel} = "runeblade-chat": # CEPI DISC
+			post "**CEPI DISC** | **%{_str}%**%effective name of event-member% » %{_msg}%" in channel with id "1140453816601427989"
+
+
+	else if {_channel} = "staff" or "reports":
+		set {_arg::*} to event-message split at " "
+
+		("Sh_iki" and "App_a") doesn't contain {_arg::2}
+		player({_arg::2})'s groups doesn't contain "owner", "admin", "mod" or "helper"
+
+		if {_arg::1} = "!ban":
+			{_arg::2} is set
+			set {_arg::3} to "%effective name of event-member% banned you: %{_arg::3} ? "The Ban Hammer has spoken!"%"
+			make console execute command "/ban %{_arg::2}% %{_arg::3}% | Appeal: https://discord.gg/9CZaRVMBVN"
+			reply with "**MODERATION** » **%effective name of event-member%** banned **%{_arg::2}%** for **%{_arg::3}%**"
+
+		else if {_arg::1} = "!pardon":
+			{_arg::2} is set
+			make console execute command "/pardon %{_arg::2}%"
+			reply with "**MODERATION** » **%effective name of event-member%** pardoned **%{_arg::2}%**"
+
+		else if {_arg::1} = "!mute":
+			{_arg::2} is set
+			set {_arg::3} to {_arg::3} ? ""
+			make console execute command "/mute %{_arg::2}% %{_arg::3}%"
+			if {_arg::3} = "":
+				set {_word} to "muted/unmuted"
+			else:
+				set {_word} to "muted"
+			reply with "**MODERATION** » **%effective name of event-member%** %{_word}% **%{_arg::2}%**"
+
+

@@ -1,0 +1,251 @@
+
+
+
+
+function frostfallAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_weapon} to "frostfall"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+
+	if {_hit} = 1:
+		set {_draw} to location 1.1 above and 2.75 infront of {_p}
+		spawn item display at {_draw}:
+			set {_ent} to item display
+			set item of item display to light blue stained glass
+			set transformation scale of item display to vector(0.25, 0.25, 0.25)
+			set interpolation duration of item display to 2 ticks
+			set teleport duration of item display to 2 ticks
+
+
+		play sound "elemental.frost" at volume 2 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "entity.snow_golem.death" at volume 2 at pitch 0.8+{_sound-scale} at {_p}
+		
+		setModifier({_p}, "speed", "secondary", -0.08)
+		updateModifiers({_p})
+
+		set {_amnt} to 2
+		set {_scale} to 0.25
+		loop 20 times:
+			add 0.25 to {_amnt} # particle amount
+			add 0.075 to {_scale} # display scale
+
+			set {_draw} to location 1.1 above and 2.75 infront of {_p}
+
+			# ROT & SCALE
+			set interpolation delay of {_ent} to 0 ticks
+
+			set transformation scale of {_ent} to vector({_scale}, {_scale}, {_scale})
+			set {_rot} to left rotation of {_ent} rotated around vector(8,20,0)
+			set left rotation of {_ent} to {_rot}
+			teleport {_ent} to {_draw}
+
+			# PARTICLE
+			
+			set {_particle-offset} to {_scale} / 2
+			draw {_amnt} of snowflake particles with offset vector({_particle-offset}, {_particle-offset}, {_particle-offset}) with extra value 0.15 at {_ent}
+
+
+			# BLOCK TYPE
+			if loop-value = 8:
+				set item of {_ent} to ice
+			else if loop-value = 15:
+				set item of {_ent} to packed ice
+			else if loop-value = 20:
+				set item of {_ent} to blue ice
+
+			wait 2 tick
+		
+		removeModifier({_p}, "speed", "secondary")
+		updateModifiers({_p})
+
+
+		play sound "block.glass.break" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+		draw 12 blue ice block particles with offset vector(0.3, 0.3, 0.3) with extra value 0.4 at {_ent}
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_v}'s vector length to 0.75
+
+		set interpolation duration of {_ent} to 1 ticks
+		set teleport duration of {_ent} to 1 ticks
+		loop 45 times:
+
+			set {_draw} to {_draw} ~ {_v}
+
+			set interpolation delay of {_ent} to 0 ticks
+			set {_rot} to left rotation of {_ent} rotated around vector(4,10,0)
+			set left rotation of {_ent} to {_rot}
+			teleport {_ent} to {_draw}
+
+			draw 1 snowflake particles with offset vector(0.3, 0.3, 0.3) with extra value 0.2 at {_ent}
+
+			loop entities in radius 2 of {_ent} where [input is not an item display]:
+				isDamageableEntity(loop-entity, {_p}) = true
+				loop-entity != {_p}
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+				make {_p} damage loop-entity by {_dmg}
+				apply slowness 1 to loop-entity for 35 ticks
+
+				push loop-entity up at speed (0.5*{_kb-scale})
+				push loop-entity (vector from {_p} to loop-entity) at speed (1.1*{_kb-scale})
+
+				set {_hit} to true
+			
+			loop blocks in radius 1 of {_draw}:
+				loop-block is solid
+				exit all loops			
+			exit all loops if {_hit} = true
+
+			mod(loop-value, 2) = 0:
+				wait 1 ticks
+
+		draw 20 blue ice block particles with offset vector(0.3, 0.3, 0.3) with extra value 0.4 at {_ent}
+		draw 8 {-colours::%{_palette}%::%{_hit}%::1} dust particles that transitions to {-colours::%{_palette}%::%{_hit}%::2} with offset vector(0.2, 0.2, 0.2) at {_ent}
+		play sound "block.glass.break" at volume 3 at pitch 0.75+{_sound-scale} at {_p}
+		kill {_ent}
+
+
+
+
+
+	else if {_hit} = 2:
+		play sound "entity.phantom.flap" at volume 3 at pitch 2 at {_p}
+		play sound "elemental.wind" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		set {_loc} to location of {_p}
+
+		set {_v-main} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_v-main}'s vector length to 0.25
+
+		loop 6 times:
+			loop 240 times:
+				set {_yaw} to (loop-value-1) + (loop-value-2 * 60.25) - 90
+				set {_v} to spherical vector with radius 6, yaw {_yaw}, pitch 0
+				set {_temp-v} to {_v}
+				set {_temp-v}'s vector length to 2
+				draw 1 snowflake particles with extra value 0 at {_loc} ~ {_temp-v}
+
+				chance of 75%:
+					draw 1 snowflake particles with offset vector(4, 0, 4) with extra value 0.04 at {_loc}
+
+				set {_draw} to {_loc} ~ {_v} ~ vector(0, 0.35, 0)
+				set {_n} to vector(0, (loop-value-2 / 240), 0)
+
+				chance of 50%:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::1} dust particles at {_draw}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::2} dust particles at {_draw} ~ {_n}
+				else:
+					draw 1 {-colours::%{_palette}%::%{_hit}%::3} dust particles at {_draw}
+					draw 1 {-colours::%{_palette}%::%{_hit}%::4} dust particles at {_draw} ~ {_n}
+
+				set {_temp-v} to {_v}
+				add 90 to {_temp-v}'s yaw
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.5
+				draw 0 snowflake particles with offset {_temp-v} with extra value 0.05 at ({_draw} ~ {_rand} ~ vector(0, 1.15, 0))
+
+				mod(loop-value-2, 60) = 0: # procs 12 total times
+					loop entities in radius 6 of {_loc} where [input is not {_p}]:
+						isDamageableEntity(loop-entity, {_p}) = true
+
+						hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+						make {_p} damage loop-entity by {_dmg}
+						apply slowness 1 to loop-entity for 10 ticks
+						
+
+				mod(loop-value-2, 15) = 0:
+					set {_loc} to {_loc} ~ {_v-main}
+					wait 1 tick
+				
+				mod(loop-value-2, 25) = 0:
+					play sound "entity.phantom.flap" at volume 3 at pitch 2 at {_loc}
+
+
+
+	else:
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_v}'s vector length to 0.75
+
+		set {_alt} to {_v}
+		set {_ref} to {_alt}
+		add 90 to {_ref}'s pitch
+		rotate {_alt} around {_ref} by -45
+
+		set {_loc} to location 0.75 infront of {_p} ~ vector(0, 1.3, 0)
+
+		play sound "elemental.frost" at volume 3 at pitch 2 at {_p}
+		play sound "entity.skeleton.converted_to_stray" at volume 3 at pitch 2 at {_p}
+
+		loop 24 times:
+			set {_loc} to ({_loc} ~ {_v})
+			set {_draw} to {_loc} ~ {_alt}
+			exit loop if block at {_draw} is solid
+			rotate {_alt} around {_ref} by 30 * sin(loop-value * 30)
+
+			frostfallIce({_p}, {_draw}, {_dmg}, {_sound-scale}, {_kb-scale})
+			wait 1 tick
+
+
+
+
+
+
+
+
+
+function frostfallIce(p: player, l: location, dmg: number, sound-scale: number, kb-scale: number):
+	set {_hit} to 3
+	set {_weapon} to "Frostfall"
+	set {_r} to random integer between 1 and 3
+
+	if {_r} = 1:
+		set {_type} to snow block
+		spawn falling snow block at {_l}
+	else if {_r} = 2:
+		set {_type} to ice
+		spawn falling ice at {_l}
+	else:
+		set {_type} to packed ice
+		spawn falling packed ice at {_l}
+	set {_ent} to last spawned falling block
+	modify nbt of {_ent}:
+		set byte tag "DropItem" of nbt to 0
+		set byte tag "CancelDrop" of nbt to 1
+	push {_ent} up at speed 0.1
+	
+	while {_ent} is alive:
+		set {_sound} to location of {_ent}
+
+		loop entities in radius 2.5 of {_ent} where [input is not a block display]:
+			loop-entity != {_p}
+			isDamageableEntity(loop-entity, {_p}) = true
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed 0.6*{_kb-scale}
+			apply slowness 1 to loop-entity for 15 ticks
+
+			set {_curr-duration} to ticks of (duration of loop-entity's slowness effect)
+			
+			set duration of loop-entity's slowness effect to (1 tick * min({_curr}, 45))
+
+			exit all loops
+	
+		draw 1 snowflake particles with offset vector(0.15, 0.15, 0.15) with extra value 0.1 at {_ent}
+
+		if any:
+			{_ent} is not alive
+			loop-counter >= 60
+		then:
+			exit loop
+
+		wait 1 tick
+
+	play sound "block.glass.break" at volume 3 at pitch 1+{_sound-scale} at {_sound}
+	draw 10 {_type} block particles with offset vector(0.5, 0.5, 0.5) with extra value 0.2 at {_sound}
+	kill {_ent}

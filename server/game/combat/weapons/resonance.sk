@@ -1,0 +1,199 @@
+
+
+
+function resonanceAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 0.7
+	set {_particle-scale::2} to 0.8
+	set {_particle-scale::3} to 1
+
+	set {_weapon} to "resonance"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+	set {_draw} to location 0.5 behind {_p}'s head ~ {_v}
+
+	if {_hit} = 1:
+		set {_dir} to -1
+		set {_arc} to 75
+		set {_angle} to 30 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		set {_yaw} to {_p}'s yaw - 5
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.9, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.1, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.3, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "entity.player.attack.sweep" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		play sound "item.trident.throw" at volume 3 at pitch 1.7+{_sound-scale} at {_p}
+		play sound "block.amethyst_block.resonate" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		play sound "elemental.magic_pulse" at volume 3 at pitch 2 at {_p}
+
+		loop {_arc} times:
+
+			set {_n} to (loop-value * -0.03) + 2.5
+			set {_loop-scale} to max(1, {_n})
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_weapon}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at ({_draw} ~ {_arc::%loop-value-2%::%loop-value-1%})
+			
+			chance of 15%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to ({_draw} ~ {_arc::2::%loop-value%} ~ {_rand})
+				draw 1 electric spark particles with offset vector(0.25, 0.25, 0.25) with extra value 0.25 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.player.attack.knockback" at pitch 1.1 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.8 * {_kb-scale})
+					push loop-entity up at speed (0.5 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+	
+
+	else if {_hit} = 2:
+
+		set {_draw} to location of {_p}'s head
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+		set {_v}'s vector length to 0.5
+
+		play sound "block.enchantment_table.use" at volume 3 at pitch 1.65+{_sound-scale} at {_p}
+		play sound "block.beacon.power_select" at volume 3 at pitch 2 at {_p}
+		play sound "entity.arrow.hit_player" at volume 2.5 at pitch 2 at {_p}
+		play sound "entity.player.attack.crit" at volume 2.75 at pitch 2 at {_p}
+		play sound "entity.player.attack.sweep" at volume 2.75 at pitch 2 at {_p}
+		play sound "entity.iron_golem.repair" at volume 2.25 at pitch 2 at {_p}
+		play sound "elemental.magic" at volume 3 at pitch 2 at {_p}
+
+		draw 1 explosion particles at location 1 infront of {_draw}
+
+		loop 60 times:
+			set {_draw} to {_draw} ~ {_v}
+
+			set {_rad} to 1 - (loop-value/59)
+			set {_circ::*} to baseCircle({_yaw}, {_pitch}, {_rad}, 90, loop-value*10)
+			set {_n} to ({_particle-scale::%{_hit}%}*2 - (0.01*loop-value))
+			set {_particle-scale} to max(0.4, {_n})
+	
+			loop {_circ::*}:
+				loop-value-1 <= 30:
+					force draw 1 {-colours::%{_weapon}%::%{_hit}%::1} dust particles of size {_particle-scale} that transitions to {-colours::%{_weapon}%::%{_hit}%::3} at ({_draw} ~ loop-value-2)
+				else:
+					force draw 1 rgb(200, 200, 200) dust particles of size {_particle-scale} that transitions to {-colours::%{_weapon}%::%{_hit}%::2} at ({_draw} ~ loop-value-2)
+			
+				set {_temp-v} to loop-value-2
+				rotate {_temp-v} around {_v} by 90
+				set {_temp-v}'s vector length to 0.5 * {_rad}
+				draw 0 enchanted hit particles with offset {_temp-v} with extra value 2 at {_draw}
+
+			set {_offset} to {_rad} / 1.2
+			draw 1 electric spark particles with offset vector({_offset}, {_offset}, {_offset}) with extra value 0.4 at {_draw}
+			
+
+			# hitbox				
+			mod(loop-value,4) = 0:
+				loop entities in radius 2.5 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.arrow.hit_player" at pitch 1.2 to {_p}
+					play sound "entity.arrow.hit_player" at pitch 1.2 at loop-entity
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.6 * {_kb-scale})
+					push loop-entity up at speed (0.25 * {_kb-scale})
+
+			mod(loop-value,3) = 0:
+				wait 1 tick
+			
+			loop blocks in radius 1 of {_draw}:
+				loop-block is solid
+				loop-block is not a barrier
+				exit all loops
+	
+
+	else:
+
+		set {_draw} to location of {_p}'s head
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+		set {_v}'s vector length to 0.5
+
+		play sound "block.enchantment_table.use" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		play sound "block.beacon.power_select" at volume 3 at pitch 1.6+{_sound-scale} at {_p}
+		play sound "entity.arrow.hit_player" at volume 2.5 at pitch 1.8+{_sound-scale} at {_p}
+		play sound "entity.player.attack.crit" at volume 2.75 at pitch 2 at {_p}
+		play sound "entity.player.attack.sweep" at volume 2.75 at pitch 1.5+{_sound-scale} at {_p}
+		play sound "entity.iron_golem.repair" at volume 2.25 at pitch 2 at {_p}
+		play sound "elemental.magic" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+
+		draw 1 explosion particles at location 1 infront of {_draw}
+
+		loop 90 times:
+			set {_draw} to {_draw} ~ {_v}
+
+			set {_rad} to 1.2 - (loop-value/74)
+			set {_circ::*} to baseCircle({_yaw}, {_pitch}, {_rad}, 90, loop-value*-10)
+			set {_n} to ({_particle-scale::%{_hit}%}*2 - (0.01*loop-value))
+			set {_particle-scale} to max(0.4, {_n})
+	
+			loop {_circ::*}:
+				loop-value-1 <= 45:
+					force draw 1 {-colours::%{_weapon}%::%{_hit}%::1} dust particles of size {_particle-scale} that transitions to {-colours::%{_weapon}%::%{_hit}%::3} at ({_draw} ~ loop-value-2)
+				else:
+					force draw 1 rgb(200, 200, 200) dust particles of size {_particle-scale} that transitions to {-colours::%{_weapon}%::%{_hit}%::2} at ({_draw} ~ loop-value-2)
+			
+				set {_temp-v} to loop-value-2
+				rotate {_temp-v} around {_v} by 90
+				set {_temp-v}'s vector length to 0.5 * {_rad}
+				draw 0 enchanted hit particles with offset {_temp-v} with extra value 2 at {_draw}
+
+			set {_offset} to {_rad} / 1.2
+			draw 1 electric spark particles with offset vector({_offset}, {_offset}, {_offset}) with extra value 0.4 at {_draw}
+			
+
+			# hitbox				
+			mod(loop-value,4) = 0:
+				loop entities in radius 2.5 of ({_draw}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.arrow.hit_player" at pitch 1.2 to {_p}
+					play sound "entity.arrow.hit_player" at pitch 1.2 at loop-entity
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.7 * {_kb-scale})
+					push loop-entity up at speed (0.35 * {_kb-scale})
+
+			mod(loop-value, 4) = 0:
+				wait 1 tick
+		
+			loop blocks in radius 1 of {_draw}:
+				loop-block is solid
+				loop-block is not a barrier
+				exit all loops

@@ -1,0 +1,21 @@
+
+
+
+
+
+on load:
+	wait 1 second
+	wipeDisplays()
+
+
+	#wait 1 ticks
+
+	loadNPCs()
+	loadDisplays()
+	loadLeaderboards()
+
+
+function wipeDisplays():
+	delete all mannequins
+	delete all displays
+	delete all interactions

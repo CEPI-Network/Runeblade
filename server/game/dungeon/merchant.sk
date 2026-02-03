@@ -1,0 +1,121 @@
+
+
+
+
+
+function spawnMerchant(loc: location):
+
+	spawn villager at {_loc}:
+		set {_ent} to villager
+		add villager to {display::dungeon::*}
+
+		set villager level of villager to 5
+		set villager profession of villager to weaponsmith profession # this might just disappear immediately when no job block is found
+
+		modify custom nbt of villager:
+			set byte tag "mob" of nbt to 1
+			set string tag "name" of nbt to "merchant"
+			set float tag "seed" of nbt to random number between 0.8 and 1.25
+		modify nbt of villager:
+			set byte tag "Invulnerable" of nbt to 1
+			set byte tag "Silent" of nbt to 1
+
+	set {_ent}'s movement speed attribute to 0
+	# apply infinite potion of jump boost of tier -10 without particles to {_ent}
+
+	spawn text display at location 2 above {_loc}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set display text of {_ent} to "&9&lMERCHANT"
+	set display billboard of {_ent} to center
+
+	spawn text display at location 1.75 above {_loc}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set display text of {_ent} to "&7CLICK TO TRADE"
+	set display billboard of {_ent} to center
+	set display scale of {_ent} to vector(0.75, 0.75, 0.75)
+
+
+on rightclick on villager:
+	cancel event
+	string tag "name" of custom nbt of clicked entity = "merchant"
+	
+	set {_seed} to float tag "seed" of custom nbt of clicked entity
+	openMerchant(player, {_seed})
+
+
+
+function openMerchant(p: player, seed: number, i: item=air):
+
+	set {_seed} to 1 if {_seed} is not set
+
+	set {_n} to runes(999999, true)
+	replace all "999999" in {_n} with "&k100&r"
+	set {_noitem} to iron bars named "&fNo Item" with lore "", formatParagraph("Click an item in your inventory to view its sell offer!") and "" with all item flags
+	set {_offer} to snout armor trim smithing template named "&6Item Value: &f%{_n}%" with lore "", formatParagraph("Click an item in your inventory to view its sell offer!") and "" with all item flags
+
+	create a gui with virtual chest inventory with 5 rows named "&9&lMERCHANT":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with blue stained glass pane named "&0" with nbt from "{custom:{seed:%{_seed}%f}}"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&a&lSHOPKEEPER" with lore "", formatParagraph("Trade in your spare equipment for some extra Runes!"), "" with all item flags
+		
+		run on gui close:
+			slot 20 of gui != {_noitem}
+			give {_p} slot 20 of gui
+		
+		if {_i} = air:
+			format gui slot 20 with {_noitem}
+			
+			format gui slot 24 with {_offer}
+			
+		else:
+			format gui slot 20 with {_i}:
+				give {_p} {_i}
+				play sound "ui.button.click" to {_p}
+				play sound "ui.toast.out" to {_p}
+				# reset the items without re-opening the gui
+				format gui slot 20 with {_noitem}
+				format gui slot 24 with {_offer}
+			
+
+			set {_ind} to string tag "name" of custom nbt of {_i}
+			set {_value} to {-dungeon::loot::%{_ind}%::price} * 0.25 * {_seed} * item amount of {_i}
+
+			format gui slot 24 with snout armor trim smithing template of unbreaking 1 named "&6Item Value: &f%runes({_value}, true)%" with lore "", "&e&lCLICK TO SELL ITEM", "" with all item flags:
+				
+				draw 8 (slot 20 of gui) item particles with offset vector(0.25, 0.25, 0.25) with extra value 0.25 at location 1 above player
+				
+				format gui slot 20 with {_noitem}
+				format gui slot 24 with {_offer}
+				play sound "block.grindstone.use" at volume 2 at pitch 1.2 at {_p}
+				play sound "entity.item.break" at volume 2 at pitch 1 at {_p}
+				set {_extra} to ""
+				if {boost} is set:
+					set {_value} to {_value} * 2
+					set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+				send "<##D87A46> + %runes({_value}, true)% %{_extra}%" to player
+				add {_value} to {-tempdata::%uuid of player%::shattered-runes}
+				score(player)
+
+				
+
+
+
+on inventory click:
+	name of player's top inventory = "&9&lMERCHANT"
+	event-inventory = player's inventory
+	string tag "name" of custom nbt of event-item is set
+	# put item into GUI
+	cancel event
+
+	set {_seed} to float tag "seed" of custom nbt of slot 0 of top inventory
+	openMerchant(player, {_seed}, event-item)
+	play sound "ui.button.click" to player
+	play sound "ui.toast.out" to player
+	remove event-item from player's inventory
+
+
+		

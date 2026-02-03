@@ -1,0 +1,129 @@
+
+
+
+function openCosmetics(p: player):
+
+	create gui with virtual chest inventory with 6 rows named "&d&l          COSMETICS":
+		open gui to {_p}
+		format gui slot (integers between 0 and 8) with magenta stained glass pane named "&0"
+		format gui slot (integers between 45 and 53) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&d&lCOSMETICS" with lore "", formatParagraph("Purchase some fancy cosmetics to spice up your game!") and "" with all item flags
+
+		format gui slot 20 with skeleton skull named "&c&lKILL EFFECTS" with lore "", formatParagraph("Create some explosions or fireworks when you defeat an enemy!") and "" with all item flags:
+			openKillEffects({_p})
+		format gui slot 22 with diamond sword named "&b&lWEAPON COLOURS" with lore "", formatParagraph("Change up the colours of your blades!") and "" with all item flags:
+			openWeaponColours({_p})
+		format gui slot 24 with paper named "&6&lKILL MESSAGES" with lore "", formatParagraph("Have a fancy kill message show up when you win!") and "" with all item flags:
+			openKillMessages({_p})
+		format gui slot 30 with iron chestplate named "&3&lARMOUR" with lore "", formatParagraph("Equip some cosmetic armour to look flashy on the battlefield!") and "" with all item flags:
+			openArmour({_p})
+		format gui slot 32 with name tag named "&e&lSUFFIXES" with lore "", formatParagraph("Place a fancy title next to your name!") and "" with all item flags:
+			openSuffixes({_p})
+		
+
+
+function toggleCosmetic(p: player, type: text, cosmetic: text):
+	indices of {-%{_type}%::*} contains {_cosmetic}
+
+
+	# able to equip multiple at a time [ex. weapon colours]
+	if {_type} = "colours":
+		set {_spl::*} to {_cosmetic} split at "-"
+		set {_weapon} to {_spl::1}
+		set {_palette} to {_spl::2}
+
+		# unequip weapon colour
+		if {data::%uuid of {_p}%::equipped::%{_type}%::%{_weapon}%} = {_palette}:
+			clear {data::%uuid of {_p}%::equipped::%{_type}%::%{_weapon}%}
+			play sound "entity.horse.saddle" to {_p}
+			play sound "block.note_block.harp" at pitch 1 to {_p}
+			send "%prefix()% Unequipped %{-%{_type}%::%{_cosmetic}%::name}%&7!" to {_p}
+            
+			loop ((items in {_p}'s inventory) where [byte tag "weapon" of custom nbt of input = 1]) and ((items in {_p}'s inventory) where [byte tag "offhand" of custom nbt of input = 1]):
+				set {_item-name} to (uncolored unformat(name of loop-slot))
+				replace all " " in {_item-name} with "_"
+				{_cosmetic} contains {_item-name}
+
+				set {_i} to loop-slot
+
+				set {_model} to (string tag "name" of custom nbt of {_i}) + (string tag "model-suffix" of custom nbt of {_i} ? "") # used for onimaru_main
+				replace all " " in {_model} with "_"
+				set {_i}'s item model to {_model}
+				set loop-slot to {_i}
+        
+		# equip weapon colour
+		else:
+			set {data::%uuid of {_p}%::equipped::%{_type}%::%{_weapon}%} to {_palette}
+			play sound "item.armor.equip_iron" to {_p}
+			play sound "block.note_block.harp" at pitch 2 to {_p}
+			send "%prefix()% Equipped %{-%{_type}%::%{_cosmetic}%::name}%&7!" to {_p}
+            
+			loop ((items in {_p}'s inventory) where [byte tag "weapon" of custom nbt of input = 1]) and ((items in {_p}'s inventory) where [byte tag "offhand" of custom nbt of input = 1]):
+				set {_item-name} to (uncolored unformat(name of loop-slot))
+				replace all " " in {_item-name} with "_"
+				{_cosmetic} contains {_item-name}
+
+				set {_i} to loop-slot
+				
+				set {_new-data} to {-colours::%{_cosmetic}%::model-data}
+				replace all "_main" in {_new-data} with (string tag "model-suffix" of custom nbt of {_i} ? "_main") # used for onimaru_main
+				set {_i}'s item model to {_new-data}
+				set loop-slot to {_i} # why doesn't it let me directly assign it?
+	
+	# can only equip one at a time
+	else:
+		set {_name} to {-%{_type}%::%{_cosmetic}%::name}
+		replace all "<victim>" in {_name} with "&e%random element out of ("Sh_iki", "TrulyMango", "Jakane", "savagechick3n", "Sh0ot", "FrogOverlord", "Chriss99", "Fantasm__", "rapapao")%&7"
+		replace all "<attacker>" in {_name} with "&e%{_p}%&7"
+
+		if {data::%uuid of {_p}%::equipped::%{_type}%} = {_cosmetic}:
+			clear {data::%uuid of {_p}%::equipped::%{_type}%}
+			play sound "entity.horse.saddle" to {_p}
+			play sound "block.note_block.harp" at pitch 1 to {_p}
+			send "%prefix()% Unequipped %{_name}%&7!" to {_p}
+		else:
+			set {data::%uuid of {_p}%::equipped::%{_type}%} to {_cosmetic}
+			play sound "item.armor.equip_iron" to {_p}
+			play sound "block.note_block.harp" at pitch 2 to {_p}
+			send "%prefix()% Equipped %{_name}%&7!" to {_p}
+
+
+function buy(p: player, i: item, type: text):
+	set {_name} to uncolored unformat(name of {_i}) in lowercase
+	if {data::%uuid of {_p}%::%{_type}%::*} contains {_name}:
+		send "%prefix()% You already own this!" to {_p}
+		play sound "block.note_block.harp" at pitch 0.5 to {_p}
+	else:
+		set {_cost} to int tag "cost" of custom nbt compound of {_i} ? {-%{_type}%::%{_name}%::cost} ? (1/0)
+
+		if ({data::%uuid of {_p}%::runes} ? 0) >= {_cost}:
+			remove {_cost} from {data::%uuid of {_p}%::runes}
+			add {_name} to {data::%uuid of {_p}%::%{_type}%::*}
+			send "%prefix()% &aPurchased %unformat(name of {_i})% &afor %runes({_cost})%&7!" to {_p}
+			
+			if {_type} = "weapons":
+				openSwordsmith({_p})
+				broadcast "%prefix()% &f%{_p}% &7has unlocked %{-weapons::%{_name}%::name}%&7!"
+			else if {_type} = "armour":
+				openArmour({_p})
+			else if {_type} = "suffixes":
+				openSuffixes({_p})
+			else if {_type} = "killmessages":
+				openKillMessages({_p})
+			else if {_type} = "killeffects":
+				openKillEffects({_p})
+			else if {_type} = "skills":
+				openSkills({_p})
+
+			loop 3 times:
+				play sound "block.note_block.harp" at volume 1 at pitch 1+(loop-value / 3) to {_p}
+				wait 3 tick
+		
+		else:
+
+			send "%prefix()% &cYou don't have enough <##2eadd7>₪ &fRunes &7to buy %name of {_i}%&7!" to {_p}
+			send "    &8(&cMissing %runes({_cost} - {data::%uuid of {_p}%::runes})%&8)" to {_p}
+			play sound "block.note_block.harp" at pitch 0.5 to {_p}
+	score({_p})
+
+

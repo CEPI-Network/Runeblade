@@ -1,0 +1,14 @@
+
+placeholderapi placeholder with the prefix "runeblade":
+	if the identifier is "prefix":
+		set the result to player's prefix
+	else if the identifier is "name":
+		set the result to player's name
+	else if the identifier is "health":
+		set the result to player's health
+
+	else if the identifier is "suffix":
+		if {data::%uuid of player%::equipped::suffixes} is set:
+			set the result to " &8(%{-suffixes::%{data::%uuid of player%::equipped::suffixes}%::name}%&8)"
+		else:
+			set the result to ""

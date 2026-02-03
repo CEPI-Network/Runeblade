@@ -1,0 +1,20 @@
+
+
+
+function escapeAction(p: player, weapon: text, atk-scale: number):
+
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	
+	remove swiftness from {_p}
+	apply swiftness 1 to {_p} for 3 seconds
+
+	play sound "entity.arrow.shoot" at volume 3 at pitch 2 at {_p}
+	play sound "entity.splash_potion.break" at volume 3 at pitch 1.5+{_sound-scale} at {_p}
+	play sound "entity.ender_dragon.flap" at volume 3 at pitch 2 at {_p}
+	push {_p} (vector from {_p} to location 3 behind {_p}) at speed 1.4
+
+	draw 15 cloud particles with extra value 0.2 at {_p}
+	draw 15 poof particles with extra value 0.15 at {_p}
+	draw 75 {-colours::%{_palette}%::1::1} dust particles of size 1 that transitions to {-colours::%{_palette}%::1::2} with offset vector(0.6, 0.6, 0.6) at {_p}
+	set {_p}'s metadata "cooldown_escape" to 1.5 seconds from now

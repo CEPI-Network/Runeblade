@@ -1,0 +1,485 @@
+
+
+
+on load:
+	loop indices of {-dungeon::loot::*}:
+		clear {-dungeon::loot::%loop-value%::*}
+		clear {-dungeon::loot::%loop-value%}
+	
+	wait 10 tick
+
+	
+	
+	set {_bag} to player head named "&6&lEquipment Bag" with nbt from "{""minecraft:profile"":{name:""Bag"",properties:[{name:""textures"",value:""eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmY1NjhkZDgwODIwNjU3NTU0ZjliNDVkYjAzMWQyMmNkOWI3ZDE2MWMxOTgyNzczYjFiMzU4NTRjOTkzOTgyNCJ9fX0""}]}}"
+	set {_bag}'s lore to "", formatParagraph("Equip items found within the dungeon."), "", "&e&lCLICK TO OPEN", ""
+	set byte tag "bag" of custom nbt of {_bag} to 1
+	set {-dungeon::bag} to {_bag}
+
+	registerLoot("rubishine", air, "null", 4, "weapon", 300)
+	registerLoot("gilded greatsword", air, "null", 4, "weapon", 300)
+	registerLoot("shimmerfang", air, "null", 4, "weapon", 300)
+	registerLoot("bladerender", air, "null", 3, "weapon", 400)
+	registerLoot("earthshaker", air, "null", 3, "weapon", 400)
+	registerLoot("hellbent dagger", air, "null", 3, "weapon", 400)
+	registerLoot("chainblade", air, "null", 3, "weapon", 400)
+	registerLoot("crossblade", air, "null", 3, "weapon", 400)
+	registerLoot("onimaru", air, "null", 3, "weapon", 400)
+	registerLoot("resonance", air, "null", 4, "weapon", 300)
+	registerLoot("arcanum", air, "null", 4, "weapon", 300)
+	registerLoot("ashfire", air, "null", 4, "weapon", 300)
+	registerLoot("frostfall", air, "null", 3, "weapon", 300)
+	registerLoot("bone blade", air, "null", 3, "weapon", 300)
+	registerLoot("bloodthorn", air, "null", 3, "weapon", 300)
+
+
+	registerLoot("escape", air, "null", 6, "attunement", 150)
+	registerLoot("hook", air, "null", 6, "attunement", 150)
+	registerLoot("quickstep", air, "null", 6, "attunement", 150)
+	registerLoot("unsheathe", air, "null", 6, "attunement", 250)
+	registerLoot("thrust", air, "null", 6, "attunement", 250)
+	registerLoot("flame dance", air, "null", 6, "attunement", 300)
+	registerLoot("rippleblade", air, "null", 6, "attunement", 300)
+	registerLoot("thunderbolt", air, "null", 6, "attunement", 300)
+
+	registerLoot("shroud", air, "null", 5, "attunement", 200)
+	registerLoot("reinforce", air, "null", 5, "attunement", 300)
+	registerLoot("eruption", air, "null", 5, "attunement", 300)
+	registerLoot("parry", air, "null", 5, "attunement", 200)
+	registerLoot("blitz", air, "null", 5, "attunement", 400)
+	registerLoot("vortex", air, "null", 5, "attunement", 400)
+
+
+
+	registerLoot("&f10<##2eadd7>₪ &fShattered Runes", snout armor trim smithing template, "Grants the user a minor number of Shattered Runes.", 35, "runes")
+	registerLoot("&f25<##2eadd7>₪ &fShattered Runes", snout armor trim smithing template, "Grants the user a small number of Shattered Runes.", 30, "runes")
+	registerLoot("&f50<##2eadd7>₪ &fShattered Runes", snout armor trim smithing template, "Grants the user a fair number of Shattered Runes.", 28, "runes")
+	registerLoot("&f100<##2eadd7>₪ &fShattered Runes", snout armor trim smithing template, "Grants the user a moderate number of Shattered Runes.", 25, "runes")
+	registerLoot("&f150<##2eadd7>₪ &fShattered Runes", snout armor trim smithing template, "Grants the user a sizeable number of Shattered Runes.", 20, "runes")
+	registerLoot("&f200<##2eadd7>₪ &fShattered Runes", silence armor trim smithing template, "Grants the user a considerate number of Shattered Runes.", 15, "runes")
+	registerLoot("&f250<##2eadd7>₪ &fShattered Runes", silence armor trim smithing template, "Grants the user a great number of Shattered Runes.", 10, "runes")
+
+	registerLoot("<##FBBA50>Bandage", map, "Covers up shallow wounds, providing brief regeneration.", 30, "false", 75)
+	registerLoot("&dGolden Apple", golden apple, "Heals the user from within, providing significant regeneration.", 15, "false", 150)
+
+	registerLoot("&3&lSpirit Horn", call goat horn, "Calls back the spirits of the dead, reviving all fallen allies and bringing them to you.", 0, "false", 200, false)
+
+	registerLoot("&9&lWitch's Root", warped stem, "Upon defeating an enemy, temporarily increase mana regeneration rate.", 5, "equipment", 100)
+	registerLoot("&6&lRusted Ring", gold nugget, "Enemies drop %runes(5, true)% on kill.", 6, "equipment", 100)
+	registerLoot("&c&lRitual Sword", golden sword, "Deal additional damage while at maximum health.", 5, "equipment", 100)
+	registerLoot("&b&lIcarus Feather", feather, "Slightly increases movement speed.", 5, "equipment", 100)
+
+
+	loop indices of {-boons::*}:
+		registerLoot(loop-value, air, "", 1, "boon", 500, false)
+
+
+function registerLoot(name: text, item: item, desc: text, weight: number, custom: string="false", price: integer=-1, lootable: boolean=true):
+	set {_index} to uncolored {_name} in lowercase
+
+	if {_custom} = "weapon":
+		set {_i} to getWeapon({_name})
+		set {-dungeon::loot::%{_index}%::name} to name of {_i}
+		set {-dungeon::loot::%{_index}%::item} to {_i}
+		set {-dungeon::loot::%{_index}%::desc::*} to lore of {_i}
+	
+	else if {_custom} = "attunement":
+		set {-dungeon::loot::%{_index}%::name} to "&e&n%{_name} in strict proper case%"
+		set {-dungeon::loot::%{_index}%::item} to enchanted book with all item flags
+		set {-dungeon::loot::%{_index}%::desc::*} to "&8ᴀᴛᴛᴜɴᴇᴍᴇɴᴛ", "", formatParagraph({-attunements::%{_index}%::desc}), "", {_dmg-mana}, "", "&e&lUSABLE IN ATTUNEMENT ANVIL", ""
+
+	else if {_custom} = "boon":
+		set {-dungeon::loot::%{_index}%::name} to {-boons::%{_index}%::name}
+		set {-dungeon::loot::%{_index}%::item} to {-boons::%{_index}%::item}
+		set {_spl::*} to {-boons::%{_index}%::desc} split at ". "
+		loop {_spl::*}:
+			set {_desc::%loop-counter%::*} to formatParagraph(loop-value)
+		set {_last} to last element out of indices of {_desc::1::*}
+		set {_desc::1::%{_last}%} to "%{_desc::1::%{_last}%}%." # add a period, removed from splitting
+		set {-dungeon::loot::%{_index}%::desc::*} to "&8ʙᴏᴏɴ", "", {_desc::1::*}, "", {_desc::2::*}, "", "", "&e&lUSABLE IN TABLE OF BOONS", ""
+
+	else if {_custom} = "equipment":
+		set {-dungeon::loot::%{_index}%::name} to "%{_name}% &8[&9🛡&8]"
+		set {-dungeon::loot::%{_index}%::item} to {_item} with all item flags
+		set {-dungeon::loot::%{_index}%::desc::*} to "&8ᴇǫᴜɪᴘᴍᴇɴᴛ", "", formatParagraph({_desc}), "", "&8(&7Stackable&8)", "", "&e&lUSE BAG TO EQUIP", ""
+		set {-dungeon::loot::%{_index}%::type} to "equipment" # currently used for openEquipment speed
+		set byte tag "equipment" of custom nbt of {-dungeon::loot::%{_index}%::item} to 1
+
+		if {_index} = "witch's root":
+			set {-dungeon::loot::%{_index}%::effect} to 0.1
+		else if {_index} = "rusted ring":
+			set {-dungeon::loot::%{_index}%::effect} to 5
+		else if {_index} = "ritual sword":
+			set {-dungeon::loot::%{_index}%::effect} to 0.10
+		else if {_index} = "icarus feather":
+			set {-dungeon::loot::%{_index}%::effect} to 0.05
+
+
+	else if {_custom} = "runes":
+		set {-dungeon::loot::%{_index}%::name} to {_name}
+		set {-dungeon::loot::%{_index}%::item} to {_item} with all item flags
+		set {-dungeon::loot::%{_index}%::desc::*} to "", formatParagraph({_desc}), "", "", "&e&lRIGHT-CLICK TO USE", "", "&8(&7Spendable at the &a&lSHOPKEEPER&8)", ""
+
+
+	else:
+		set {-dungeon::loot::%{_index}%::name} to {_name}
+		set {-dungeon::loot::%{_index}%::item} to {_item} with all item flags
+		set {-dungeon::loot::%{_index}%::desc::*} to "", formatParagraph({_desc}), "", "&e&lRIGHT-CLICK TO USE", ""
+	
+	set {-dungeon::loot::%{_index}%::weight} to {_weight}
+	set {-dungeon::loot::%{_index}%::price} to {_price}
+	set {-dungeon::loot::%{_index}%::lootable} to {_lootable}
+
+	# used for merchants; don't want to sell rune consumables
+	if {_price} != -1:
+		set string tag "name" of custom nbt of {-dungeon::loot::%{_index}%::item} to {_index}
+
+
+
+
+
+
+
+# chest
+function weighted_choice(values: objects, weights: numbers) :: object:
+	if (amount of {_values::*}) != (amount of {_weights::*}):
+		return {_none}
+	set {_total-weight} to sum({_weights::*})
+	loop (amount of {_weights::*}) times:
+		set {_value} to 0
+		loop (integers from 1 to (loop-value)):
+			add {_weights::%loop-value-2%} to {_value}
+		set {_cumulative-weights::%loop-value-1%} to {_value}
+	set {_random} to random number from 0 to {_total-weight}
+	set {_n} to 1
+	loop {_values::*}:
+		if {_random} <= {_cumulative-weights::%{_n}%}:
+			return loop-value
+		add 1 to {_n}
+	return {_none}
+
+
+
+function spawnChest(loc: location):
+	set {_varients::*} to chest[facing=east], chest[facing=west], chest[facing=north] and chest[facing=south]
+	set block at {_loc} to random element out of {_varients::*}
+	set {_chest} to block at {_loc}
+	set byte tag "dungeon" of custom nbt of {_chest} to 1
+	add {_loc} to {-dungeon::chests::*}
+
+
+
+function openChest(p: player, loc: location):
+	set {_chest} to block at {_loc}
+	byte tag "opened" of custom nbt of {_chest} != 1
+
+	set byte tag "opened" of custom nbt of {_chest} to 1
+	remove {_loc} from {-dungeon::chests::*}
+	play open animation on {_chest}
+
+	set {_times} to weighted_choice((1, 2, 3, 4), (4, 3, 2, 1))
+	add (random integer between 1 and 2) to {_times} if {-tempdata::%uuid of {_p}%::boon} = "boon of the greedy"
+	loop {_times} times:
+		wait 1 second
+
+		loop 3 times:
+			set {_v} to vector(0,2,0) + random vector
+			draw 0 poof particles with offset {_v} with extra value 0.05 at location 0.3 above {_loc}
+		play sound "entity.item.pickup" at {_loc}
+
+		set {_ind::*} to (indices of {-dungeon::loot::*}) where [{-dungeon::loot::%input%::lootable} = true]
+		clear {_weight::*}
+		loop {_ind::*}:
+			set {_weight::%loop-value-2%} to {-dungeon::loot::%loop-value-2%::weight}
+
+		set {_index} to weighted_choice({_ind::*}, {_weight::*})
+		set {_name} to {-dungeon::loot::%{_index}%::name}
+		set {_item} to {-dungeon::loot::%{_index}%::item}
+		set {_desc::*} to {-dungeon::loot::%{_index}%::desc::*}
+
+		set {_i} to {_item} named {_name} with lore {_desc::*} with all item flags
+		if {_index} contains "runes":
+			set {_cut} to uncolored {_name} in lowercase
+			replace all "₪ shattered runes" in {_cut} with ""
+			set {_cut} to {_cut} parsed as integer
+			set int tag "runes" of custom nbt of {_i} to {_cut}
+
+		#send "%{_i}%" to {_p} if "%{_p}%" = "Sh_iki"
+		drop {_i} at location 0.6 above {_loc}
+		set name of last dropped item to {_name}
+		modify nbt of dropped item:
+			set byte tag "CustomNameVisible" of nbt to 1
+		set byte tag "pickup" of custom nbt of last dropped item to 1
+
+		push {_i} up at speed 0.5
+
+	wait 1 second
+	play close animation on {_chest}
+	wait 1 second
+	set block at {_loc} to air
+	draw 5 poof particles with extra value 0.3 at {_loc}
+	play sound "entity.item.pickup" at pitch 0.5 at {_loc}
+
+
+on rightclick on chest:
+	player's gamemode != spectator
+	byte tag "dungeon" of custom nbt of clicked block = 1:
+		cancel event
+		openChest(player, location of clicked block)
+	else if byte tag "dungeon-starter" of custom nbt of clicked block = 1:
+		cancel event
+		openStarterChest(player)
+
+
+
+
+
+
+
+function spawnStarterChest(loc: location):
+	set block at {_loc} to chest[facing=north]
+	set {_chest} to block at {_loc}
+	set byte tag "dungeon-starter" of custom nbt of {_chest} to 1
+
+	spawn text display at location 1 above {_chest}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set display text of {_ent} to "&b&lSTARTER GEAR"
+	set display billboard of {_ent} to center
+
+	spawn text display at location 0.75 above {_chest}
+	set {_ent} to last spawned text display
+	add {_ent} to {display::dungeon::*}
+	set display text of {_ent} to "&7CLICK TO OPEN"
+	set display billboard of {_ent} to center
+	set display scale of {_ent} to vector(0.75, 0.75, 0.75)
+
+
+function openStarterChest(p: player):
+	create a gui with virtual chest inventory with 5 rows named "&b&lSTARTER GEAR":
+		open gui to {_p}
+
+		format gui slot (integers between 0 and 8) with light blue stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&b&lDUNGEON STARTER GEAR" with lore "", formatParagraph("Pick a starter weapon to enter the dungeon with!"), "", formatParagraph("Other weapons and attunements will be available to find throughout the dungeon."), "" with all item flags
+
+		set {_curr} to {-tempdata::%uuid of {_p}%::dungeon::starter} ? 1
+		if {_curr} = 1:
+			loop "rubishine", "gilded greatsword" and "shimmerfang":
+				set {_i} to getWeapon(loop-value, "hidden")
+				enchant {_i} with unbreaking 1
+				add "", "&a&lCLICK TO SELECT" and "" to lore of {_i}
+				format gui slot (18 + 2*loop-counter) with {_i}:
+					play sound "ui.button.click" to {_p}
+					equipWeapon({_p}, {_i})
+					set {-tempdata::%uuid of {_p}%::dungeon::starter} to 2
+					openStarterChest({_p})
+		
+		else if {_curr} = 2:
+			set {_opt::*} to "bandage"
+			loop {_opt::*}:
+				set {_name} to {-dungeon::loot::%loop-value%::name}
+				set {_item} to {-dungeon::loot::%loop-value%::item}
+				set {_desc::*} to {-dungeon::loot::%loop-value%::desc::*}
+
+				set {_i} to {_item} named {_name} with lore {_desc::*} with all item flags
+				format gui slot 22 with 3 of {_i}:
+					play sound "ui.button.click" to {_p}
+					give {_p} 3 of {_i}
+					set {-tempdata::%uuid of {_p}%::dungeon::starter} to 3
+					close {_p}'s inventory
+
+		else:
+			format gui slot 22 with barrier named "&c&lNO MORE STARTER ITEMS" with lore "", formatParagraph("You've already selected your starting equipment!"), "" with all item flags
+
+
+
+
+# use runes
+on rightclick: # with any armor trim smithing template
+	"%type of tool%" contains "smithing template"
+	clicked entity is not set
+	name of event-item contains "Runes"
+	set {_amnt} to int tag "runes" of custom nbt of event-item
+	remove 1 of event-item from player's inventory
+
+	draw 8 event-item item particles with offset vector(0.25, 0.25, 0.25) with extra value 0.25 at location 1 above player
+
+	play sound "block.lodestone.place" at volume 1 at pitch 0.8 at player
+	play sound "elemental.rocks" at volume 1 at pitch 1.2 at player
+
+	set {_extra} to ""
+	send "<##D87A46> + %runes({_amnt}, true)% %{_extra}%" to player
+	add {_amnt} to {-tempdata::%uuid of player%::shattered-runes}
+	score(player)
+
+
+
+on rightclick with map:
+	name of event-item contains "Bandage"
+	cancel event
+	clicked entity is not set
+	remove 1 of event-item from player's inventory
+
+	draw 3 heart particles with offset vector(1, 1, 1) at location 1 above player
+	apply regeneration 2 to player for 3 seconds
+	play sound "ui.loom.take_result" at pitch 1.5 at player
+	play sound "entity.witch.drink" at pitch 1 at player
+
+
+on rightclick with golden apple:
+	cancel event
+	clicked entity is not set
+	remove 1 of event-item from player's inventory
+
+	draw 5 heart particles with offset vector(1, 1, 1) at location 1 above player
+	apply regeneration 3 to player for 3 seconds
+	play sound "item.bottle.fill_dragonbreath" at pitch 1.1 at player
+	play sound "entity.witch.drink" at pitch 1 at player
+
+
+
+
+on rightclick with goat horn:
+	clicked entity is not set
+	item cooldown of player's tool for player = 0 seconds
+
+	loop 6 times:
+		draw 5 soul particles with offset vector(0.5, 0.5, 0.5) with extra value 0.1 at player ~ vector(0, 1, 0)
+		wait 1 second
+	
+
+	set {_dead::*} to all players where [{-tempdata::%uuid of input%::dungeon} is set]
+	set {_dead::*} to {_dead::*} where [input's gamemode = spectator]
+
+	play sound "entity.goat.horn_break" at volume 3 at pitch 0.5 at player
+	draw 10 goat horn item particles with offset vector(0.2, 0.2, 0.2) with extra value 0.1 at location 1.3 above and 1 infront of player
+	remove 1 of event-item from player's inventory
+
+	if size of {_dead::*} = 0:
+		play sound "entity.goat.ram_impact" at volume 3 at pitch 0.6 at player
+		send "%prefix()% No lost spirits heeded the call..." to player
+		send "%prefix()% &cFailed to revive teammates." to player
+
+	else:
+
+		send "%prefix()% The lost souls of your allies return to you." to player
+		send "%prefix()% Revived &f%{_dead::*}%" to player
+
+		loop {_dead::*}:
+			loop 6 times:
+				set {_rand} to random vector
+				set {_rand}'s pitch to 0
+				set {_rand}'s vector length to random number between 0.1 and 1
+
+				set {_loc} to location of player ~ {_rand}
+				
+				if all:
+					y coordinate of (highest block at {_loc}) > 0
+					block at {_loc} is not solid
+				then:
+					exit loop
+
+				else if loop-value-2 = 6:
+					set {_loc} to location of player
+
+			teleport loop-value to {_loc}
+			set loop-value's gamemode to adventure
+
+			draw 5 sculk soul particles with offset vector(0.5, 0.5, 0.5) with extra value 0.1 at loop-value ~ vector(0, 1, 0)
+
+		
+		play sound "entity.player.levelup" at volume 3 at player
+
+
+
+on rightclick with player head:
+	clicked entity is not set
+	byte tag "bag" of custom nbt of event-item = 1
+	openEquipment(player)
+
+
+
+function openEquipment(p: player, sound: boolean=true):
+
+	if {_sound} = true:
+		play sound "item.bundle.drop_contents" at {_p}
+
+	create gui with virtual chest inventory with 5 rows named "&6&l       EQUIPMENT BAG":
+		open gui to {_p}
+
+		format gui slot (integers between 9 and 35) with gray stained glass pane named "&0"
+		format gui slot (integers between 0 and 9, 17 and 18) with orange stained glass pane named "&0"
+		format gui slot (integers between 36 and 44, 26, 27, 35) with black stained glass pane named "&0"
+		
+		format gui slot 4 with {-dungeon::bag} named "&6&lEQUIPMENT BAG" with lore "", formatParagraph("Here you can equip items you find throughout the dungeon!"), ""
+
+		format gui slot (integers between 20 and 24) with air
+		
+		if size of {-tempdata::%uuid of {_p}%::equipment::*} = 0:
+			format gui slot 22 with paper named "&cNo Equipment" with lore "", formatParagraph("You don't have any equipment! Find some in the dungeon and equip it here!"), "", formatParagraph("Click any new equipment in your inventory to add it to your bag."), "" with all item flags
+		else:
+
+			set {_slot} to 19
+			loop (indices of {-dungeon::loot::*}) where [{-dungeon::loot::%input%::type} = "equipment"]:
+				add 1 to {_slot}
+				{-tempdata::%uuid of {_p}%::equipment::%loop-value%} is set
+				set {_index} to loop-value
+
+				set {_name} to {-dungeon::loot::%loop-value%::name}
+				set {_col} to first 2 characters of {_name}
+				set {_item} to {-dungeon::loot::%loop-value%::item}
+				set {_desc::*} to {-dungeon::loot::%loop-value%::desc::*}
+
+				if {_index} = "witch's root":
+					set {_msg} to "%{_col}%+%{-dungeon::loot::%loop-value%::effect} * {-tempdata::%uuid of {_p}%::equipment::%{_index}%} * 100%%% %{_col}%Mana Regeneration"
+				else if {_index} = "rusted ring":
+					set {_msg} to "<##d15228>+%runes({-dungeon::loot::%loop-value%::effect} * {-tempdata::%uuid of {_p}%::equipment::%{_index}%}, true)% On Kill"
+				else if {_index} = "ritual sword":
+					set {_msg} to "%{_col}%+%{-dungeon::loot::%loop-value%::effect} * {-tempdata::%uuid of {_p}%::equipment::%{_index}%} * 100%%% %{_col}%Attack Damage"
+				else if {_index} = "icarus feather":
+					set {_msg} to "%{_col}%+%{-dungeon::loot::%loop-value%::effect} * {-tempdata::%uuid of {_p}%::equipment::%{_index}%} * 100%%% %{_col}%Movement Speed"
+
+				set {_desc::%size of {_desc::*} - 3%} to "&fCurrent Effects: %{_msg}%"
+				set {_desc::%size of {_desc::*} - 1%} to "&e&lCLICK TO UNEQUIP"
+				set byte tag "equipment" of custom nbt of {_item} to 0
+
+				set {_ench} to {_item}
+				if {-tempdata::%uuid of {_p}%::equipment::%{_index}%} = 10:
+					enchant {_ench} with unbreaking 1
+				format gui slot {_slot} with {-tempdata::%uuid of {_p}%::equipment::%{_index}%} of {_ench} named "%{_name}% &8(&e%{-tempdata::%uuid of {_p}%::equipment::%{_index}%}%x&8)" with lore {_desc::*} with all item flags:
+					if {-tempdata::%uuid of {_p}%::equipment::%{_index}%} > 1:
+						remove 1 from {-tempdata::%uuid of {_p}%::equipment::%{_index}%}
+					else:
+						clear {-tempdata::%uuid of {_p}%::equipment::%{_index}%}
+
+					set {_desc::*} to {-dungeon::loot::%{_index}%::desc::*}
+					set {_i} to {_item} named {_name} with lore {_desc::*} with all item flags
+					set byte tag "equipment" of custom nbt of {_i} to 1
+					give {_p} {_i}
+					play sound "item.bundle.remove_one" at {_p}
+					openEquipment({_p})
+
+					if {_index} = "icarus feather":
+						updateSkill({_p})
+
+
+on inventory click:
+	name of top inventory of player = "&6&l       EQUIPMENT BAG"
+	byte tag "equipment" of custom nbt of event-item = 1
+
+	cancel event
+	set {_index} to uncolored unformat(name of event-item) in lowercase
+
+	if ({-tempdata::%uuid of player%::equipment::%{_index}%} ? 0) < 10:
+		remove 1 of event-item from player's inventory
+		add 1 to {-tempdata::%uuid of player%::equipment::%{_index}%}
+
+		play sound "item.bundle.insert" at player
+		openEquipment(player, false)
+
+		if {_index} = "icarus feather":
+			updateSkill(player)
+	
+	else:
+		play sound "block.note_block.didgeridoo" at pitch 0.5 to player
+		send "%prefix()% You can only equp a maximum of 10!" to player

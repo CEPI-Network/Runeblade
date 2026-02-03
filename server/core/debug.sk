@@ -1,0 +1,74 @@
+
+on drop:
+	player's gamemode != creative
+	if {-tempdata::%uuid of player%::dungeon} isn't set:
+		cancel event
+
+	else if event-item = {-dungeon::bag}:
+		cancel event
+
+on pickup:
+	player's gamemode != creative
+	if byte tag "pickup" of custom nbt of event-dropped item = 1:
+		stop
+	{-tempdata::%uuid of player%::dungeon} isn't set
+	cancel event
+
+#on rightclick on any trapdoor:
+#	player's gamemode != creative
+#	cancel event
+
+#on rightclick:
+#	if any:
+#		clicked block is any flower pot
+#		clicked block is potted cherry sapling
+#		clicked block is cave vines
+#		clicked block is lever
+#	then:
+#		player's gamemode != creative
+#		cancel event
+
+
+
+
+on entity knockback:
+	cancel event
+
+on entity change block:
+	event-entity is a falling block
+	cancel event
+
+on teleport:
+	player's gamemode = spectator
+	teleport cause = spectate
+	player does not have permission "skript.staff"
+	cancel event
+
+#on gamemode change:
+#	wait 1 tick
+#	set player's flight mode to true
+
+on craft:
+	cancel event
+
+#on shoot:
+#	shooter is a player
+#	projectile's metadata "hook" is not set
+#	cancel event
+
+on respawn:
+	# set player's flight mode to true
+	# teleport player to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers # spawn
+	wait 1 tick
+	apply infinite weakness 255 to player:
+		hide the particles
+		hide the icon
+
+
+on projectile collide:
+	isDamageableEntity(event-entity) = false
+	cancel event
+
+
+on hunger meter change:
+	cancel event

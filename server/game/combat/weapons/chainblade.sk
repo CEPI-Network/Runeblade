@@ -1,0 +1,384 @@
+
+
+
+
+function chainbladeAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 0.8
+	set {_particle-scale::2} to 1
+	set {_particle-scale::3} to 1.2
+
+	set {_weapon} to "chainblade"
+	set {_palette} to getWeaponColour({_p}, {_weapon})
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+
+	# momentum scaling
+	set {_init} to location of {_p}
+	wait 1 tick
+	set {_future} to location of {_p}
+	set {_v} to vector from {_init} to {_future}
+	set {_v}'s vector length to ({_v}'s vector length*{momentum-offset})
+	set {_draw} to location of {_p}'s head ~ {_v}
+
+	if {_palette} = {_weapon}:
+		set {_pattern} to 0
+	else:
+		set {_pattern} to 1
+
+	if {_hit} = 1:
+		set {_dir} to 1
+		set {_arc} to 110
+		set {_angle} to -40 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_ref} to {_v}
+		add 90 to {_ref}'s pitch
+		rotate {_v} around {_ref} by 10
+
+		set {_yaw} to {_v}'s yaw
+		set {_pitch} to {_v}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 2.6, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.4, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "sword.alt_slash" at volume 3 at pitch 1.2+{_sound-scale} at {_p}
+		play sound "block.chain.break" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		if {_pattern} != 0:
+			play sound "entity.generic.splash" at volume 3 at pitch 1.25+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_n} to (loop-value * 0.01)+0.5
+			set {_loop-scale} to max(1, {_n})
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 of {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at ({_draw} ~ {_arc::%loop-value-2%::%loop-value-1%})
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%}
+				set {_v} to vector from {_temp} to ({_draw} ~ {_arc::2::%loop-value+1%})
+				set {_v}'s vector length to 3.4
+
+				set {_temp} to {_temp} ~ {_draw}
+
+				if {_pattern} = 0:
+					draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 iron chain block particles with extra value 0.1 at {_temp}
+				else:
+					draw 0 smoke particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 redstone block block particles with extra value 0.1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.3 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.45 * {_kb-scale})
+				loop entities in radius 2.5 of (location 1.5 infront of {_p}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.3 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.45 * {_kb-scale})
+				
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+	
+
+
+
+
+	else if {_hit} = 2:
+		set {_dir} to -1
+		set {_arc} to 110
+		set {_angle} to 0 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+		
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_ref} to {_v}
+		add 90 to {_ref}'s pitch
+		rotate {_v} around {_ref} by -10
+
+		set {_yaw} to {_v}'s yaw
+		set {_pitch} to {_v}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 3, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 3.4, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 3.8, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "sword.alt_slash" at volume 3 at pitch 1+{_sound-scale} at {_p}
+		play sound "block.chain.break" at volume 3 at pitch 0.7+{_sound-scale} at {_p}
+		if {_pattern} != 0:
+			play sound "entity.generic.splash" at volume 3 at pitch 1.05+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_n} to (loop-value * 0.01)+0.5
+			set {_loop-scale} to max(1, {_n})
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at ({_draw} ~ {_arc::%loop-value-2%::%loop-value-1%})
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%}
+				set {_v} to vector from {_temp} to ({_draw} ~ {_arc::2::%loop-value+1%})
+				set {_v}'s vector length to 3.4
+
+				set {_temp} to {_temp} ~ {_draw}
+
+				if {_pattern} = 0:
+					draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 iron chain block particles with extra value 0.1 at {_temp}
+				else:
+					draw 0 smoke particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 redstone block block particles with extra value 0.1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.35 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.55 * {_kb-scale}
+				loop entities in radius 2.5 of (location 1.5 infront of {_p}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.35 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.55 * {_kb-scale}
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+	
+
+
+
+	else if {_hit} = 3:
+		set {_dir} to 1
+		set {_arc} to 80
+		set {_angle} to -90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 3.6, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 4, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 4.4, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "sword.alt_slash" at volume 3 at pitch 0.75+{_sound-scale} at {_p}
+		play sound "block.chain.break" at volume 3 at pitch 0.55+{_sound-scale} at {_p}
+		if {_pattern} != 0:
+			play sound "entity.generic.splash" at volume 3 at pitch 0.75+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_n} to (loop-value * 0.01)+0.75
+			set {_loop-scale} to max(1, {_n})
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at ({_draw} ~ {_arc::%loop-value-2%::%loop-value-1%})
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%}
+				set {_v} to vector from {_temp} to ({_draw} ~ {_arc::2::%loop-value+1%})
+				set {_v}'s vector length to 3.4
+
+				set {_temp} to {_temp} ~ {_draw}
+
+				if {_pattern} = 0:
+					draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 iron chain block particles with extra value 0.1 at {_temp}
+				else:
+					draw 0 smoke particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 redstone block block particles with extra value 0.1 at {_temp}
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed 0.35 * {_kb-scale}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.55 * {_kb-scale}
+				loop entities in radius 2.5 of (location 1.5 infront of {_p}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed 0.35 * {_kb-scale}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.55 * {_kb-scale}
+
+			mod(loop-value, 20) = 0
+			wait 1 tick
+		
+
+
+
+
+
+
+	else if {_hit} = 4:
+
+		set {_draw} to location 0.3 below and 1 infront of {_draw}
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+		set {_v}'s vector length to 0.4
+
+		draw 1 sweep attack particles at {_draw}
+
+		play sound "sword.throw" at volume 3 at pitch 0.8+{_sound-scale} at {_p}
+		play sound "sword.thrust" at volume 3 at pitch 0.6+{_sound-scale} at {_p}
+		play sound "block.chain.break" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "entity.iron_golem.attack" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		if {_pattern} != 0:
+			play sound "entity.generic.splash" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+		loop 10 times:
+			set {_n} to (1.1 - (0.55*loop-value^0.25))
+			set {_rad} to max(0.075, {_n})
+			set {_circ::*} to baseCircle({_v}'s yaw, {_v}'s pitch, {_rad}, 4/{_rad})
+
+			set {_particle-scale} to max(0.75, {_rad}+0.3)
+			loop {_circ::*}:
+				draw 1 {-colours::%{_palette}%::%{_hit}%::1} dust particles of size {_particle-scale} that transitions to {-colours::%{_palette}%::%{_hit}%::2} at ({_draw} ~ loop-value-2)
+
+				chance of 30%
+				set {_temp} to {_v}
+				set {_temp}'s vector length to 1
+
+				if {_pattern} = 0:
+					draw 0 iron chain block particles with offset vector {_temp} with extra value 2 at ({_draw} ~ loop-value-2)
+				else:
+					draw 0 redstone block block particles with offset vector {_temp} with extra value 2 at ({_draw} ~ loop-value-2)
+				
+			if {_pattern} = 0:
+				draw 1 iron chain block particles with offset vector(0.2, 0.2, 0.2) with extra value 0.15 at {_draw}
+			else:
+				draw 2 smoke particles with offset vector(0.2, 0.2, 0.2) with extra value 0.15 at {_draw}
+				draw 2 redstone block block particles with offset vector(0.2, 0.2, 0.2) with extra value 0.15 at {_draw}
+
+			mod(loop-value+2, 3) = 0:
+				loop entities in radius 1.75 of ({_draw} ~ {_v}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.4 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.6 * {_kb-scale})
+
+			mod(loop-value, 5) = 0:
+				wait 1 tick
+
+
+			set {_draw} to {_draw} ~ {_v}
+
+
+
+
+
+	else if {_hit} = 5:
+		set {_dir} to 1
+		set {_arc} to 80
+		set {_angle} to 90 + (random number between -5 and 5) - ({_p}'s pitch * 0.33)
+
+		set {_yaw} to {_p}'s yaw
+		set {_pitch} to {_p}'s pitch
+		set {_hitbox} to round({_arc}/3)
+
+		set {_arc::1::*} to baseArc({_yaw}, {_pitch}, 4, {_dir}, {_arc}, 1, {_angle}+2.5)
+		set {_arc::2::*} to baseArc({_yaw}, {_pitch}, 4.4, {_dir}, {_arc}, 1, {_angle})
+		set {_arc::3::*} to baseArc({_yaw}, {_pitch}, 4.8, {_dir}, {_arc}, 1, {_angle}-2.5)
+
+		play sound "sword.alt_slash" at volume 3 at pitch 1.1+{_sound-scale} at {_p}
+		play sound "block.chain.break" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		play sound "entity.iron_golem.attack" at volume 3 at pitch 0.9+{_sound-scale} at {_p}
+		if {_pattern} != 0:
+			play sound "entity.generic.splash" at volume 3 at pitch 1+{_sound-scale} at {_p}
+
+		loop {_arc} times:
+			set {_n} to (loop-value * 0.01)+0.75
+			set {_loop-scale} to max(1, {_n})
+			loop 3 times:
+				set {_particle-scale} to {_particle-scale::%loop-value-2%} * {_loop-scale}
+				draw 1 {-colours::%{_palette}%::%{_hit}%::%loop-value-2%} dust particles of size {_particle-scale} at ({_draw} ~ {_arc::%loop-value-2%::%loop-value-1%})
+			
+			chance of 10%:
+				set {_rand} to random vector
+				set {_rand}'s vector length to 0.2
+				set {_temp} to {_draw} ~ {_arc::2::%loop-value%}
+				set {_v} to vector from {_temp} to ({_draw} ~ {_arc::2::%loop-value+1%})
+				set {_v}'s vector length to 3.4
+
+				set {_temp} to {_temp} ~ {_draw}
+
+				if {_pattern} = 0:
+					draw 0 dust plume particles with offset {_v} with extra value 0.1 at {_temp}
+					draw 2 iron chain block particles with extra value 0.1 at {_temp}
+					draw 20 mycelium particles with offset vector(0.35, 0.35, 0.35) at {_temp}
+				else:
+					draw 0 smoke particles with offset {_v} with extra value 0.03 at {_temp}
+					draw 0 redstone block block particles with offset {_v} with extra value 2 at {_temp}
+					draw 20 crimson spore particles with offset vector(0.35, 0.35, 0.35) at {_temp}
+				
+			
+			# hitbox
+			mod(loop-value, {_hitbox}) = 0:
+				loop entities in radius 2.5 of ({_draw} ~ {_arc::2::%loop-value%}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					{_hit::*} doesn't contain loop-entity
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "block.chain.step" at pitch 1.25 at {_p}
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity up at speed (0.6 * {_kb-scale})
+					push loop-entity (vector from {_p} to loop-entity) at speed (0.5 * {_kb-scale})
+
+			mod(loop-value, 20) = 0
+			wait 1 tick

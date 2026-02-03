@@ -1,0 +1,13 @@
+
+
+function resourcepack(p: player):
+	#remove all resource packs from {_p}
+	wait 5 ticks
+	send resource pack from "https://download.mc-packs.net/pack/f30b06cfb2fccffedf599fdf8e18242e93e4c109.zip" with hash "f30b06cfb2fccffedf599fdf8e18242e93e4c109" to {_p}
+
+
+
+
+command /resourcepack:
+	trigger:
+		resourcepack(player)

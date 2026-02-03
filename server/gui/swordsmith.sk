@@ -1,0 +1,165 @@
+
+
+
+function openSwordsmith(p: player, tutorial: boolean=false):
+
+	create a gui with virtual chest inventory with 5 rows named "&c&lWEAPONS":
+		open gui to {_p}
+		
+		format gui slot (integers between 0 and 8) with red stained glass pane named "&0"
+		format gui slot (integers between 36 and 44) with black stained glass pane named "&0"
+		format gui slot 4 with spruce sign named "&c&lWEAPONS" with lore "", formatParagraph("Runeblade has multiple different weapons, each with different &cdamage&7, &fattack &fspeeds, &6attack &6range and <##2eadd7>mana <##2eadd7>costs&7."), "", formatParagraph("You may only equip one &cPrimary &cWeapon and &aSecondary &aWeapon at a time. Experiment with different options and see what works!"), "", formatParagraph("To equip a weapon, &fclick the item in the GUI. Don't forget to bring your weapons to the &5Attunement &5Master for an extra &fRight-Click &7ability!") and "" with all item flags
+
+
+		if {_tutorial} = false:
+			loop ("standard", "heavy" and "light"):
+				loop (indices of {-weapons::*}) where [{-weapons::%input%::moveset} = loop-value-1]:
+					{-weapons::%loop-value-2%::hidden} != true
+					#add loop-value-2 to {_ind::%loop-value-1%::%{-weapons::%loop-value-2%::type}%::*}
+					set {_ind::%loop-value-1%::%{-weapons::%loop-value-2%::type}%::%loop-value-2%} to {-weapons::%loop-value-2%::order}
+			
+			set {_orig::primary} to 10
+			set {_orig::secondary} to 14
+
+			loop ("primary" and "secondary"):
+			
+				loop ("standard", "heavy" and "light"):
+					set {_slot} to {_orig::%loop-value-1%} + 9*((loop-counter-2) - 1) # vertical offset
+
+					loop sorted indices of {_ind::%loop-value-2%::%loop-value-1%::*} in ascending order:
+						if all:
+							{-weapons::%loop-value-3%::hidden} = true
+							{_p} doesn't have permission "skript.hidden"
+						then:
+							continue
+
+						set {_i} to {-weapon::%loop-value-3%::cached-item} ? getWeapon(loop-value-3, "hidden")
+						if {data::%uuid of {_p}%::equipped::colours::%loop-value-3%} is set:
+							set {_i}'s custom model data to {-colours::%loop-value-3%;%{data::%uuid of {_p}%::equipped::colours::%loop-value-3%}%::model-data} ? 99
+						if loop-value-3 = "onimaru":
+							add 2 to {_i}'s custom model data
+
+						if any:
+							("rubishine", "gilded greatsword", "shimmerfang", "resonance") contains loop-value-3
+							{data::%uuid of {_p}%::weapons::*} contains loop-value-3
+						then:
+							enchant {_i} with unbreaking 1
+							add "", "&a&lCLICK TO EQUIP" and "" to lore of {_i}
+							format gui slot {_slot} with {_i}:
+								# EQUIP
+								equipWeapon({_p}, {_i})
+						
+
+						else:
+							if ({data::%uuid of {_p}%::runes} ? 0) >= {-weapons::%loop-value-3%::cost}:
+								set {_locked} to "&e&lCLICK TO PURCHASE"
+							else:
+								set {_locked} to "&c&lLOCKED"
+							add "", {_locked}, "", "&7Costs: %runes({-weapons::%loop-value-3%::cost})%" and "" to lore of {_i}
+							set int tag "cost" of custom nbt of {_i} to {-weapons::%loop-value-3%::cost}
+							format gui slot {_slot} with {_i}:
+								# BUY
+								buy({_p}, {_i}, "weapons")
+
+						add 1 to {_slot}
+
+
+			if {_p} has permission "skript.hidden":
+				set {_i} to {-weapon::moonveil::cached-item} ? getWeapon("moonveil", "hidden")
+				enchant {_i} with unbreaking 1
+				add "", "&a&lCLICK TO EQUIP" and "" to lore of {_i}
+				format gui slot 37 with {_i}:
+					equipWeapon({_p}, {_i})
+					
+				#set {_i} to {-weapon::chainblade::cached-item} ? getWeapon("chainblade", "hidden")
+				#enchant {_i} with unbreaking 1
+				#add "", "&a&lCLICK TO EQUIP" and "" to lore of {_i}
+				#format gui slot 39 with {_i}:
+				#	equipWeapon({_p}, {_i})
+
+		else:
+			set {_slot} to 19
+			loop ("rubishine", "gilded greatsword", "shimmerfang"):
+
+				set {_i} to getWeapon(loop-value, "hidden")
+				enchant {_i} with unbreaking 1
+				add "", "&a&lCLICK TO EQUIP" and "" to lore of {_i}
+			
+				format gui slot {_slot} with {_i}:
+					equipWeapon({_p}, {_i})
+					updateTutorial({_p}, "attunement")
+
+				add 1 to {_slot}
+			
+			set {_i} to getWeapon("resonance", "hidden")
+			enchant {_i} with unbreaking 1
+			add "", "&a&lCLICK TO EQUIP" and "" to lore of {_i}
+			format gui slot 24 with {_i}:
+				equipWeapon({_p}, {_i})
+				updateTutorial({_p}, "attunement")
+
+
+
+
+# Working on implementing Swordsmith -- some colours are incorrect (gilded, some part of arcanum 2nd attack)
+
+
+
+
+
+function equipWeapon(p: player, i: item):
+	if byte tag "primary" of custom nbt of {_i} = 1:
+		remove (all items of {_p}'s inventory where [byte tag "primary" of custom nbt compound of input = 1]) from {_p}'s inventory
+	if byte tag "secondary" of custom nbt of {_i} = 1:
+		remove (all items of {_p}'s inventory where [byte tag "secondary" of custom nbt compound of input = 1]) from {_p}'s inventory
+
+	set {_raw} to unformat(name of {_i})
+	set {_index} to uncolored {_raw} in lowercase
+	replace all " " in {_index} with "_"
+	set {_model} to getWeaponColour({_p}, {_index}) + (string tag "model-suffix" of custom nbt of {_i} ? "")
+
+	play sound "block.note_block.pling" at pitch 2 to {_p}
+	send "%prefix()% Equipped %{_raw}%&7!" to {_p}
+	set {_i} to getWeapon(uncolored {_raw} in lowercase)
+	set {_i}'s item model to {_model}
+	give {_p} {_i}
+
+	{data::%uuid of {_p}%::options::dual onimaru} is not set
+	if uncolored {_raw} in lowercase = "onimaru":
+		set {_i2} to getWeapon("onimaru", "hidden")
+		set byte tag "weapon" of custom nbt of {_i2} to 0
+		set byte tag "offhand" of custom nbt of {_i2} to 1
+		set string tag "name" of custom nbt of {_i2} to "onimaru" # hidden doesn't do this ig
+		#set custom model data of {_i2} to {_model-data}+1
+		set {_p}'s offhand tool to {_i2}
+
+
+on inventory click:
+	name of top inventory = "&c&lWEAPONS":
+		event-inventory = player's inventory
+		byte tag "weapon" of custom nbt of event-item = 1
+		play sound "block.note_block.pling" at pitch 1 to player
+		send "%prefix()% Unequipped %unformat(name of event-item)%&7!" to player
+		remove event-item from player's inventory
+
+	else:
+		if all:
+			string tag "name" of custom nbt of event-item = "onimaru"
+			byte tag "offhand" of custom nbt of event-item = 1
+		then:
+			set {_cont} to true
+		else if all:
+			"%event-clicktype%" = "swap offhand"
+			string tag "name" of custom nbt of player's offhand tool = "onimaru"
+			byte tag "offhand" of custom nbt of player's offhand tool = 1
+		then:
+			set {_cont} to true
+		
+		if {_cont} = true:
+			cancel event
+
+
+on swap hand items:
+	byte tag "offhand" of custom nbt of player's offhand tool = 1
+	cancel event
+

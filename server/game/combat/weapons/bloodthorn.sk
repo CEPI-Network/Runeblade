@@ -1,0 +1,469 @@
+
+
+
+function bloodthornAction(p: player, hit: integer=1, atk-scale: number):
+
+	set {_particle-scale::1} to 1.2
+	set {_particle-scale::2} to 2
+	set {_particle-scale::4} to 1
+
+	set {_weapon} to "bloodthorn"
+	set {_dmg} to getDamage({_p}, {_weapon}, {_hit}) * {_atk-scale}
+	set {_sound-scale} to (-1 * {_atk-scale}) + 1
+	set {_kb-scale} to {_atk-scale}^2
+	
+	# AOE
+	if {_hit} = 1:
+
+		set {_draw} to location of {_p}
+		set {_v} to vector from yaw {_p}'s yaw and pitch 0
+		set {_rand} to random element out of (90 and -90)
+
+		play sound "block.grass.break" at volume 2.5 at pitch 0.8+{_sound-scale} at {_p}
+
+		setModifier({_p}, "speed", "secondary", -0.2)
+		setModifier({_p}, "jump", "secondary", -0.42)
+		updateModifiers({_p})
+
+		make {_p} damage {_p} by 0.5
+		draw 10 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at ({_p} ~ vector(0,1,0))
+
+		# outer ring
+		loop 12 times:
+			set {_cv} to spherical vector with radius 2.6, yaw {_p}'s yaw + loop-value*30, pitch 0
+			rotate {_v} around vector(0,1,0) by -30
+			set {_loop} to loop-value
+
+			set {_loc} to {_draw} ~ {_cv}
+			set {_loc}'s yaw to {_v}'s yaw + {_rand}
+			set {_loc}'s pitch to 30
+
+			# smaller sub-thorn
+			spawn item display at {_loc}:
+				set {_i} to mangrove roots
+				set item model of {_i} to "bloodspike_%random integer between 1 and 3%"
+				set {_ent::%{_loop}%} to item display
+				set item of item display to {_i}
+				set transformation scale of item display to vector(0.5, 1, 0.5)
+				set display brightness of item display to displayBrightness(10, 10)
+				set interpolation delay of item display to 0 ticks
+				set interpolation duration of item display to 1 ticks
+				set byte tag "display" of custom nbt of item display to 1
+			
+			set {_cv}'s vector length to 2
+			rotate {_v} around vector(0,1,0) by -5
+			set {_loc} to {_draw} ~ {_cv}
+			set {_loc}'s yaw to {_v}'s yaw + {_rand}
+			set {_loc}'s pitch to 10
+
+			# larger main-thorn
+			spawn item display at {_loc}:
+				set {_i} to mangrove roots
+				set item model of {_i} to "bloodspike_%random integer between 1 and 3%"
+				set {_ent::%{_loop} + 12%} to item display
+				set item of item display to {_i}
+				set transformation scale of item display to vector(0.5, 1, 0.5)
+				set display brightness of item display to displayBrightness(10, 10)
+				set interpolation delay of item display to 0 ticks
+				set interpolation duration of item display to 1 ticks
+				set byte tag "display" of custom nbt of item display to 1
+
+			# particles
+			loop 12 times:
+				set {_rand2} to random vector
+				set {_rand2}'s vector length to (random number between 0.1 and 0.45)
+
+				set {_cv}'s vector length to loop-value-2 / 4
+				set {_loc} to {_draw} ~ {_cv}
+				draw 0 redstone block block particles with offset {_v}+{_rand2} with extra value 2 at ({_loc} ~ {_rand2} ~ vector(0, 0.2, 0))
+
+				set {_mod} to mod(loop-value-2, 3)+1
+				set {_mod2} to mod({_mod}, 3)+1
+				set {_col::1} to {-colours::%{_weapon}%::%{_hit}%::%{_mod}%}
+				set {_col::2} to {-colours::%{_weapon}%::%{_hit}%::%{_mod2}%}
+				
+				draw 1 {_col::1} dust particles of size 1.5 that transitions to {_col::2} at ({_loc} ~ {_rand2} ~ vector(0, 0.2, 0))
+
+
+		# random main-scale height
+		loop integers between 12 and 24:
+			set {_rand::%loop-value%} to (random number between 0.9 and 1.25)
+
+		# duration
+		loop 16 times:
+			loop-value <= 8:
+				set {_sub-scale} to 0.03125*(loop-value*2)
+				set {_main-scale} to 0.03125*(loop-value*2)
+			else:
+				set {_sub-scale} to 0.25+0.05*((loop-value - 8)*2)
+				set {_main-scale} to 0.25+0.075*((loop-value - 8)*2)
+
+
+			loop {_ent::*}:
+				set loop-value-2's interpolation delay to 0 ticks
+				
+				loop-counter-2 <= 12:
+					set loop-value-2's transformation scale to vector({_sub-scale}, {_sub-scale}*2, {_sub-scale})
+				else:
+					set {_main} to {_main-scale} * {_rand::%loop-counter-2%}
+
+					set loop-value-2's transformation scale to vector({_main}, {_main}*2.5, {_main})
+				
+				set {_loc} to location (loop-value-1 / 6)-1 above loop-value-2
+				draw 1 mangrove roots block particles with offset vector(0.5, 1, 0.5) with extra value 0.5 at {_loc}
+
+
+			mod(loop-value, 3) = 0:
+				set {_n} to 0.5+(loop-value / 25)+{_sound-scale}
+				play sound "block.mangrove_roots.break" at volume 2.25 at pitch {_n} at {_p}
+			
+			loop-value = 14:
+				play sound "entity.armor_stand.break" at volume 2.25 at pitch 0.5+{_sound-scale} at {_p}
+			
+
+			loop-value > 8:
+				mod(loop-value, 2) = 0
+				loop entities in radius 3.6 of {_draw} where [input is not an item display]:
+					loop-entity != {_p}
+					{_hit::*} doesn't contain loop-entity
+					isDamageableEntity(loop-entity, {_p}) = true
+					set {_hit::%uuid of loop-entity%} to loop-entity
+
+					play sound "entity.zombie.converted_to_drowned" at pitch 1.5+{_sound-scale} at loop-entity
+					play sound "block.mangrove_roots.break" at pitch 0.5+{_sound-scale} at loop-entity
+
+					draw 18 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at (loop-entity ~ vector(0,1,0))
+
+					hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+					make {_p} damage loop-entity by {_dmg}
+					push loop-entity (vector from {_p} to loop-entity) at speed 0.3 * {_kb-scale}
+					push loop-entity up at speed 0.6 * {_kb-scale}
+
+					draw 3 heart particles with offset vector(0.25, 0.25, 0.25) at location 1 above {_p}
+					heal {_p} by 0.125
+					play sound "entity.witch.drink" at volume 1.75 at pitch 1.2 at {_p}
+
+			# remove slowness
+			if loop-value = 13:
+				removeModifier({_p}, "speed", "secondary")
+				removeModifier({_p}, "jump", "secondary")
+				updateModifiers({_p})
+
+			wait 1 tick
+		
+		wait 10 tick
+
+		loop reversed 8 times:
+			set {_sub-scale} to 0.08125*(loop-value)
+			set {_main-scale} to 0.10625*(loop-value)
+
+			loop {_ent::*}:
+				set loop-value-2's interpolation delay to 0 ticks
+
+				loop-counter-2 <= 12:
+					set loop-value-2's transformation scale to vector({_sub-scale}, {_sub-scale}*4, {_sub-scale})
+				else:
+					set {_main} to {_main-scale} * {_rand::%loop-counter-2%}
+
+					set loop-value-2's transformation scale to vector({_main}, {_main}*4.5, {_main})
+
+				set {_loc} to location (loop-value-1 / 3)-1 above loop-value-2
+				draw 1 mangrove roots block particles with offset vector(0.5, 1, 0.5) with extra value 0.5 at {_loc}
+
+			wait 1 tick
+
+		kill {_ent::*}
+
+
+
+
+	else if {_hit} = 2:
+
+		make {_p} damage {_p} by 1
+		draw 10 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at ({_p} ~ vector(0,1,0))
+
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch 0
+		set {_draw} to location of {_p}
+		loop 20 times:
+			exit loop if block at {_draw} ~ vector(0, -0.5, 0) is solid
+			set {_draw} to {_draw} ~ vector(0, -0.5, 0)
+		
+		loop 30 times:
+			if {_target} is set:
+				set {_tv} to vector from {_draw} to {_target}
+				set {_tv}'s pitch to 0
+
+				if {_dist} is set:
+					{_tv}'s vector length > {_dist} # further away than before
+					add 1 to {_too-far}
+					exit loop if {_too-far} >= 8
+				set {_dist} to {_tv}'s vector length
+
+
+				set {_tv}'s vector length to 0.15
+				set {_v} to {_v} + {_tv}
+			set {_draw} to {_draw} ~ {_v}
+
+
+			draw 4 {-colours::%{_weapon}%::%{_hit}%::1} dust particles of size 3 that transitions to {-colours::%{_weapon}%::%{_hit}%::3} with offset vector(1, 0.2, 1) at {_draw}
+			draw 2 mangrove roots block particles with offset vector(0.5, 1, 0.5) with extra value 0.5 at {_draw}
+
+			set {_rand} to random vector
+			set {_rand}'s vector length to 1
+			raiseThorns({_draw} ~ {_rand})
+			raiseThorns({_draw})
+			
+			set {_n} to (0.5+(loop-value / 40)+{_sound-scale})
+			play sound "block.mangrove_roots.break" at volume 2.25 at pitch {_n} at {_draw}
+
+			# homing
+			{_target} isn't set:
+				set {_temp} to {_v}
+				set {_temp}'s vector length to 2
+				loop entities in radius 10 of ({_draw} ~ {_temp}) where [input != {_p}]:
+					isDamageableEntity(loop-entity, {_p}) = true
+					set {_target} to loop-entity
+					exit loop
+			
+			# hitbox
+			loop entities in radius 2 of (location 0.75 above {_draw}) where [input is not an item display]:
+				loop-entity != {_p}
+				{_hit::*} doesn't contain loop-entity
+				isDamageableEntity(loop-entity, {_p}) = true
+				set {_hit::%uuid of loop-entity%} to loop-entity
+
+				play sound "entity.zombie.converted_to_drowned" at pitch 1.1+{_sound-scale} at loop-entity
+				play sound "block.mangrove_roots.break" at pitch 0.5+{_sound-scale} at loop-entity
+
+				draw 18 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at (location of loop-entity ~ vector(0,1,0))
+
+				hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+				make {_p} damage loop-entity by {_dmg}
+				push loop-entity (vector from {_p} to loop-entity) at speed (0.325 * {_kb-scale})
+				push loop-entity up at speed 0.125 * {_kb-scale}
+
+				draw 3 heart particles with offset vector(0.25, 0.25, 0.25) at location 1 above {_p}
+				heal {_p} by 0.25
+				play sound "entity.witch.drink" at volume 1.75 at pitch 1.2 at {_p}
+
+				set {_end} to true
+			
+			loop blocks in radius 1 of ({_draw} ~ vector(0,1,0)):
+				loop-block is solid
+				add 1 to {_solid}
+
+			exit loop if {_end} = true
+			exit loop if {_solid} >= 3
+
+			wait 1 tick
+
+
+
+	else:
+
+		make {_p} damage {_p} by 0.5
+		draw 10 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at ({_p} ~ vector(0,1,0))
+
+
+
+		set {_max-dist} to 15
+		set {_ray} to raytrace from {_p} with max distance {_max-dist} with ray size 0.75 while ignoring passable blocks while ignoring all entities where [isDamageableEntity(input, {_p}) = false]
+		set {_hit-target} to raytrace hit entity of {_ray} ? raytrace hit block of {_ray} ? location {_max-dist} infront of {_p}
+		set {_draw} to location of {_hit-target}
+		set {_draw} to location 1 above {_draw} if block at location 0.6 above {_draw} is solid
+		loop 40 times:
+			exit loop if block at {_draw} ~ vector(0, -0.25, 0) is solid
+			set {_draw} to {_draw} ~ vector(0, -0.25, 0)
+		set {_draw}'s pitch to 0
+
+
+		set {_v} to vector from yaw {_p}'s yaw and pitch {_p}'s pitch
+
+		# outer ring
+		loop 12 times:
+			set {_cv} to spherical vector with radius 2.5, yaw ({_p}'s yaw + loop-value*30), pitch 0
+			rotate {_v} around vector(0,1,0) by -45
+			set {_loop} to loop-value
+
+			set {_loc} to {_draw} ~ {_cv}
+			set {_loc}'s yaw to {_v}'s yaw + {_rand}
+			set {_loc}'s pitch to 30
+
+			# smaller sub-thorn
+			spawn item display at {_loc}:
+				set {_i} to mangrove roots
+				set item model of {_i} to "bloodspike_%random integer between 1 and 3%"
+				set {_ent::%{_loop}%} to item display
+				set item of item display to {_i}
+				set transformation scale of item display to vector(0.5, 1, 0.5)
+				set display brightness of item display to displayBrightness(10, 10)
+				set interpolation delay of item display to 0 ticks
+				set interpolation duration of item display to 1 ticks
+				set byte tag "display" of custom nbt of item display to 1
+			
+			set {_cv}'s vector length to 1.5
+			rotate {_v} around vector(0,1,0) by -5
+			set {_loc} to {_draw} ~ {_cv}
+			set {_loc}'s yaw to {_v}'s yaw + {_rand}
+			set {_loc}'s pitch to 10
+
+			# larger main-thorn
+			spawn item display at location 0.6 above {_loc}:
+				set {_i} to mangrove roots
+				set item model of {_i} to "bloodspike_%random integer between 1 and 3%"
+				set {_ent::%{_loop} + 12%} to item display
+				set item of item display to {_i}
+				set transformation scale of item display to vector(0.5, 1, 0.5)
+				set display brightness of item display to displayBrightness(10, 10)
+				set interpolation delay of item display to 0 ticks
+				set interpolation duration of item display to 1 ticks
+				set byte tag "display" of custom nbt of item display to 1
+
+			# particles
+			loop 12 times:
+				set {_rand2} to random vector
+				set {_rand2}'s vector length to (random number between 0.1 and 0.45)
+
+				set {_cv}'s vector length to (loop-value-2 / 4)
+				set {_loc} to {_draw} ~ {_cv}
+				draw 0 redstone block block particles with offset {_v}+{_rand2} with extra value 2 at ({_loc} ~ {_rand2} ~ vector(0, 0.2, 0))
+
+				set {_mod} to mod(loop-value-2, 3)+1
+				set {_mod2} to mod({_mod}, 3)+1
+
+				set {_col::1} to {-colours::%{_weapon}%::%{_hit}%::%{_mod}%}
+				set {_col::2} to {-colours::%{_weapon}%::%{_hit}%::%{_mod2}%}
+				
+				draw 1 {_col::1} dust particles of size 1.5 that transitions to {_col::2} at ({_loc} ~ {_rand2} ~ vector(0, 0.2, 0))
+
+
+		set transformation translation of {_ent::*} to vector(0, 0.5, 0)
+		loop 10 times:
+			# scales
+			set {_sub-scale} to (0.075*loop-value)
+			set {_main-scale} to (0.12*loop-value)
+
+			loop {_ent::*}:
+				set loop-value-2's interpolation delay to 0 ticks
+					
+				loop-counter-2 <= 12:
+					set loop-value-2's transformation scale to vector({_sub-scale}, {_sub-scale}*1.25, {_sub-scale})
+				else:
+					set loop-value-2's transformation scale to vector({_main-scale}, {_main-scale}*1.5, {_main-scale})
+				
+				set {_loc} to location (loop-value-1 / 12)-1 above loop-value-2
+				draw 1 mangrove roots block particles with offset vector(0.5, 1, 0.5) with extra value 0.5 at {_loc}
+
+
+			# sound
+			mod(loop-value, 3) = 0:
+				set {_n} to (0.8+(loop-value / 20)+{_sound-scale})
+				play sound "block.mangrove_roots.break" at volume 2.5 at pitch {_n} at {_draw}
+
+			wait 1 tick
+
+
+		wait 2 tick
+
+		play sound "block.mangrove_roots.break" at volume 2.25 at pitch 0.8+{_sound-scale} at {_draw}
+		play sound "block.grass.break" at volume 2.25 at pitch 0.7+{_sound-scale} at {_draw}
+
+		loop entities in radius 4 of {_draw} where [input is not a display]:
+			loop-entity != {_p}
+			{_hit::*} doesn't contain loop-entity
+			isDamageableEntity(loop-entity, {_p}) = true
+			set {_hit::%uuid of loop-entity%} to loop-entity
+
+			play sound "entity.zombie.converted_to_drowned" at pitch 1.25+{_sound-scale} at loop-entity
+			play sound "block.mangrove_roots.break" at pitch 0.5+{_sound-scale} at loop-entity
+
+			draw 18 redstone block block particles with offset vector(0.4, 0.4, 0.4) with extra value 0.6 at (loop-entity ~ vector(0,1,0))
+
+			hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon})
+			make {_p} damage loop-entity by {_dmg}
+			push loop-entity (vector from {_p} to loop-entity) at speed 0.3 * {_kb-scale}
+			push loop-entity up at speed 0.8 * {_kb-scale}
+
+			draw 3 heart particles with offset vector(0.25, 0.25, 0.25) at location 1 above {_p}
+			heal {_p} by 0.25
+			play sound "entity.witch.drink" at volume 1.75 at pitch 1.2 at {_p}
+
+		wait 10 tick
+
+		loop reversed 10 times:
+			# scales
+			set {_sub-scale} to (0.075*loop-value)
+			set {_main-scale} to (0.12*loop-value)
+
+			loop {_ent::*}:
+				set loop-value-2's interpolation delay to 0 ticks
+					
+				loop-counter-2 <= 12:
+					set loop-value-2's transformation scale to vector({_sub-scale}, {_sub-scale}*1.25, {_sub-scale})
+				else:
+					set loop-value-2's transformation scale to vector({_main-scale}, {_main-scale}*1.5, {_main-scale})
+				
+				set {_loc} to location -1+(loop-value-1 / 12) above loop-value-2
+				draw 1 mangrove roots block particles with offset vector(0.5, 1, 0.5) with extra value 0.5 at {_loc}
+
+			set {_height} to loop-value*0.0625
+			
+			wait 1 tick
+
+		kill {_ent::*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function raiseThorns(loc: location):
+	add (random number between 8 and -8) to {_loc}'s yaw
+	set {_loc}'s pitch to random number between 10 and 15
+
+	spawn item display at {_loc}:
+		set {_i} to mangrove roots
+		set item model of {_i} to "bloodspike_%random integer between 1 and 3%"
+		set {_ent} to item display
+		set item of item display to {_i}
+		set transformation scale of item display to vector(0.5, 1, 0.5)
+		set display brightness of item display to displayBrightness(10, 10)
+		set interpolation delay of item display to 0 ticks
+		set interpolation duration of item display to 1 ticks
+		set byte tag "display" of custom nbt of item display to 1
+
+
+	set {_rand} to random number between 0.05 and 0.085
+	set {_rand2} to random number between 1 and 3
+
+	# raise
+	loop 8 times:
+		set {_scale} to {_rand}*loop-value*2
+
+		set {_ent}'s interpolation delay to 0 ticks
+		set {_ent}'s transformation scale to vector({_scale}, {_scale}*{_rand2}, {_scale})
+		
+		wait 1 tick
+	
+	wait 10 ticks
+
+	# lower
+	loop reversed 8 times:
+		set {_scale} to {_rand}*loop-value
+
+		set {_ent}'s interpolation delay to 0 ticks
+		set {_ent}'s transformation scale to vector({_scale}, {_scale}*{_rand2}, {_scale})
+		
+		wait 1 tick
+	
+	kill {_ent}

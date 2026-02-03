@@ -1,0 +1,190 @@
+
+
+
+
+command /map:
+	trigger:
+		set {_diff} to ((difference between 20 minutes and (difference between {mapchange} and now))) ? 20 minutes
+		send "%prefix()% Next Map Change in &e%formatTime({_diff})%" to player
+		play sound "block.note_block.pling" to player
+
+
+
+
+on load:
+	set {mapchange} to now
+	loop all block displays:
+		byte tag "display" of custom nbt of loop-value = 1
+		kill loop-entity
+	
+	loop indices of {-map::*}:
+		clear {-map::%loop-value%::*}
+	clear {-map::*}
+	clear {-sorted-maps::*}
+
+	registerMap("River", location(1050, 81, -137, world "runeblade"))
+	registerMap("Forest", location(-1015, 86, -88, world "runeblade"))
+	registerMap("Blossom", location(0, 80, -1000, world "runeblade"), 65)
+
+	loop indices of {-map::*}:
+		set {-sorted-maps::%loop-counter%} to loop-value
+	
+
+
+	clear {-a}
+	wait 1 second
+	set {-a} to true
+	while {-a} is true:
+		loop 10 times:
+			set {_rand} to random vector
+			set {_rand}'s vector length to 3
+			draw 0 dragon breath particles with offset (vector(0,2,0)+random vector) with extra value 0.05 at (location(-0.5, 71.5, -31.5, world "runeblade") ~ {_rand})
+		wait 10 tick
+
+
+
+
+function registerMap(name: text, loc: location, spawn-rad: number=50):
+	set {_index} to uncolored {_name} in lowercase
+
+	set {-map::%{_index}%::name} to {_name}
+	set {-map::%{_index}%::center} to {_loc}
+	set {-map::%{_index}%::radius} to {_spawn-rad}
+
+
+# map change
+every 20 minutes:
+	broadcast ""
+	broadcast "<##ff9b24>&lMAP CHANGE &fin %formatTime(30 seconds)%!"
+	broadcast ""
+	size of all players > 0:
+		post "> **MAP CHANGE** in 30 seconds!" to text channel with id "1140453816601427989"
+		post "> **MAP CHANGE** in 30 seconds!" to text channel with id "1294824268722470973"
+
+
+	wait 30 seconds
+
+	changeMap()
+
+
+
+function clearMap():
+	set {_oldMap} to {-sorted-maps::%{map}%}
+	loop all entities in radius 255 of {-map::%{_oldMap}%::center}:
+		if any:
+			byte tag "display" of custom nbt of loop-entity = 1
+			name of loop-entity = "&6Knight"
+			name of loop-entity = "&bFencer"
+			name of loop-entity = "&cBrute"
+			name of loop-entity = "Necromancer"
+
+		then:
+			kill loop-entity
+
+function changeMap(target-map: text=""):
+
+	set {_oldMap} to {-sorted-maps::%{map}%}
+
+	clearMap()
+
+	loop players in radius 255 of {-map::%{_oldMap}%::center} where [input's gamemode != creative]:
+		teleport loop-player to spawn() retaining passengers
+		play sound "entity.enderman.teleport" to loop-entity
+		set loop-player's gamemode to adventure
+		heal loop-player
+
+	wait 1 tick
+	if {_target-map} = "":
+		set {map} to mod({map}, (size of indices of {-map::*}))+1
+	else:
+		set {_ind::*} to indices of {-sorted-maps::*} where [{-sorted-maps::%input%} = {_target-map}]
+		set {map} to (first element out of {_ind::*}) ? mod({map}, (size of {-map::*}))+1
+	
+
+	set {_newMap} to {-sorted-maps::%{map}%}
+
+	broadcast ""
+	broadcast "<##ff9b24>&lMAP CHANGE &8» &f%{-map::%{_newMap}%::name}%"
+	broadcast ""
+	size of all players > 0:
+		post "> **MAP CHANGE**  |  %uncolored {-map::%{_newMap}%::name}%" to text channel with id "1140453816601427989"
+		post "> **MAP CHANGE**  |  %uncolored {-map::%{_newMap}%::name}%" to text channel with id "1294824268722470973"
+        
+	wait 5 tick
+	clearMap()
+	set {mapchange} to now
+	chance of 65%:
+		wait "%random number between 5 and 14% minutes" parsed as timespan
+		{event} isn't set
+		size of all players > 0
+		startEvent()
+
+
+# enter arena
+on step on magenta stained glass:
+	player's gamemode != spectator
+
+	# do they have the proper tools equipped?
+	loop items in player's inventory:
+		byte tag "weapon" of custom nbt of loop-value = 1
+
+		if byte tag "primary" of custom nbt of loop-value = 1:
+			set {_primary} to string tag "name" of custom nbt of loop-value
+			set {_primary-attunement} to string tag "attunement" of custom nbt of loop-value
+		else if byte tag "secondary" of custom nbt of loop-value = 1:
+			set {_secondary} to string tag "name" of custom nbt of loop-value
+			set {_secondary-attunement} to string tag "attunement" of custom nbt of loop-value
+		
+		if all:
+			{_primary} is set
+			{_secondary} is set
+		then:
+			exit loop
+	
+	if all:
+		{_primary} isn't set
+		{_secondary} isn't set
+	then:
+		send "" to player
+		send "%prefix()% &7You can't enter the arena without some &cweapons&7!" to player
+		send "" to player
+		send "%prefix()% &7Equip a &cPRIMARY &7and &aSECONDARY &7weapon at the &c&lSWORDSMITH&7!" to player
+		send "" to player
+		play sound "block.note_block.pling" at pitch 0.5 to player
+		teleport player to location(1.5, 75, -41.5, world "runeblade", -45, 0) retaining passengers
+		stop
+
+
+	# add some weaponstats
+	{_primary} is set:
+		add 1 to {stats::%{_primary}%::selects}
+	{_secondary} is set:
+		add 1 to {stats::%{_secondary}%::selects}
+	{_primary-attunement} is set:
+		add 1 to {stats::%{_primary-attunement}%::selects}
+	{_secondary-attunement} is set:
+		add 1 to {stats::%{_secondary-attunement}%::selects}
+	{data::%uuid of player%::equipped::skills} is set:
+		add 1 to {stats::%{data::%uuid of player%::equipped::skills}%::selects}
+	
+
+
+	# enter
+	set {_currMap} to {-sorted-maps::%{map}%}
+	set {_center} to {-map::%{_currMap}%::center}
+	set {_rad} to {-map::%{_currMap}%::radius}
+
+	loop 5 times:
+		loop 2 times:
+			set {_rand::%loop-value-2%} to random number between {_rad} and ({_rad} * -1)
+		set {_loc} to location {_rand::1} to the left and {_rand::2} infront of {_center}
+		exit loop if block at {_loc} is not solid
+	
+	teleport player to {_loc} retaining passengers
+	wait 1 tick
+	play sound "entity.enderman.teleport" to player
+	apply infinite potion of weakness of tier 255 without particles to player
+	
+	wait 20 tick
+	if size of all players in radius 300 of {_loc} = 1:
+		clearMap()

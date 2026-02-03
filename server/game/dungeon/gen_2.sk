@@ -1,0 +1,816 @@
+
+
+
+
+
+function registerRoom(name: text, size: text, weight: number, vertical-offset: number=0, overwritable: boolean=false, hidden: boolean=false):
+	set {_index} to uncolored {_name} in lowercase
+	set {-dungeon-room::%{_index}%::size} to {_size}
+	set {-dungeon-room::%{_index}%::weight} to {_weight}
+	set {-dungeon-room::%{_index}%::offset} to {_vertical-offset}
+	set {-dungeon-room::%{_index}%::hidden} to {_hidden}
+	set {-dungeon-room::%{_index}%::overwritable} to {_overwritable}
+	# Generation path for a 2x1:
+	# step 1. generate a 1x1 (somewhere, doesn't matter, just context)
+	# step 2. decide to generate a 2x1
+	# step 3. generate it, covering the previously generated 1x1 and the empty space infront of the square
+	#	overwritable decides whether you're able to overwrite it, most notably for staircases & unique tiles
+
+
+on load:
+
+	loadDungeon()
+
+	set {-directions::%vector 1, 0, 0%} to vector 1, 0, 0
+	set {-directions::%vector -1, 0, 0%} to vector -1, 0, 0
+	set {-directions::%vector 0, 0, 1%} to vector 0, 0, 1
+	set {-directions::%vector 0, 0, -1%} to vector 0, 0, -1
+
+	kill {display::dungeon::*}
+
+	loop indices of {-dungeon-room::*}:
+		clear {-dungeon-room::%loop-value%::*}
+	clear {-dungeon-room::*}
+
+	registerRoom("room_1x1_1", "1x1", 2)
+	registerRoom("room_1x1_garden", "1x1", 2)
+	registerRoom("room_1x1_library", "1x1", 2)
+	registerRoom("room_1x1_tree", "1x1", 2)
+	registerRoom("room_1x1_well", "1x1", 2)
+
+	registerRoom("room_1x1_vault", "1x1", 1)
+	registerRoom("room_1x1_altar", "1x1", 1)
+	registerRoom("room_1x1_den", "1x1", 1)
+	registerRoom("room_1x1_nest", "1x1", 1)
+	registerRoom("room_1x1_sewer", "1x1", 1, -7, false)
+
+	registerRoom("room_1x1_shopkeeper_1", "1x1", 3)
+	registerRoom("room_1x1_merchant_1", "1x1", 1)
+
+	registerRoom("room_1x1_stairway_1", "1x1", 0, -32, false, true)
+
+	registerRoom("room_2x1_1", "2x1", 4)
+	registerRoom("room_2x1_2", "2x1", 4)
+	registerRoom("room_2x1_prison", "2x1", 4)
+	
+
+
+
+
+function loadStructure(loc: location, struct: text, centered: boolean=false, rotated: boolean=false, custom-rot: integer=0):
+	set {_s} to structure with id "minecraft:%{_struct}%"
+	set {_v} to structure size of {_s}
+	# rotated = random rotation
+	if {_rotated} = true:
+		set {_rand} to random element out of (0, 90, 180 and 270)
+		set {_r::0} to none
+		set {_r::90} to clockwise 90
+		set {_r::180} to clockwise 180
+		set {_r::270} to counterclockwise 90
+		set structure rotation of {_s} to {_r::%{_rand}%}
+	else if {_custom-rot} != 0:
+		set {_r::90} to clockwise 90
+		set {_r::180} to clockwise 180
+		set {_r::270} to counterclockwise 90
+		set structure rotation of {_s} to {_r::%{_custom-rot}%}
+
+	if {_centered} = true:
+		if {-dungeon-room::%{_struct}%::size} = "1x1":
+			set {_x} to ceil(x component of {_v} / -2)
+			set {_z} to ceil(z component of {_v} / -2)
+		else if {-dungeon-room::%{_struct}%::size} = "2x1":
+			set {_x} to ceil(x component of {_v} / -2) # 1
+			set {_z} to ceil(z component of {_v} / -4) # 2
+
+		set {_rot-vec} to vector({_x}, 0, {_z})
+
+		if {_rotated} = true:
+			rotate {_rot-vec} around vector(0,1,0) by (-1 * {_rand})
+		else if {_custom-rot} != 0:
+			rotate {_rot-vec} around vector(0,1,0) by (-1 * {_custom-rot})
+
+		set {_draw} to location of block at ({_loc} ~ {_rot-vec})
+	else:
+		set {_draw} to {_loc}
+	
+	place structure {_s} at {_draw}
+
+		
+		
+
+
+
+
+
+
+
+
+
+function generateObjects(depth: number, index: string):
+
+	set {_loc} to location of {-cell::%{_depth}%::%{_index}%::stand}
+	set {_chance} to 10 + (size of {-dungeon::queue::*} * 10)
+
+
+	set {_structure} to structure with id {-cell::%{_depth}%::%{_index}%::room}
+	set {_v} to structure size of {_structure}
+
+	#broadcast "Structure size of %{_structure}% = %{_v}%"
+
+	if {-dungeon-room::%{-cell::%{_depth}%::%{_index}%::room}%::size} = "1x1":
+		set {_x::1} to ceil(x component of {_v} / -2)
+		set {_z::1} to ceil(z component of {_v} / -2)
+
+		set {_x::2} to ceil(x component of {_v} / 2)
+		set {_z::2} to ceil(z component of {_v} / 2)
+	else if {-dungeon-room::%{-cell::%{_depth}%::%{_index}%::room}%::size} = "2x1":
+		set {_x::1} to ceil(x component of {_v} / -2) # 1
+		set {_z::1} to ceil(z component of {_v} / -4) # 2
+
+		set {_x::2} to ceil(x component of {_v} / 2)
+		set {_z::2} to ceil(z component of {_v} / 4)
+	else: # only for unregistered, ex. starter
+		set {_x::1} to -20
+		set {_z::1} to -20
+
+		set {_x::2} to 20
+		set {_z::2} to 20
+	set {_y} to y component of {_v} ? 10
+
+	set {_v::1} to vector({_x::1}, {_y}*-1, {_z::1})
+	set {_v::2} to vector({_x::2}, {_y}, {_z::2})
+
+
+	set {_l::1} to {_loc} ~ {_v::1}
+	set {_l::2} to {_loc} ~ {_v::2}
+
+	loop (blocks within {_l::1} and {_l::2}) where [input is tagged with tag "minecraft:shulker_boxes"]:
+
+		set {_type} to type of loop-block
+		set loop-block to air
+
+		if {_type} = yellow shulker box:
+			if any:
+				{_spawned} isn't set # guaranteed to have 1 chest
+				chance of {_chance}% # don't spawn all the chests
+			then:
+				add 1 to {_spawned}
+				chance of 75%: # majority of the time it's a chest
+					spawnChest(location of loop-block)
+				else:
+					spawnAnvil(location of loop-block)
+
+		else if {_type} = purple shulker box:
+			chance of 75%:
+				spawnAnvil(location of loop-block)
+			else:
+				spawnBoon(location of loop-block)
+
+		else if {_type} = pink shulker box:
+			spawnBoon(location of loop-block)
+
+		else if {_type} = magenta shulker box:
+			add location of loop-block to {-dungeon::spawners::%{_depth}%::default::*}
+			# spawned in dungeon/spawner as a single unit
+		
+		else if {_type} = white shulker box:
+			add location of loop-block to {-dungeon::spawners::%{_depth}%::den::*}
+
+		else if {_type} = gray shulker box:
+			add location of loop-block to {-dungeon::spawners::%{_depth}%::nest::*}
+		
+		else if {_type} = lime shulker box:
+			spawnShopkeeper(location of loop-block)
+		else if {_type} = blue shulker box:
+			spawnMerchant(location of loop-block)
+
+		else if {_type} = cyan shulker box:
+			spawn_necromancer(location of loop-block, true)
+
+
+		else if {_type} = light blue shulker box:
+			spawnStarterChest(location of loop-block)
+
+		else if {_type} = red shulker box:
+			spawnPortal(location of loop-block)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ░█████╗░██╗░░░░░░██████╗░░█████╗░██████╗░██╗████████╗██╗░░██╗███╗░░░███╗
+# ██╔══██╗██║░░░░░██╔════╝░██╔══██╗██╔══██╗██║╚══██╔══╝██║░░██║████╗░████║
+# ███████║██║░░░░░██║░░██╗░██║░░██║██████╔╝██║░░░██║░░░███████║██╔████╔██║
+# ██╔══██║██║░░░░░██║░░╚██╗██║░░██║██╔══██╗██║░░░██║░░░██╔══██║██║╚██╔╝██║
+# ██║░░██║███████╗╚██████╔╝╚█████╔╝██║░░██║██║░░░██║░░░██║░░██║██║░╚═╝░██║
+# ╚═╝░░╚═╝╚══════╝░╚═════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░░░░╚═╝
+
+options:
+	step: 17
+	origin: location(1000, 160, 1000, world "runeblade") # might needa change this
+
+
+
+function wilson(depth: integer=1):
+
+	loop indices of {-cell::*}: # depth
+		loop indices of {-cell::%loop-value%::*}:
+			kill {-cell::%loop-value-1%::%loop-value-2%::stand}
+			clear {-cell::%loop-value-1%::%loop-value-2%::*}
+	clear {-cell::*}
+
+	# width = x
+	# length = z
+
+	#
+	# STEP 1) Generate the basic maze layout
+	#
+
+	loop integers between {_depth} and 3:
+
+		set {_depth} to loop-value
+
+		set {_width} to 1 + 2*{_depth}
+		set {_len} to 1 + 2*{_depth}
+		
+
+		set {_init} to {@origin} ~ (vector(0, -32, 0) * ({_depth}-1))
+
+		# create STARTER ROOM
+		if {_depth} = 1:
+			set {_temp::x} to -1 # front row, back one
+			set {_temp::z} to floor({_width} / 2) # middle
+
+			registerCell({_init} ~ vector(17, 0, -17), {_temp::x}, {_depth}, {_temp::z})
+			set {-cell::%{_depth}%::%{_temp::x}%;%{_temp::z}%::room} to "room_starter_1"
+			add "%{_temp::x}+1%;%{_temp::z}%" to {-cell::%{_depth}%::%{_temp::x}%;%{_temp::z}%::neighbors::*}
+
+		# create EXTRACT ROOM
+		set {_temp::x} to {_len}
+		set {_temp::z} to floor({_width} / 2) # middle
+		set {_offset} to vector(0,0,17)*({_len}) + vector(17,0,0)*(ceil({_width} / 2) - 2)
+
+		registerCell({_init} ~ {_offset} ~ vector(17, 0, 0), {_temp::x}, {_depth}, {_temp::z})
+		set {-cell::%{_depth}%::%{_temp::x}%;%{_temp::z}%::room} to "room_extract_1"
+		add "%{_temp::x}-1%;%{_temp::z}%" to {-cell::%{_depth}%::%{_temp::x}%;%{_temp::z}%::neighbors::*}
+
+
+
+		# create EXIT ROOM
+		#
+		#
+
+
+		# init setup
+		set {_draw} to {_init}
+		set {_z} to 0
+		loop {_len} times:
+			set {_x} to 0
+
+			loop {_width} times:
+				registerCell({_draw}, {_x}, {_depth}, {_z})
+
+				add 1 to {_x}
+				set {_draw} to location {@step} infront of {_draw}
+			
+			add 1 to {_z}
+			set {_draw} to location {@step}*loop-value-2 to the left of {_init}
+
+		#
+		# CELL LAYOUT
+		#
+		#	FORWARD  +=  X
+		#	BACK -= X
+		#
+		#	LEFT += Z
+		#	RIGHT -= Z
+		#
+
+
+
+
+		# assign SRC and DST
+		#	1) pick two random cells for the START & END locations
+		#
+		#	2) randomly walk from END until you reach START [ in this, CURR is the actual target ]
+		#
+		#	3) overwrite each cell's direction in the walk
+		#
+		#	4) post-walk, trace the path and cull any cells not in that path
+		#
+
+		set {_remaining::*} to (indices of {-cell::%{_depth}%::*}) where [{-cell::%{_depth}%::%input%::room} = "none"]
+		set {_remaining} to size of {_remaining::*}
+		#broadcast "&8[&b%{_depth}%&8] &7REMAINING: %{_remaining::*}%"
+
+
+		set {_target} to random element out of {_remaining::*}
+		set {_spl::*} to {_target} split at ";"
+		set {_target::x} to {_spl::1} parsed as number
+		set {_target::z} to {_spl::2} parsed as number
+		
+		set {_curr} to random element out of (((indices of {-cell::%{_depth}%::*}) where [{-cell::%{_depth}%::%input%::room} = "none"]) where [input != {_target}])
+		set {_spl::*} to {_curr} split at ";"
+		set {_curr::x} to {_spl::1} parsed as number
+		set {_curr::z} to {_spl::2} parsed as number
+
+
+		# total iteration loop /// basic maze generation
+		while {_remaining} > 0:
+
+			# save init cell for the trace back
+			set {_init::x} to {_curr::x}
+			set {_init::z} to {_curr::z}
+
+			# random walk
+			while "%{_curr::x}%;%{_curr::z}%" != "%{_target::x}%;%{_target::z}%":
+				
+
+				loop shuffled {-directions::*}:
+					set {_rand-dir} to loop-value-2
+					set {_x-offset} to x component of {_rand-dir}
+					set {_z-offset} to z component of {_rand-dir}
+
+					set {_next::x} to {_curr::x} + {_x-offset}
+					set {_next::z} to {_curr::z} + {_z-offset}
+
+					# next cell isn't generated & is within bounds
+					if all:
+						{_next::x} is between 0 and {_width}-1
+						{_next::z} is between 0 and {_len}-1
+					then:
+
+						set {_next} to "%{_next::x}%;%{_next::z}%"
+						set {_next-cell::%{_curr}%} to {_next}
+
+						# finish the path
+						if any:
+							{_next} = "%{_target::x}%;%{_target::z}%" # reached the target
+							{_generated::%{_depth}%::*} contains {_next} # reached a cell already in the maze
+						then:
+							set {_trace} to "%{_init::x}%;%{_init::z}%"
+
+							
+							# start from the init cell and trace back to the target cell
+							while {_trace} != {_next}:
+
+								#broadcast "&6  &lTRACE &8&l>> &f%{_trace}% &c!= &f%{_next}%"
+
+								add {_trace} to {_generated::%{_depth}%::*}
+								if {-cell::%{_depth}%::%{_trace}%::neighbors::*} doesn't contain {_next-cell::%{_trace}%}:
+									add {_next-cell::%{_trace}%} to {-cell::%{_depth}%::%{_trace}%::neighbors::*}
+
+								set {_delete this} to {_trace}
+								set {_trace} to {_next-cell::%{_trace}%}
+								
+								if {_trace} is not set:
+									broadcast "&e&lBREAK 3 &8&l| &3&lTRACE UNSET&f for %{_delete this}%"
+									exit all loops
+								if loop-counter-5 >= 1000:
+									broadcast "&e&lBREAK 3 &8&l| &3&lTRACE EXCEEDED"
+									exit all loops
+
+							clear {_next-cell::*}
+							exit 2 loops
+					
+						# found a real location -> stop shuffling directions, move on
+						set {_curr} to {_next}
+						set {_curr::x} to {_next::x}
+						set {_curr::z} to {_next::z}
+						exit loop
+
+
+				mod(loop-counter-3, 100) = 0:
+					wait 1 tick
+
+				if loop-counter-3 >= 1000:
+					broadcast "%nl%&d&lDUNGEON GENERATION ERROR &8&l> &cError Code. 1"
+					exit all loops
+			
+
+			if loop-counter-2 >= 1000:
+				broadcast "%nl%&d&lDUNGEON GENERATION ERROR &8&l> &cError Code. 2"
+				exit all loops
+
+
+			# reset curr and target for the next iteration
+			clear {_next-cell::*}
+			set {_remaining::*} to ({_remaining::*}) where [{_generated::%{_depth}%::*} doesn't contain input]
+			set {_remaining} to size of {_remaining::*}
+
+			set {_target} to random element out of {_generated::%{_depth}%::*}
+			set {_spl::*} to {_target} split at ";"
+			set {_target::x} to {_spl::1} parsed as number
+			set {_target::z} to {_spl::2} parsed as number
+
+			set {_curr} to random element out of {_remaining::*}
+			set {_spl::*} to {_curr} split at ";"
+			set {_curr::x} to {_spl::1} parsed as number
+			set {_curr::z} to {_spl::2} parsed as number
+
+
+	#
+	# STEP 2) Decide where to place staircases connecting 1-2 and 2-3
+	#
+	
+	loop integers between 1 and 2:
+		set {_scale} to (1 + 2*(loop-value - 1))
+		set {_rand::x} to random integer between 0 and {_scale}
+		set {_rand::z} to random integer between 0 and {_scale}
+
+		# avoid staircase stacking
+		while "%{_rand::x}%;%{_rand::z}%" = {_ind}:
+			set {_rand::x} to random integer between 0 and {_scale}
+			set {_rand::z} to random integer between 0 and {_scale}
+		set {_ind} to "%{_rand::x}%;%{_rand::z}%"
+
+		set {-cell::%loop-value%::%{_ind}%::room} to "stairway_top" # top of stairway // avoid generation
+		set {-cell::%loop-value + 1%::%{_ind}%::room} to "room_1x1_stairway_1" # bottom of stairway // generate here
+
+
+	wait 1.5 second
+
+	#
+	# STEP 3) Actual generation
+	#
+
+	set {_structure-choices::*} to (indices of {-dungeon-room::*}) where [{-dungeon-room::%input%::hidden} != true]
+	loop {_structure-choices::*}:
+		set {_weight::%loop-value%} to {-dungeon-room::%loop-value%::weight}
+
+	# depth
+	loop integers between 1 and 3:
+
+		set {_width} to 1 + 2*loop-value
+		set {_len} to 1 + 2*loop-value
+
+		# stack
+		clear {_stack::*}
+		loop ({_len}*{_width})+5 times: # +5 to try and ensure 2x1's don't flood the pool
+			add weighted_choice({_structure-choices::*}, {_weight::*}) to {_stack::*}
+		set {_stack::*} to sorted {_stack::*} # last elem in stack is 2x1's
+
+
+		# randomly place rooms until all cells are filled
+		set {_ind::*} to shuffled indices of {-cell::%loop-value%::*}
+		set {_size} to size of {_ind::*}
+		while size of ((indices of {-cell::%loop-value%::*}) where [{-cell::%loop-value%::%input%::generated} = false]) > 0:
+			
+			if size of {_stack::*} = 0:
+				broadcast "%nl%&d&lDUNGEON GENERATION ERROR &8&l> &cError Code. 3"
+				exit all loops
+
+			set {_mod} to mod(loop-counter-2, {_size})+1
+			set {_ind} to {_ind::%{_mod}%} # cycle between em
+			set {_cell} to location of {-cell::%loop-value%::%{_ind}%::stand}
+			set {_current-room} to {-cell::%loop-value%::%{_ind}%::room}
+
+
+			# stairs
+			if {_current-room} = "room_1x1_stairway_1":
+				loadStructure({_cell}, "room_1x1_stairway_1", true, true)
+				set {-cell::%loop-value%::%{_ind}%::generated} to true
+			else if {_current-room} = "stairway_top":
+				set {-cell::%loop-value%::%{_ind}%::generated} to true
+				continue
+			
+			# start/end rooms
+			else if {_current-room} = "room_starter_1":
+				set {_cell} to {_cell} ~ vector(-9, 0, -17)
+				loadStructure({_cell}, "room_starter_1", false, false)
+				set {-cell::%loop-value%::%{_ind}%::generated} to true
+			# else if ending room
+			else if {_current-room} = "room_extract_1":
+				set {_cell} to {_cell} ~ vector(-9, 0, -8)
+				loadStructure({_cell}, "room_extract_1", false, false)
+				set {-cell::%loop-value%::%{_ind}%::generated} to true
+
+
+			else if {_current-room} = "none":
+				set {_structure} to last element out of {_stack::*}
+				
+				# any vertical offsets?
+				if {-dungeon-room::%{_structure}%::offset} != 0:
+					set {_cell} to {_cell} ~ vector(0, {-dungeon-room::%{_structure}%::offset}, 0)
+
+				# can we gen a 2x1?
+				if {-dungeon-room::%{_structure}%::size} = "2x1":
+
+					set {_viable-neighbors::*} to ({-cell::%loop-value-1%::%{_ind}%::neighbors::*} where [{-cell::%loop-value-1%::%input%::room} = "none"])
+					if size of {_viable-neighbors::*} > 0:
+				
+						set {_neighbor} to random element out of {_viable-neighbors::*}
+						set {_cell-neighbor} to {-cell::%loop-value-1%::%{_neighbor}%::stand}
+
+						set {_v} to vector from {_cell} to {_cell-neighbor}
+						set {_rot} to round(({_v}'s yaw)/90)*90
+						set {_rot} to 0 if {_rot} = 360
+
+						# flip it so we can draw it backwards
+						if {_rot} < 180:
+							add 180 to {_rot}
+						else:
+							add -180 to {_rot}
+						
+
+						loadStructure({_cell-neighbor}, {_structure}, true, false, {_rot})
+						loop ({_ind} and {_neighbor}):
+							set {-cell::%loop-value-1%::%loop-value-2%::room} to {_structure}
+							set {-cell::%loop-value-1%::%loop-value-2%::generated} to true
+							set {-cell::%loop-value-1%::%loop-value-2%::rah} to 4
+
+						# used for not carving within a 2x1
+						set {-cell::%loop-value-1%::%{_ind}%::shared} to {_neighbor}
+						set {-cell::%loop-value-1%::%{_neighbor}%::shared} to {_ind}
+						
+				
+
+				# gen a 1x1
+				else:
+					loadStructure({_cell}, {_structure}, true, true)
+					set {-cell::%loop-value%::%{_ind}%::room} to {_structure}
+					set {-cell::%loop-value%::%{_ind}%::generated} to true
+				
+
+				remove {_structure} from {_stack::*}
+
+			
+			if loop-counter-2 >= 1000:
+				broadcast "%nl%&d&lDUNGEON GENERATION ERROR &8&l> &cError Code. 4"
+				exit all loops
+
+		# wait between each layer
+		wait 2 seconds					
+
+
+
+	#
+	# STEP 4) Doors & Objects
+	#
+
+	loop 3 times:
+		carvePaths(loop-value)
+	
+	wait 1 second
+
+
+	loop integers between 1 and 3:
+		loop indices of {-cell::%loop-value%::*}:
+			generateObjects(loop-value-1, loop-value-2)
+	
+	wait 2 second
+
+	spawnDungeonSpawners()
+
+
+
+function carvePaths(depth: integer=1):
+
+	loop indices of {-cell::%{_depth}%::*}: # cells
+
+		set {_loc} to {-cell::%{_depth}%::%loop-value%::stand}
+		{-cell::%{_depth}%::%loop-value%::neighbors::*} is set:
+			set {_elem} to (first element out of {-cell::%{_depth}%::%loop-value%::neighbors::*})
+			set {_prev} to {-cell::%{_depth}%::%{_elem}%::stand}
+
+			# not shared room
+			if all:
+				{-cell::%{_depth}%::%loop-value%::shared} != {_elem}
+				{-cell::%{_depth}%::%{_elem}%::shared} != loop-value
+			then:
+				# carve doorway
+
+				set {_door-v} to vector from {_prev} to {_loc}
+				set {_door-v}'s vector length to floor(({_door-v}'s vector length) / 2) - 1
+
+				set {_rot} to {_door-v}
+				rotate {_rot} around vector(0,1,0) by -90
+				set {_rot}'s vector length to 2
+
+				set {_loc} to {_prev} ~ vector(0, 1, 0) ~ {_door-v} ~ {_rot} 
+				# {_prev} = stand
+				# vector(0, 1, 0) = get it out of the floor
+				# {_door-v} = midpoint
+				# {_rot} = left/right side of door
+				set {_rot} to round(({_door-v}'s yaw)/90)*90 # clamp it to a value divisible by 90
+				set {_rot} to 0 if {_rot} = 360
+				
+				loadStructure({_loc}, "dungeon_door", false, false, {_rot})
+
+
+
+
+
+
+
+function visualize(loop: integer=1):
+
+	loop {_loop} times:
+		loop indices of {-cell::*}: # depth
+			loop indices of {-cell::%loop-value-2%::*} where [{-cell::%loop-value-2%::%input%::neighbors::*} is set]: # cells
+				loop {-cell::%loop-value-2%::%loop-value-3%::neighbors::*}: # each cell, draw path from itself to all of its neighbors
+					
+					set {_draw} to location of {-cell::%loop-value-2%::%loop-value-3%::stand}
+
+					set {_v} to vector from {_draw} to {-cell::%loop-value-2%::%loop-value-4%::stand}
+					set {_v}'s vector length to 1
+					
+					loop 17 times:
+						force draw 1 red dust particles of size 4 at {_draw} ~ vector(0, 20, 0)
+						set {_draw} to {_draw} ~ {_v}
+		
+		wait 10 tick
+
+
+
+
+
+# ░█████╗░███████╗██╗░░░░░██╗░░░░░
+# ██╔══██╗██╔════╝██║░░░░░██║░░░░░
+# ██║░░╚═╝█████╗░░██║░░░░░██║░░░░░
+# ██║░░██╗██╔══╝░░██║░░░░░██║░░░░░
+# ╚█████╔╝███████╗███████╗███████╗
+# ░╚════╝░╚══════╝╚══════╝╚══════╝
+
+
+
+function registerCell(loc: location, x: integer, y: integer, z: integer):
+	set {_ind} to "%{_x}%;%{_z}%"
+
+	set {-cell::%{_y}%::%{_ind}%::type} to "0x0"
+	set {-cell::%{_y}%::%{_ind}%::room} to "none"
+	set {-cell::%{_y}%::%{_ind}%::generated} to false
+	
+	spawn armor stand at {_loc}
+	set {-cell::%{_y}%::%{_ind}%::stand} to last spawned armor stand
+	set {-cell::%{_y}%::%{_ind}%::stand}'s name to "%{_x}%;%{_z}%"
+	modify nbt of {-cell::%{_y}%::%{_ind}%::stand}:
+		set byte tag "NoGravity" of nbt to 1
+		set byte tag "Invisible" of nbt to 1
+		set byte tag "Marker" of nbt to 1
+
+
+
+function getNeighbors(str: string, min-len: number, max-len: number, min-width: number, max-width: number) returns strings:
+
+	set {_spl::*} to {_str} split at ";"
+	set {_x} to {_spl::1} parsed as number
+	set {_z} to {_spl::2} parsed as number
+
+	if {_x} - 1 is between {_min-len} and {_max-len}:
+		set {_c::1} to "%({_x} - 1)%;%{_z}%"
+	if {_x} + 1 is between {_min-len} and {_max-len}:
+		set {_c::2} to "%({_x} + 1)%;%{_z}%"
+	if {_z} - 1 is between {_min-width} and {_max-width}:
+		set {_c::3} to "%{_x}%;%({_z} - 1)%"
+	if {_z} + 1 is between {_min-width} and {_max-width}:
+		set {_c::4} to "%{_x}%;%({_z} + 1)%"
+
+	return {_c::*}
+
+
+function clearCells(depth: number=1):
+	
+	# cells
+	loop indices of {-cell::*}: # depth
+		loop indices of {-cell::%loop-value%::*}:
+			kill {-cell::%loop-value-1%::%loop-value-2%::stand}
+			clear {-cell::%loop-value-1%::%loop-value-2%::*}
+	clear {-cell::*}
+
+	# shopkeeper seeds
+	loop indices of {-dungeon::seed::*}:
+		clear {-dungeon::seed::%loop-value%::*}
+	clear {-dungeon::seed::*}
+	
+	# spawner cache for spawnDungeonSpawners
+	#	{-dungeon::spawners::%{_depth}%::default::*}
+	loop indices of {-dungeon::spawners::*}:
+		loop indices of {-dungeon::spawners::%loop-value%::*}:
+			clear  {-dungeon::spawners::%loop-value-1%::%loop-value-2%::*}
+				
+
+	kill {display::dungeon::*}
+	clear {-dungeon::chests::*}
+	clear {-dungeon::stairway}
+
+	wait 0.5 seconds
+
+	# blocks
+	set {_y} to 180 - 30*({_depth}-1) # depth 1 spawns at 150
+	set {_div} to 30/5 # 6
+	
+
+	set {_center} to location(1000, {_y}, 1000, world "runeblade")
+	loop 5 times:
+
+		set {_l1} to location(992, {_y}, 966, world "runeblade") # origin corner
+		set {_l2} to location(1076, {_y}-{_div}, 1103, world "runeblade") ~ vector(17, 0, 17)*{_depth} # expanding corner
+
+		set ((blocks within {_l1} and {_l2}) where [input != air]) to air
+		remove {_div} from {_y}
+
+		wait 1 seconds
+		
+
+	# entities
+	loop all entities in radius 250 of {_center} where [input is not a player]:
+		if any:
+			loop-entity is an armor stand # cell
+			loop-entity is a mob # mob
+			loop-entity is a display # spawner, somethin, whatever
+			loop-entity is a dropped item # bookcase or pot or smthn
+		then:
+			kill loop-entity
+
+
+
+
+	
+
+
+
+
+
+
+
+
+# ██████╗░░█████╗░██████╗░████████╗░█████╗░██╗░░░░░
+# ██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██║░░░░░
+# ██████╔╝██║░░██║██████╔╝░░░██║░░░███████║██║░░░░░
+# ██╔═══╝░██║░░██║██╔══██╗░░░██║░░░██╔══██║██║░░░░░
+# ██║░░░░░╚█████╔╝██║░░██║░░░██║░░░██║░░██║███████╗
+# ╚═╝░░░░░░╚════╝░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚══════╝
+
+
+function spawnPortal(loc: location):
+	set {_l1} to {_loc} ~ vector(1,0,0)
+	set {_l2} to {_loc} ~ vector(-1,3,0)
+
+	set blocks within {_l1} and {_l2} to nether portal
+
+
+on portal:
+	cancel event
+
+on portal enter:
+	if {-tempdata::%uuid of player%::dungeon} is set:
+		set {_time} to (difference between now and {-tempdata::%uuid of player%::dungeon})
+		set {_time} to 15 minutes if {_time} isn't set
+		clear {-tempdata::%uuid of player%::dungeon}
+
+		wait 1 tick
+		teleport player to spawn() retain passengers
+		play sound "ui.toast.challenge_complete" to player
+
+		set {_amnt} to {-tempdata::%uuid of player%::shattered-runes} / 2
+
+		set {_init} to {_amnt}
+		set {_extra} to ""
+		if {boost} is set:
+			set {_amnt} to {_amnt} * 2
+			set {_extra} to "&8(&e2x <##2eadd7>₪ &fRune Gains&8)"
+
+		send ""
+		send "&5&l DUNGEON CLEARED"
+		send ""
+		send "&8 - &f%formatTime({_time})%&e⌚"
+		send "&8 - &3 +%runes({_amnt}, false)%%{_extra}%"
+		send ""
+
+		add {_amnt} to {data::%uuid of player%::runes}
+		if ({data::%uuid of player%::dungeon::time} ? 99 days) > {_time}:
+			set {data::%uuid of player%::dungeon::time} to {_time}
+		if ({data::%uuid of player%::dungeon::runes} ? 0) < {_init}:
+			set {data::%uuid of player%::dungeon::runes} to {_init}
+
+		score(player)
+		leaveDungeonQueue(player, "escape")
+		
+		set {_spectating::*} to (all players in radius 250 of location(1000, 150, 1000, world "runeblade")) where [input's gamemode = spectator]
+		if size of {_spectating::*} > 0:
+			size of (all players in radius 250 of location(1000, 150, 1000, world "runeblade")) where [input's gamemode = adventure] = 0
+			
+			loop {_spectating::*}:
+				set loop-value's gamemode to adventure
+				teleport loop-value to spawn() retain passengers
+				leaveDungeonQueue(loop-value, "failure")
+
+
+		wait 3 seconds
+		set {_size} to size of (all players in radius 250 of location(1000, 150, 1000, world "runeblade"))
+		if {_size} = 0:
+			clearDungeon()
+	
