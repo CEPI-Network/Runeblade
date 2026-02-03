@@ -15,7 +15,7 @@ function openAttunement(p: player, i: item=air, tutorial: boolean=false):
 
 		format gui slot (integers between 0 and 8) with purple stained glass pane named "&0"
 		format gui slot (integers between 45 and 53) with black stained glass pane named "&0"
-		format gui slot 4 with spruce floor sign named "&5&lATTUNEMENTS" with lore "", formatParagraph("Each weapon can have an &5Attunement added to it to gain an extra ability!"), "", formatParagraph("Attunements are activated by pressing &fRight-Click while holding the weapon. Keep in mind they cost mana, so don't try to spam them!"), "", formatParagraph("Not all attunements can be applied to every weapon. Sometimes, using a &aSecondary &aWeapon just for its attunements is a viable strategy.") and "" with all item flags
+		format gui slot 4 with spruce sign named "&5&lATTUNEMENTS" with lore "", formatParagraph("Each weapon can have an &5Attunement added to it to gain an extra ability!"), "", formatParagraph("Attunements are activated by pressing &fRight-Click while holding the weapon. Keep in mind they cost mana, so don't try to spam them!"), "", formatParagraph("Not all attunements can be applied to every weapon. Sometimes, using a &aSecondary &aWeapon just for its attunements is a viable strategy.") and "" with all item flags
 		
 		set boolean tag "tutorial" of custom nbt of slot 0 of gui to {_tutorial}
 
@@ -88,7 +88,7 @@ function openAttunement(p: player, i: item=air, tutorial: boolean=false):
 
 						play sound "block.enchantment_table.use" at volume 10 at pitch 1.2 to {_p}
 						play sound "ui.cartography_table.take_result" at volume 10 at pitch 1.3 to {_p}
-						draw 20 of enchant at location 1 above {_p} with offset vector(0.6, 0.6, 0.6) with extra 0.5
+						draw 20 enchanting particles with offset vector(0.6, 0.6, 0.6) with extra value 0.5 at location 1 above {_p}
 
 						if {_tutorial} = true:
 							updateTutorial({_p}, "dummy")
