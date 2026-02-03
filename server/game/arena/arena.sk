@@ -183,7 +183,9 @@ on step on magenta stained glass:
 	teleport player to {_loc} retaining passengers
 	wait 1 tick
 	play sound "entity.enderman.teleport" to player
-	apply infinite potion of weakness of tier 255 without particles to player
+	apply infinite weakness 255 to player:
+		hide particles
+		hide icon
 	
 	wait 20 tick
 	if size of all players in radius 300 of {_loc} = 1:
