@@ -169,13 +169,14 @@ function loadDisplays():
 		set {_line::3} to "&e2/1/26"
 		set {_line::4} to "&8<strikethrough>                                       "
 		set {_line::5} to ""
-		set {_line::6} to "<#AFAFAF>» &7Updated server to &6[1.21.10]"
-		set {_line::7} to ""
-		set {_line::8} to "<#AFAFAF>» &eSideways Double Jumps"
-		set {_line::9} to ""
-		set {_line::10} to "<#AFAFAF>» &7Removed AFK Pool"
-		set {_line::11} to ""
-		set {_line::12} to "&8&m                                       "
+		set {_line::6} to "<#AFAFAF>» &7Updated server to &6[1.21.11]"
+		set {_line::7} to "<#AFAFAF>» &7New <#556577>&lChainblade &dMastery Skin"
+		set {_line::8} to "<#AFAFAF>» &7New Maps: &3Aurora &7&& &6Mesa"
+		set {_line::9} to "<#AFAFAF>» &eSideways Double Jumps"
+		set {_line::10} to ""
+		set {_line::11} to "<#AFAFAF>» &7Removed AFK Pool"
+		set {_line::12} to ""
+		set {_line::13} to "&8&m                                       "
 		set text of text display to {_line::*}
 		set transformation scale of text display to vector(1.1, 1.1, 1.1)
 		set billboard of text display to center
