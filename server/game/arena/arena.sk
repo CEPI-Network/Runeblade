@@ -26,7 +26,7 @@ on load:
 	registerMap("Forest", location(-1015, 86, -88, world "runeblade"))
 	registerMap("Blossom", location(0, 80, -1000, world "runeblade"), 65)
 	registerMap("Aurora", location(1989, 90, -10, world "runeblade"))
-	registerMap("Mesa", location(1531, 90, -38, world "runeblade"))
+	registerMap("Mesa", location(1531, 90, -38, world "runeblade"), 40)
 	
 
 	loop indices of {-map::*}:
