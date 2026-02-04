@@ -1,15 +1,14 @@
 
 
 
-function sendResourcepack(p: player, type: text="main"):
+function sendResourcepack(p: player):
 	
-	wait 5 ticks
-	if {_type} = "main":
+	wait 20 ticks
         
-		set {_url} to "https://download.mc-packs.net/pack/6511fe06938d548f23d16b3356ec3ed9988b0ce9.zip"
-		set {_hash} to "6511fe06938d548f23d16b3356ec3ed9988b0ce9"
-		set {_uuid} to random uuid
-		send resource pack from url {_url} with uuid {_uuid} with hash {_hash} to {_p}
+	set {_url} to "https://download.mc-packs.net/pack/a44078408e5eb3a18f1d9832ac307fde8765a7cb.zip"
+	set {_hash} to "a44078408e5eb3a18f1d9832ac307fde8765a7cb"
+	set {_uuid} to random uuid
+	send resource pack from url {_url} with uuid {_uuid} with hash {_hash} to {_p}
 
 
 

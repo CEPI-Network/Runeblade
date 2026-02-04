@@ -3,6 +3,8 @@
 
 
 on player press of an input key:
+	if player's gamemode = survival:
+		set player's gamemode to adventure
 	player's gamemode = adventure
 	event-input keys contains jump key
 	player's level progress > 0

@@ -14,7 +14,7 @@ on server list ping:
 	#set the motd to "\             §8§m       §r §x§0§0§8§6§a§5§lI§x§0§0§7§5§9§2§lR§x§0§0§6§4§8§0§lO§x§0§0§5§3§6§d§lN§x§0§9§b§a§b§d§lG§x§1§8§b§7§a§f§lR§x§2§6§b§5§a§1§lA§x§3§5§b§2§9§3§lV§x§4§3§a§f§8§5§lE §8§m        §r\n                §x§0§0§c§6§6§6  Dungeon Crawler"
 	
 	set {_line::1} to "&8•&m   &8• <#ff9b24>🗡 <#ff9b24>&lRUNE<#2eadd7>&lBLADE <#2eadd7>🏹 &8•&m   &8•"
-	set {_line::2} to "&8« <#ffcc33>Sword Ability PVP [1.21.10] &8»"
+	set {_line::2} to "&8« <#ffcc33>Sword Ability PVP [1.21.11] &8»"
 	set the motd to centeredText({_line::1}, 127) + nl + centeredText({_line::2}, 120)
 	
 	#set {_x} to 

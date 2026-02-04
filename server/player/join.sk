@@ -8,18 +8,25 @@ options:
 
 
 
-
+function fixInventory(p: player):
+	# goal: remove broken items without any textures
+	loop items in {_p}'s inventory:
+		item model of loop-value = namespaced key from loop-value
+		byte tag "custom;weapon" of custom nbt of loop-value = 1
+		remove loop-value from {_p}'s inventory
 
 
 on join:
 
 	wait 1 tick
 	
-	resourcepack(player)
-	
+	sendResourcepack(player)
+	fixInventory(player)
+
 	loop all players:
 		score(loop-player)
-	teleport player to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers
+	teleport player to spawn()
+
 	if player hasn't played before:
 		broadcast "<##ff2458>🗡 &fA new fighter has entered the arena!"
 		postEmbed(player, "🗡 A new fighter has entered the arena!", "3694FE", "1140453816601427989")
