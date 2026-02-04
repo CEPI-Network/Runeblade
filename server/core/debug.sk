@@ -29,6 +29,9 @@ on pickup:
 #		cancel event
 
 
+on damage of player:
+	if event-damage source is a campfire:
+		cancel event
 
 
 on entity knockback:
