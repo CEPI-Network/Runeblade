@@ -233,7 +233,7 @@ function loadColours():
 
 
 # migrate from "hellbent dagger;ignition" --> "hellbent_dagger-ignition"
-local function migrateSyst():
+function migrateSyst():
 	loop (indices of {data::*}) where [{data::%input%::colours::*} is set]:
 		loop {data::%loop-value%::colours::*}:
 			set {_txt} to loop-value-2
