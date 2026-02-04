@@ -25,6 +25,8 @@ on load:
 	registerMap("River", location(1050, 81, -137, world "runeblade"))
 	registerMap("Forest", location(-1015, 86, -88, world "runeblade"))
 	registerMap("Blossom", location(0, 80, -1000, world "runeblade"), 65)
+	registerMap("Aurora", location(1989, 90, -10, world "runeblade"))
+	
 
 	loop indices of {-map::*}:
 		set {-sorted-maps::%loop-counter%} to loop-value
