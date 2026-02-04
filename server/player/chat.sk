@@ -17,7 +17,7 @@ function filter(message: text) :: boolean:
 
 
 
-on async chat:
+on async chat with priority lowest:
 
 	set {_viewers::*} to console and all players where [{data::%uuid of input%::blocked::*} doesn't contain player] 
 
