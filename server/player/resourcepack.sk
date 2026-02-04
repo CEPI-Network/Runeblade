@@ -1,17 +1,18 @@
 
 
-function resourcepack(p: player):
-	#remove all resource packs from {_p}
-	wait 5 ticks
-	
-	# 1.20.4
-	# send resource pack from "https://download.mc-packs.net/pack/f30b06cfb2fccffedf599fdf8e18242e93e4c109.zip" with hash "f30b06cfb2fccffedf599fdf8e18242e93e4c109" to {_p}
 
-	# 1.21.11
-	send resource pack from "https://download.mc-packs.net/pack/6511fe06938d548f23d16b3356ec3ed9988b0ce9.zip" with hash "6511fe06938d548f23d16b3356ec3ed9988b0ce9" to {_p}
+function sendResourcepack(p: player, type: text="main"):
+	
+	wait 5 ticks
+	if {_type} = "main":
+        
+		set {_url} to "https://download.mc-packs.net/pack/6511fe06938d548f23d16b3356ec3ed9988b0ce9.zip"
+		set {_hash} to "6511fe06938d548f23d16b3356ec3ed9988b0ce9"
+		set {_uuid} to random uuid
+		send resource pack from url {_url} with uuid {_uuid} with hash {_hash} to {_p}
 
 
 
 command /resourcepack:
 	trigger:
-		resourcepack(player)
+		sendResourcepack(player)

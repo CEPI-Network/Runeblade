@@ -9,6 +9,14 @@ placeholderapi placeholder with the prefix "runeblade":
 
 	else if the identifier is "suffix":
 		if {data::%uuid of player%::equipped::suffixes} is set:
-			set the result to " &8(%{-suffixes::%{data::%uuid of player%::equipped::suffixes}%::name}%&8)"
+			set the result to raw " <dark_gray>(%raw {-suffixes::%{data::%uuid of player%::equipped::suffixes}%::name}%<dark_gray>)"
 		else:
 			set the result to ""
+
+
+
+function formatMini(str: string) :: string:
+	set {_str} to {_str}
+	replace all "&l" in {_str} with "<bold>EA</b>"
+
+	return {_str}
