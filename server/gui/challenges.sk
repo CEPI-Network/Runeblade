@@ -20,10 +20,10 @@ on load:
 	registerChallenge("&fGet &a50 &fKills", chainmail chestplate, 1, "Rage forth and put your life behind your blade.", "kills_50", "&e&nBlitz&f Attunement", {-attunements::blitz::desc})
 	registerChallenge("&fGet &a100 &fKills", enchanting table, 1, "The feeling of a blade striking you has grown dull with time.", "kills_100", "&e&nReinforce&f Attunement", {-attunements::reinforce::desc})
 
-	registerChallenge("&fGet &a15 &e&nUnsheathe&f Kills", iron sword with custom model data 1, 2, "The first step to mastering the art of the blade.", "unsheathe_kills_15", "&e&nThrust&f Attunement", {-attunements::thrust::desc})
-	registerChallenge("&fGet &a25 &e&nThrust&f Kills", diamond sword with custom model data 1, 2, "With each extra step, you grow closer to becoming invincible under the sun.", "thrust_kills_25", "&e&nFlame Dance&f Attunement", {-attunements::flame dance::desc})
-	registerChallenge("&fGet &a30 &e&nFlame Dance&f Kills", golden sword with custom model data 1, 2, "Burn your foes with nothing but the skill of your blade.", "flame dance_kills_30", "&e&nRippleblade&f Attunement", {-attunements::rippleblade::desc})
-	registerChallenge("&fGet &a40 &e&nRippleblade&f Kills", iron pickaxe with custom model data 1, 2, "Stay as calm as the night, then strike with the force of a tidal wave.", "rippleblade_kills_40", "&e&nEruption&f Attunement", {-attunements::eruption::desc})
+	registerChallenge("&fGet &a10 &e&nUnsheathe&f Kills", iron sword with custom model data 1, 2, "The first step to mastering the art of the blade.", "unsheathe_kills_10", "&e&nThrust&f Attunement", {-attunements::thrust::desc})
+	registerChallenge("&fGet &a15 &e&nThrust&f Kills", diamond sword with custom model data 1, 2, "With each extra step, you grow closer to becoming invincible under the sun.", "thrust_kills_15", "&e&nFlame Dance&f Attunement", {-attunements::flame dance::desc})
+	registerChallenge("&fGet &a20 &e&nFlame Dance&f Kills", golden sword with custom model data 1, 2, "Burn your foes with nothing but the skill of your blade.", "flame dance_kills_20", "&e&nRippleblade&f Attunement", {-attunements::rippleblade::desc})
+	registerChallenge("&fGet &a25 &e&nRippleblade&f Kills", iron pickaxe with custom model data 1, 2, "Stay as calm as the night, then strike with the force of a tidal wave.", "rippleblade_kills_25", "&e&nEruption&f Attunement", {-attunements::eruption::desc})
 
 	registerChallenge("&fGet &a20 &fPerfect Combos", netherite sword, 3, "What purpose does the sword have if it does not hit its mark?", "combo_20", "&e&nHook&f Attunement", {-attunements::hook::desc})
 	registerChallenge("&e&nHook&f &a20 &fEnemies", tripwire hook, 3, "There is no escaping the endless spiral.", "hook_enemies_20", "&e&nShroud&f Attunement", {-attunements::shroud::desc})
