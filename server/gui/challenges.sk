@@ -35,9 +35,9 @@ on load:
 
 	# add new requirements to progressChallenge() on bottom of .sk
 
-	registerDailyChallenge("&fGet &a5 &fKills with <any>", "<any>", "kills_5_<any>", 125)
-	registerDailyChallenge("&fGet &a10 &fKills with <any>", "<any>", "kills_10_<any>", 250)
-	registerDailyChallenge("&fGet &a20 &fKills with <weapon>", "<weapon>", "kills_20_<weapon>", 500)
+	registerDailyChallenge("&fGet &a5 &fKills with <any>", "<any>", "kills_5_<any>", 400)
+	registerDailyChallenge("&fGet &a10 &fKills with <any>", "<any>", "kills_10_<any>", 800)
+	registerDailyChallenge("&fGet &a20 &fKills with <weapon>", "<weapon>", "kills_20_<weapon>", 1250)
 
 
 
