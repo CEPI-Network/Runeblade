@@ -30,7 +30,7 @@ on pickup:
 
 
 on damage of player:
-	if event-damage source is a campfire:
+	if damage cause = campfire:
 		cancel event
 
 
@@ -75,3 +75,4 @@ on projectile collide:
 
 on hunger meter change:
 	cancel event
+
