@@ -8,6 +8,9 @@ command /challenges:
 		openChallenges(player)
 
 
+
+
+
 on load:
 	clear {-challenges::*}
 	clear {-dailychallenges::*}
