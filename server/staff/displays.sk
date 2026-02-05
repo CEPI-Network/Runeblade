@@ -166,22 +166,25 @@ function loadDisplays():
 		set {-display::update::2} to text display
 		set {_line::1} to ""
 		set {_line::2} to "&d&l&nNEW UPDATE"
-		set {_line::3} to "&e2/1/26"
+		set {_line::3} to "&e2/4/26"
 		set {_line::4} to "&8<strikethrough>                                       "
 		set {_line::5} to ""
-		set {_line::6} to "<#AFAFAF>» &7Updated server to &6[1.21.11]"
+		set {_line::6} to "<#AFAFAF>» &7Updated server to &6[1.21.11+]"
 		set {_line::7} to "<#AFAFAF>» &7New <#556577>&lChainblade &dMastery Skin"
 		set {_line::8} to "<#AFAFAF>» &7New Maps: &3Aurora &7& &6Mesa"
-		set {_line::9} to "<#AFAFAF>» &eSideways Double Jumps"
-		set {_line::10} to "<#AFAFAF>» &7Removed AFK Pool"
-		set {_line::11} to ""
-		set {_line::12} to "&8&m                                       "
+		set {_line::9} to "<#AFAFAF>» &7Reduced <#FFD15C>&lCHALLENGES &7Kill Requirements"
+		set {_line::10} to "<#AFAFAF>» &7Increased &e&lDAILY CHALLENGES &7Rewards"
+		set {_line::11} to "<#AFAFAF>» &9Sideways Double Jumps"
+		set {_line::12} to "<#AFAFAF>» &7Removed &fAFK Pool"
+		set {_line::13} to ""
+		set {_line::14} to "&8&m                                       "
+		set {_line::15} to ""
 		set text of text display to {_line::*}
 		set transformation scale of text display to vector(1.1, 1.1, 1.1)
 		set billboard of text display to center
-		add drop shadow to entity
-		set color of entity to rgb(0, 0, 0, 0)
-
+		add drop shadow to text display
+		set color of text display to rgb(0, 0, 0, 0)
+		set line width of text display to 300
 
 	
 	spawn text display at (location(0.5, 80, -481.5, world "runeblade", 180, 0) ~ vector(0, 3.25, 28)):
