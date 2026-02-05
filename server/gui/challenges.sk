@@ -102,7 +102,8 @@ function generateDailyChallenges():
 			set {_rand} to random element out of (indices of {-weapons::*}) where [{-weapons::%input%::hidden} != true]
 			replace all "<weapon>" in {_formatted-index} with {_rand}
 		else if {_index} contains "<any>":
-			set {_ind::*} to (indices of {-weapons::*}) where [{-weapons::%input%::hidden} != true] and ((indices of {-attunements::*}) where [input != "Transient Moonlight"]) where [{stats::%input%::kills} > 0]
+			set {_banned::*} to "Hook", "Parry", "Transient Moonlight"
+			set {_ind::*} to (indices of {-weapons::*}) where [{-weapons::%input%::hidden} != true] and ((indices of {-attunements::*}) where [{_banned::*} doesn't contain input]) where [{stats::%input%::kills} > 0]
 			set {_rand} to random element out of {_ind::*}
 			if indices of {-weapons::*} contains {_rand}:
 				set {_type} to "weapons"
