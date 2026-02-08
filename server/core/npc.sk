@@ -65,6 +65,7 @@ function registerNPC(name: string, display: strings, loc: location, skin: string
 		make entity invulnerable
 		setSkin(entity, {_value}, {_signature})
 		set string tag "name" of custom nbt of entity to {_name}
+		add entity to getNPCTeam()
 
 	spawn text display at {_loc} ~ vector(0, 2.2, 0):
 		set {_txt} to entity

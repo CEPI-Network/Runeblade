@@ -1,0 +1,18 @@
+
+on load:
+	createNPCTeam()
+
+# Creates team, npc_no_push. Adds npcs upon register. Warn if overried.
+function createNPCTeam():: team:
+	if team "npc_no_push" is registered:
+		delete team with id "npc_no_push"
+
+	set {_team} to team with id "npc_no_push"
+	set team option collision rule of {_team} to never
+	
+	return {_team}
+
+function getNPCTeam() :: team:
+	if team "npc_no_push" isn't registered:
+		return createNPCTeam()
+	return team with id "npc_no_push"
