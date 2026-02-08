@@ -63,7 +63,7 @@ on damage:
 		distance between victim and attacker < 6.25:
 			{-tempdata::%uuid of attacker%::parry} != true
 			set {_weapon} to (string tag "name" of custom nbt of victim's tool) ? "rubishine"
-			hitCombo(victim, 1, {_weapon}, "parry")
+			hitCombo(victim, 1, 1, {_weapon}, "parry")
 			make victim damage attacker by (damage * 1.25)
 			push attacker (vector from victim to attacker) at speed 0.7
 			push attacker up at speed 0.2
