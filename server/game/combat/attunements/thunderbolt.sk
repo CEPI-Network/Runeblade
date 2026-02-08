@@ -26,44 +26,46 @@ function thunderboltAction(p: player, weapon: text, atk-scale: number):
 		set item transform of item display to head
 		set interpolation duration of {_ent} to 1 ticks
 		set name of item display to "Thunderbolt"
-	###
+	
+
+	set {_draw} to location 2.25 above {_loc}
 	loop 6 times:
-		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0 at location 2.25 above {_loc}
+		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0 at {_draw}
 		wait 1 tick
 
 	loop 6 times:
 
-		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0.01 at location 2.25 above {_loc}
+		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0.01 at {_draw}
 
 		set {_ent}'s interpolation delay to 0 ticks
-		set {_ent}'s transformation translation to vector(0.75, (0.25 * loop-value), 0.65)
+		set {_n} to (0.25 * loop-value)
+		set {_ent}'s transformation translation to vector(0.75, {_n}, 0.65)
 
 		loop-value >= 4:
-			set {_ray} to raytrace from {_p} with max distance {_max-dist} with ray size 0.75 while ignoring passable blocks while ignoring all entities where [isDamageableEntity(input, {_p}) = false]
+			set {_ray} to raytrace from {_p} with max distance {_max-dist} with ray size 0.75 while ignoring passable blocks while ignoring ((all entities) where [isDamageableEntity(input, {_p}) = false])
 			set {_hit} to raytrace hit entity of {_ray} ? location 1 above raytrace hit block of {_ray} ? location {_max-dist} infront of {_p}
 			
 			draw 4 cloud particles with offset vector(0.5, 0.1, 0.5) with extra value 0.02 at {_hit}
 
 		wait 1 tick
-	###
 
-###
+
 	removeModifier({_p}, "speed", "attunement")
 	removeModifier({_p}, "jump", "attunement")
 	updateModifiers({_p})
 
-	draw 15 electric spark particles with offset vector(0.35, 0.6, 0.35) with extra value 0.2 at location 1.3 above {_ent}
-	draw 1 rgb(255, 255, 135) flash particles at location 2 above {_ent}
+	draw 15 electric spark particles with offset vector(0.35, 0.6, 0.35) with extra value 0.2 at (location 1.3 above {_ent})
+	draw 1 rgb(255, 255, 135) flash particles at (location 2 above {_ent})
 
-	play sound "elemental.lightning" at volume 3.25 at pitch 1.75+{_sound-scale} at {_p}
-	play sound "elemental.lightning_strike" at volume 3.25 at pitch 1.75+{_sound-scale} at {_p}
+	play sound "elemental.lightning" at volume 3.25 at pitch (1.75+{_sound-scale}) at {_p}
+	play sound "elemental.lightning_strike" at volume 3.25 at pitch (1.75+{_sound-scale}) at {_p}
 
 	loop 6 times:
-		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0.01 at location 2.25 above {_loc}
+		draw 5 cloud particles with offset vector(0.75, 0.25, 0.75) with extra value 0.01 at (location 2.25 above {_loc})
 
 		loop-value <= 3:
-			set {_ray} to raytrace from {_p} with max distance {_max-dist} with ray size 0.75 while ignoring passable blocks while ignoring all entities where [isDamageableEntity(input, {_p}) = false]
-			set {_hit} to raytrace hit entity of {_ray} ? location 1 above raytrace hit block of {_ray} ? location {_max-dist} infront of {_p}'s head
+			set {_ray} to raytrace from {_p} with max distance {_max-dist} with ray size 0.75 while ignoring passable blocks while ignoring ((all entities) where [isDamageableEntity(input, {_p}) = false])
+			set {_hit} to raytrace hit entity of {_ray} ? (location 1 above raytrace hit block of {_ray}) ? (location {_max-dist} infront of {_p}'s head)
 		
 		draw 4 cloud particles with offset vector(0.5, 0.1, 0.5) with extra value 0.02 at {_hit}
 
@@ -77,9 +79,8 @@ function thunderboltAction(p: player, weapon: text, atk-scale: number):
 
 		hitCombo({_p}, {_hit}, {_atk-scale}, {_weapon}, "thunderbolt")
 		make {_p} damage loop-entity by {_dmg}
-		push loop-entity (vector from {_hit} to loop-entity) at speed 1 * {_atk-scale}
-		push loop-entity up at speed 0.4 * {_atk-scale}
-
+		push loop-entity (vector from {_hit} to loop-entity) at speed (1 * {_atk-scale})
+		push loop-entity up at speed (0.4 * {_atk-scale})
 		{_push} isn't set:
 			set {_push} to true
 			set {_v} to vector from {_p} to {_hit}
@@ -101,5 +102,5 @@ function thunderboltAction(p: player, weapon: text, atk-scale: number):
 
 
 	kill {_ent}
-###
+
 
