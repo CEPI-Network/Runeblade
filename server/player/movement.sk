@@ -2,7 +2,7 @@
 
 
 
-on player press of an input key:
+on player press of jump key:
 	if player's gamemode = survival:
 		set player's gamemode to adventure
 	player's gamemode = adventure
