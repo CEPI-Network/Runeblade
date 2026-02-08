@@ -118,7 +118,8 @@ function flamedance_projectile(p: player, loc: location, v: vector, weapon: stri
 			loop-entity != {_p}
 			isDamageableEntity(loop-entity, {_p}) = true
 
-			hitCombo({_p}, 1, {_weapon}, "flame dance")
+			hitCombo({_p}, 1, 1, {_weapon}, "flame dance")
+			
 			make {_p} damage loop-entity by 1
 			ignite loop-entity for 20 ticks
 			kill {_ent}
