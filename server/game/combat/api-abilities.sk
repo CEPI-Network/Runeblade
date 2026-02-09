@@ -388,6 +388,7 @@ function hitCombo(p: entity, hit: integer, atk-scale: number, weapon: text, attu
 		set {-tempdata::%uuid of {_p}%::combo::%{_hit}%} to false
 	actionbar({_p})
 
+	replace all "_" in {_weapon} with " "
 	set {_weapon} to {-weapons::%{_weapon}%::name}
 	set {_attunement} to "&e&n%{-attunements::%{_attunement}%::name}%" if {-attunements::%{_attunement}%::name} is set
 	set {-tempdata::%uuid of {_p}%::last-used} to join {_weapon} and {_attunement} with " &8| "
