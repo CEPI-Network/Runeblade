@@ -6,6 +6,10 @@
 
 ---
 
+This code should only be used for educational purposes. You are not allowed to use it in your own work without significant changes.
+
+---  
+
 Sword &amp; Magic PVP server in Minecraft.  
 > runeblade.minehut.gg  
 > Server Version: `1.21.11+`  
