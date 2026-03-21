@@ -80,16 +80,15 @@ on async chat with priority lowest:
 		replace name of loop-player in {_msg} with "&e%loop-player%%{data::%uuid of player%::chatcolor} ? "&7"%"
 		play sound "block.note_block.pling" at volume 10 at pitch 2 to loop-player
 	if player has permission "group.grand":
-		set {_msg} to formatted {_msg}
+		set {_msg} to colored {_msg}
 	
-	set {_prefix} to formatted "%player's prefix%%{data::%uuid of player%::nickname} ? player%%{_suffix}% &8» "
+	set {_prefix} to colored "%player's prefix%%{data::%uuid of player%::nickname} ? player%%{_suffix}% &8» "
 	set {_content} to "%{data::%uuid of player%::chatcolor} ? "&7"%%{_msg}%"
 	set {_merge} to merge components {_prefix} and {_content}
-	#set async chat format to {_merge}
 	
 	# Bypass Minehut chat filter
 	cancel event
-	send formatted {_merge} to {_viewers::*}
+	send colored {_merge} to {_viewers::*}
 	# ==---
 
 	if player's prefix != "&7":
