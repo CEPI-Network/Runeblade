@@ -24,7 +24,8 @@ Sword &amp; Magic PVP server in Minecraft.
 > 15 unique attunements to apply on each weapon  
 > Arena, Duels, Challenges & Dungeons  
 
-
+[Trailer](https://www.youtube.com/watch?v=Sl0A8bscqWI)   
+[Weapon Showcase](https://www.youtube.com/watch?v=mvdIbkPze34)   
 
 
 
