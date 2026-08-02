@@ -5,8 +5,8 @@ function sendResourcepack(p: player):
 	
 	wait 20 ticks
         
-	set {_url} to "https://download.mc-packs.net/pack/2d66e8948661f95ff3c66c5396375ee83848060c.zip"
-	set {_hash} to "2d66e8948661f95ff3c66c5396375ee83848060c"
+	set {_url} to "https://download.mc-packs.net/pack/6889dd7ae2f90a231d96048ba0517f382202b349.zip"
+	set {_hash} to "6889dd7ae2f90a231d96048ba0517f382202b349"
 	set {_uuid} to random uuid
 	send resource pack from url {_url} with uuid {_uuid} with hash {_hash} to {_p}
 
