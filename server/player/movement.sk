@@ -2,32 +2,32 @@
 
 
 
-on player press of jump key:
-	if player's gamemode = survival:
-		set player's gamemode to adventure
-	player's gamemode = adventure
-	event-input keys contains jump key
-	player's level progress > 0
-	player is not on the ground
+#on player press of jump key:
+#	if player's gamemode = survival:
+#		set player's gamemode to adventure
+#	player's gamemode = adventure
+#	event-input keys contains jump key
+#	player's level progress > 0
+#	player is not on the ground
 
-	set {_old-velo} to player's velocity
-	player's level progress <= 0:
-		wait 1 tick
-		set player's velocity to {_old-velo}
-		stop
+#	set {_old-velo} to player's velocity
+#	player's level progress <= 0:
+#		wait 1 tick
+#		set player's velocity to {_old-velo}
+#		stop
 
 
-	set y of player's velocity to 0
-	push player up at speed 0.5
-	push player getWASD(player) at speed 0.7
-	play sound "entity.ender_dragon.flap" at volume 3 at pitch 1.2 at player
-	draw 8 cloud particles with offset vector(0.6, 0.3, 0.6) with extra value 0.2 at player
-	set player's level progress to 0
+#	set y of player's velocity to 0
+#	push player up at speed 0.5
+#	push player getWASD(player) at speed 0.7
+#	play sound "entity.ender_dragon.flap" at volume 3 at pitch 1.2 at player
+#	draw 8 cloud particles with offset vector(0.6, 0.3, 0.6) with extra value 0.2 at player
+#	set player's level progress to 0
 
-	while player is not on ground:
-		wait 1 tick
-		exit loop if loop-counter >= 120
-	set player's level progress to 0.99
+#	while player is not on ground:
+#		wait 1 tick
+#		exit loop if loop-counter >= 120
+#	set player's level progress to 0.99
 
 
 
@@ -52,3 +52,37 @@ function getWASD(p: player) :: vector:
 		add 45 to yaw of {_v}
 	
 	return {_v}
+
+
+
+
+on flight toggle:
+	player's gamemode = adventure or survival
+
+	set {_old-velo} to player's velocity
+	cancel event
+	player's level progress <= 0:
+		wait 1 tick
+		set player's velocity to {_old-velo}
+		stop
+
+	set y of player's velocity to 0
+	push player up at speed 0.5
+	push player getWASD(player) at speed 0.7
+	play sound "entity.ender_dragon.flap" at volume 3 at pitch 1.2 at player
+	draw (8 cloud particles) with offset vector(0.6, 0.3, 0.6) with extra value 0.2 at player
+	set player's level progress to 0
+
+	while player is not on ground:
+		wait 1 tick
+		exit loop if loop-counter >= 120
+	set player's level progress to 0.99
+
+
+on respawn:
+	set player's flight mode to true
+
+
+on game event hit_ground:
+	player's flight mode != true
+	set player's flight mode to true

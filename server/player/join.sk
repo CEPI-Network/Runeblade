@@ -22,6 +22,7 @@ on join:
 	
 	sendResourcepack(player)
 	fixInventory(player)
+	set flight mode of player to true
 
 	loop all players:
 		score(loop-player)

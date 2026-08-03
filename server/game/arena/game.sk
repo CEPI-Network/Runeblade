@@ -1,6 +1,6 @@
 
 on load:
-	set gamerule announceAdvancements of world "runeblade" to false
+	set gamerule announce_advancements of world "runeblade" to false
 
 
 on skript start:
@@ -343,6 +343,7 @@ on death:
 	wait 3 seconds
 	set victim's gamemode to adventure
 	teleport victim to location(-0.5, 75, -54.5, world "runeblade", 0, 0) retain passengers # spawn
+	set victim's flight mode to true
 	apply infinite weakness 255 to victim:
 		hide the particles
 		hide the icon
